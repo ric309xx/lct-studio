@@ -1,9 +1,0 @@
-https://app.netlify.com/projects/lct-studio/deploys
-↑
-網頁上傳
-1.
-先執行generate_photo_list.py，把photo裡面的照片縮小+浮水印，產生的照片會在public資料夾裡面
-2.
-把照片放到publish資料夾內的photo，如果要改網頁就改裡面的index.html
-3.
-把publish整個資料夾上傳到最上面那個網頁
