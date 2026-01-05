@@ -55,23 +55,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const openModal = (category, filename, photoListStr) => {
-        // Parse the list of photos for this context
-        // To simplify, we will rebuild the current list based on the gallery state
-        // OR we can pass the list.
-        // For View All: pass all. For Random 3: pass those 3.
-
-        // Better approach: When clicking a card, we know which gallery it belongs to.
-        // We can get all images currently in that gallery's DOM or from our data.
-
-        // Let's use the data we have in memory `allPhotosData` (will be stored globally)
-        // and the state of "isViewAll" for that category.
-
-        // For simplicity in this function, we will set the index based on the filename match
-        // in the `currentCategoryPhotos` list which we must update whenever the gallery updates.
-
-        // ACTUALLY: Let's just pass the index and the list when clicking.
-        // But `currentCategoryPhotos` needs to be set when the gallery is rendered.
-
         modalImage.src = `./public/photos/${encodeURIComponent(category)}/${encodeURIComponent(filename)}`;
         modalImage.alt = getBaseLocationName(filename);
         photoModal.classList.remove('hidden');
@@ -123,7 +106,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let globalPhotoData = {}; // Store fetched data
 
+    // Color Distance Calculation (Euclidean)
+    const getColorDistance = (color1, color2) => {
+        if (!color1 || !color2) return 1000;
+        return Math.sqrt(
+            Math.pow(color1[0] - color2[0], 2) +
+            Math.pow(color1[1] - color2[1], 2) +
+            Math.pow(color1[2] - color2[2], 2)
+        );
+    };
+
     const renderGallery = (categoryName) => {
+        // photoList is now Array of { filename, color }
         const photoList = globalPhotoData[categoryName] || [];
         const galleryContainer = document.getElementById(`gallery-${categoryName}`);
 
@@ -131,32 +125,75 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let photosToDisplay = [];
 
-        // "隨機播放"模式：
-        // 規則：隨機選 3 張，但「前四個字」相同的不能同時出現。
+        // "智慧隨機 + 色系搭配" 模式：
+        // 規則 1：隨機選 1 張「種子照片」。
+        // 規則 2：找出跟種子照片顏色最接近的候選人。
+        // 規則 3：確保地點 (前四字) 用於去重。
 
-        // 1. 根據前四個字分組
-        const groups = {};
-        photoList.forEach(filename => {
-            const prefix = filename.substring(0, 4); // 取前四個字
-            if (!groups[prefix]) { groups[prefix] = []; }
-            groups[prefix].push(filename);
-        });
+        if (photoList.length > 0) {
+            // 1. Pick Seed
+            const seedIndex = Math.floor(Math.random() * photoList.length);
+            const seedPhoto = photoList[seedIndex];
+            const seedPrefix = seedPhoto.filename.substring(0, 4);
 
-        // 2. 取得所有不重複的前綴 (Keys)
-        const prefixes = Object.keys(groups);
+            photosToDisplay.push(seedPhoto);
 
-        // 3. 隨機打亂前綴
-        const shuffledPrefixes = prefixes.sort(() => 0.5 - Math.random());
+            // 2. Find Candidates sorted by color distance
+            let candidates = photoList.filter(p => p !== seedPhoto).map(p => {
+                return {
+                    ...p,
+                    distance: getColorDistance(seedPhoto.color, p.color),
+                    prefix: p.filename.substring(0, 4)
+                };
+            });
 
-        // 4. 取前 3 個不同前綴 (如果不滿 3 個，就取全部)
-        const selectedPrefixes = shuffledPrefixes.slice(0, 3);
+            // Sort by color similarity (lowest distance first)
+            candidates.sort((a, b) => a.distance - b.distance);
 
-        // 5. 從選中的每個前綴群組中，隨機挑出一張照片
-        photosToDisplay = selectedPrefixes.map(prefix => {
-            const photosInGroup = groups[prefix];
-            const randomPhoto = photosInGroup[Math.floor(Math.random() * photosInGroup.length)];
-            return { category: categoryName, filename: randomPhoto };
-        });
+            // 3. Select 2 more
+            let selectedPrefixes = new Set([seedPrefix]);
+
+            for (const candidate of candidates) {
+                if (photosToDisplay.length >= 3) break;
+
+                // Unique prefix check
+                if (!selectedPrefixes.has(candidate.prefix)) {
+                    photosToDisplay.push(candidate);
+                    selectedPrefixes.add(candidate.prefix);
+                }
+            }
+
+            // Fallback: If strict matching resulted in < 3 photos (rare, but possible if all matching colors are same location)
+            // Pick random others to fill constraints
+            if (photosToDisplay.length < 3) {
+                const remaining = photoList.filter(p => !photosToDisplay.includes(p));
+                // Shuffle remaining
+                remaining.sort(() => 0.5 - Math.random());
+
+                for (const p of remaining) {
+                    if (photosToDisplay.length >= 3) break;
+                    const prefix = p.filename.substring(0, 4);
+                    if (!selectedPrefixes.has(prefix)) {
+                        photosToDisplay.push(p);
+                        selectedPrefixes.add(prefix);
+                    }
+                }
+            }
+
+            // Final Fallback: If still < 3 (e.g. total locations < 3), just fill
+            if (photosToDisplay.length < 3) {
+                const remaining = photoList.filter(p => !photosToDisplay.includes(p));
+                for (const p of remaining) {
+                    if (photosToDisplay.length >= 3) break;
+                    photosToDisplay.push(p);
+                }
+            }
+
+            // Optional: Shuffle the 3 selected photos so the "seed" isn't always first?
+            // Or keep them sorted by color? Keeping them sorted might look nice (gradient effect).
+            // Let's shuffle position to look more natural.
+            photosToDisplay.sort(() => 0.5 - Math.random());
+        }
 
         // Render
         galleryContainer.innerHTML = '';
@@ -186,9 +223,6 @@ document.addEventListener('DOMContentLoaded', () => {
         galleryContainer.querySelectorAll('.photo-card').forEach(card => {
             card.addEventListener('click', () => {
                 // Update Global List for Lightbox based on context
-                // if view all, lightbox uses all. if random, use these 3? 
-                // Creating a better UX: Lightbox should probably navigation through visually present photos OR valid photos in category?
-                // Standard behavior: navigate through the displayed set.
                 currentCategoryPhotos = photosToDisplay;
                 openModal(card.dataset.category, card.dataset.filename);
             });

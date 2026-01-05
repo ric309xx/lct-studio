@@ -110,11 +110,19 @@ def process_image(source_path, output_path, target_width, add_watermark=True):
                 img.save(output_path)
             
             print(f"  - 已處理: {os.path.basename(source_path)} (寬度 -> {img.width}px)")
-            return True
+            
+            # 計算平均顏色 (Resize to 1x1)
+            # 必須使用原始圖片(無浮水印)或處理後的圖片皆可，這裡使用處理後的 img
+            # Convert to RGB just in case (e.g. PNG with alpha) for color calculation
+            img_for_color = img.convert('RGB')
+            img_1x1 = img_for_color.resize((1, 1), Image.Resampling.LANCZOS)
+            dominant_color = img_1x1.getpixel((0, 0)) # Returns (r, g, b)
+            
+            return True, dominant_color
             
     except Exception as e:
         print(f"處理檔案 {os.path.basename(source_path)} 時發生錯誤: {e}")
-        return False
+        return False, None
 
 
 def run_processor():
@@ -141,7 +149,7 @@ def run_processor():
     
     # --- 1. 處理作品集分類照片 (加浮水印，寬度 1280px) ---
     all_photo_data = {}
-    print("\n--- 正在處理作品集照片 (將加上浮水印) ---")
+    print("\n--- 正在處理作品集照片 (將加上浮水印與計算顏色) ---")
     for category in portfolio_categories:
         source_category_path = os.path.join(source_parent_folder, category)
         output_category_path = os.path.join(output_parent_folder, 'photos', category)
@@ -161,8 +169,13 @@ def run_processor():
         for filename in files:
             source_path = os.path.join(source_category_path, filename)
             output_path = os.path.join(output_category_path, filename)
-            if process_image(source_path, output_path, target_width=portfolio_resize_width, add_watermark=True):
-                all_photo_data[category].append(filename)
+            success, color = process_image(source_path, output_path, target_width=portfolio_resize_width, add_watermark=True)
+            if success:
+                # Store object instead of string
+                all_photo_data[category].append({
+                    "filename": filename,
+                    "color": color # (r, g, b)
+                })
 
     # 確保 public 資料夾存在 (即使沒有照片也該建立)
     os.makedirs(output_parent_folder, exist_ok=True)
@@ -198,4 +211,5 @@ def run_processor():
 if __name__ == '__main__':
     run_processor()
     # 在程式結束前暫停，方便在終端機查看所有 print 訊息
-    input("請按 Enter 鍵結束...")
+    # input("請按 Enter 鍵結束...")
+    pass
