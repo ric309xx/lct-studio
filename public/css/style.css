@@ -4,7 +4,8 @@ body {
     background-color: #111827;
     color: #e2e8f0;
     scroll-behavior: smooth;
-    overflow-x: hidden; /* Prevent horizontal scroll from animations */
+    overflow-x: hidden;
+    /* Prevent horizontal scroll from animations */
 }
 
 /* Header & Nav */
@@ -32,13 +33,18 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
+    background-color: rgba(0, 0, 0, 0.4);
+    /* Reverted to 0.4 */
 }
 
 @media (max-width: 767px) {
     .hero-overlay {
         background-color: rgba(0, 0, 0, 0.4);
     }
+}
+
+.hero-text-shadow {
+    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.9), 0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
 /* Photo Gallery */
@@ -98,6 +104,14 @@ body {
 }
 
 /* Staggered delays for grid items if needed */
-.reveal-delay-100 { transition-delay: 0.1s; }
-.reveal-delay-200 { transition-delay: 0.2s; }
-.reveal-delay-300 { transition-delay: 0.3s; }
+.reveal-delay-100 {
+    transition-delay: 0.1s;
+}
+
+.reveal-delay-200 {
+    transition-delay: 0.2s;
+}
+
+.reveal-delay-300 {
+    transition-delay: 0.3s;
+}

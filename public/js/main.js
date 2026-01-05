@@ -315,6 +315,33 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    const setupHeroVideo = () => {
+        const heroVideo = document.getElementById('hero-video');
+        if (!heroVideo) return;
+
+        const videos = [
+            'background/your-hero-video1.mp4',
+            'background/your-hero-video2.mp4',
+            'background/your-hero-video3.mp4',
+            'background/your-hero-video4.mp4'
+        ];
+
+        const randomVideo = videos[Math.floor(Math.random() * videos.length)];
+
+        // Find existing source or create one
+        let source = heroVideo.querySelector('source');
+        if (source) {
+            source.src = randomVideo;
+        } else {
+            source = document.createElement('source');
+            source.src = randomVideo;
+            source.type = 'video/mp4';
+            heroVideo.appendChild(source);
+        }
+
+        heroVideo.load();
+    };
+
     window.playVideo = (elementId, videoUrl) => {
         const container = document.getElementById(elementId);
         if (!container) return;
@@ -335,6 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize
     fetchPhotoData();
     setupRandomVideos();
+    setupHeroVideo();
 
     // Initial Observe for static elements
     setTimeout(observeElements, 500); // Wait for initial render

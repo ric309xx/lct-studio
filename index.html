@@ -59,16 +59,18 @@
     </header>
 
     <section id="hero" class="relative h-screen flex items-center justify-center text-center overflow-hidden">
-        <video class="hero-video" autoplay muted loop playsinline>
-            <source src="background/your-hero-video.mp4" type="video/mp4">
+        <video id="hero-video" class="hero-video" autoplay muted loop playsinline>
+            <!-- Source will be set by JS -->
+            <source src="background/your-hero-video1.mp4" type="video/mp4">
             您的瀏覽器不支援此影片格式。
         </video>
         <div class="hero-overlay"></div>
         <div class="z-10 px-4 reveal">
-            <h1 class="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter text-white mb-4 drop-shadow-2xl">
+            <h1
+                class="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter text-white mb-4 drop-shadow-2xl hero-text-shadow">
                 從不一樣的角度，看見世界
             </h1>
-            <p class="text-lg sm:text-xl md:text-2xl text-gray-200 mb-8 drop-shadow-lg">
+            <p class="text-lg sm:text-xl md:text-2xl text-gray-200 mb-8 drop-shadow-lg hero-text-shadow">
                 捕捉那些平常無法企及的壯麗瞬間
             </p>
             <a href="#portfolio"
