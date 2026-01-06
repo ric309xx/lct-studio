@@ -319,25 +319,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const heroVideo = document.getElementById('hero-video');
         if (!heroVideo) return;
 
-        const videos = [
-            'background/your-hero-video1.mp4',
-            'background/your-hero-video2.mp4',
-            'background/your-hero-video3.mp4',
-            'background/your-hero-video4.mp4'
-        ];
+        // Randomly select video 1 to 4
+        const videoCount = 4;
+        const randomIndex = Math.floor(Math.random() * videoCount) + 1;
+        const baseFilename = `your-hero-video${randomIndex}`;
 
-        const randomVideo = videos[Math.floor(Math.random() * videos.length)];
+        // Set Poster (First frame)
+        heroVideo.poster = `background/${baseFilename}.jpg`;
 
-        // Find existing source or create one
-        let source = heroVideo.querySelector('source');
-        if (source) {
-            source.src = randomVideo;
-        } else {
-            source = document.createElement('source');
-            source.src = randomVideo;
-            source.type = 'video/mp4';
-            heroVideo.appendChild(source);
-        }
+        // Clear existing content (fallback text/sources)
+        heroVideo.innerHTML = '';
+
+        // 1. Add WebM Source (Preferred)
+        const sourceWebM = document.createElement('source');
+        sourceWebM.src = `background/${baseFilename}.webm`;
+        sourceWebM.type = 'video/webm';
+        heroVideo.appendChild(sourceWebM);
+
+        // 2. Add MP4 Source (Fallback)
+        const sourceMp4 = document.createElement('source');
+        sourceMp4.src = `background/${baseFilename}.mp4`;
+        sourceMp4.type = 'video/mp4';
+        heroVideo.appendChild(sourceMp4);
+
+        // Fallback text
+        heroVideo.appendChild(document.createTextNode('您的瀏覽器不支援此影片格式。'));
 
         heroVideo.load();
     };
