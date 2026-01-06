@@ -44,17 +44,17 @@ for v in videos:
     print(f"  -> Generated Poster: {os.path.basename(poster_path)}")
     
     # 2. WebM (VP9)
-    # -vf scale=-2:720 : Resize to 720p height, width auto-scaled (divisible by 2)
+    # -vf scale=-2:1080 : Resize to 1080p
     # -an : Remove audio
-    # -b:v 1500k : Target bitrate 1.5Mbps
-    cmd_webm = ['ffmpeg', '-y', '-i', input_source, '-vf', 'scale=-2:720', '-c:v', 'libvpx-vp9', '-b:v', '1500k', '-an', webm_path]
+    # -b:v 3000k : Target bitrate 3Mbps
+    cmd_webm = ['ffmpeg', '-y', '-i', input_source, '-vf', 'scale=-2:1080', '-c:v', 'libvpx-vp9', '-b:v', '3000k', '-an', webm_path]
     subprocess.run(cmd_webm, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     print(f"  -> Generated WebM: {os.path.basename(webm_path)}")
 
     # 3. MP4 (H.264)
     # -c:v libx264
-    # -pix_fmt yuv420p : Ensure compatibility
-    cmd_mp4 = ['ffmpeg', '-y', '-i', input_source, '-vf', 'scale=-2:720', '-c:v', 'libx264', '-b:v', '1800k', '-pix_fmt', 'yuv420p', '-an', mp4_path]
+    # -b:v 3500k : Target bitrate 3.5Mbps
+    cmd_mp4 = ['ffmpeg', '-y', '-i', input_source, '-vf', 'scale=-2:1080', '-c:v', 'libx264', '-b:v', '3500k', '-pix_fmt', 'yuv420p', '-an', mp4_path]
     subprocess.run(cmd_mp4, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     print(f"  -> Generated MP4: {os.path.basename(mp4_path)}")
 
