@@ -1,7 +1,7 @@
 import os
 import json
 import shutil
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ExifTags
 
 # --- 設定區 ---
 # 1. 來源與輸出路徑
@@ -66,6 +66,79 @@ def clean_output():
     return True # 清理成功，回傳 True
 
 
+def get_decimal_from_dms(dms, ref):
+    """
+    將度/分/秒 (DMS) 格式轉換為十進位度數。
+    dms: (Degrees, Minutes, Seconds)
+    ref: 'N', 'S', 'E', 'W'
+    """
+    degrees = dms[0]
+    minutes = dms[1]
+    seconds = dms[2]
+    
+    decimal = degrees + (minutes / 60.0) + (seconds / 3600.0)
+    
+    if ref in ['S', 'W']:
+        decimal = -decimal
+        
+    return decimal
+
+def get_gps_info(img):
+    """
+    從圖片的 EXIF 資料中提取 GPS 經緯度和高度。
+    回傳: 包含 lat, lng, alt 的字典，若無資料則回傳 None。
+    """
+    try:
+        exif_data = img._getexif()
+        if not exif_data:
+            return None
+
+        gps_info = {}
+        for tag, value in exif_data.items():
+            decoded = ExifTags.TAGS.get(tag, tag)
+            if decoded == 'GPSInfo':
+                gps_info = value
+                break
+        
+        if not gps_info:
+            return None
+
+        # 提取經緯度需要的標籤 ID
+        # 1: GPSLatitudeRef, 2: GPSLatitude, 3: GPSLongitudeRef, 4: GPSLongitude, 6: GPSAltitude
+        gps_lat_ref = gps_info.get(1)
+        gps_lat = gps_info.get(2)
+        gps_lng_ref = gps_info.get(3)
+        gps_lng = gps_info.get(4)
+        gps_alt = gps_info.get(6)
+
+        if gps_lat and gps_lat_ref and gps_lng and gps_lng_ref:
+            lat = get_decimal_from_dms(gps_lat, gps_lat_ref)
+            lng = get_decimal_from_dms(gps_lng, gps_lng_ref)
+            
+            result = {
+                "lat": round(lat, 6),
+                "lng": round(lng, 6)
+            }
+            
+            # 高度是選擇性的
+            if gps_alt is not None:
+                # gps_alt 可能是 (numerator, denominator) 或直接是數值
+                try:
+                    # Pillow 的 IFDRational 處理
+                    alt_val = float(gps_alt)
+                except:
+                    alt_val = 0
+                result["alt"] = round(alt_val, 2)
+            
+            return result
+
+    except Exception as e:
+        print(f"  ! 讀取 GPS 發生錯誤: {e}")
+        return None
+
+    return None
+
+
 def process_image(source_path, output_path, target_width, add_watermark=True):
     """
     統一處理單一圖片的函式 (可指定縮放寬度、可選浮水印)。
@@ -74,7 +147,14 @@ def process_image(source_path, output_path, target_width, add_watermark=True):
     # 注意：'font' 變數是在 run_processor() 中定義的全域變數，
     # 這裡僅為讀取，不需要 'global' 關鍵字。
     try:
+        current_gps_info = None # 初始化 GPS 變數
+        
         with Image.open(source_path) as img:
+            # 1. 先嘗試讀取 GPS 資訊 (在縮放之前)
+            current_gps_info = get_gps_info(img)
+            if current_gps_info:
+                print(f"  * 發現 GPS: {current_gps_info}")
+
             # 使用傳入的 target_width 進行縮放
             if img.width > target_width:
                 aspect_ratio = img.height / img.width
@@ -131,11 +211,11 @@ def process_image(source_path, output_path, target_width, add_watermark=True):
             img_1x1 = img_for_color.resize((1, 1), Image.Resampling.LANCZOS)
             dominant_color = img_1x1.getpixel((0, 0)) # Returns (r, g, b)
             
-            return True, dominant_color
+            return True, dominant_color, current_gps_info
             
     except Exception as e:
         print(f"處理檔案 {os.path.basename(source_path)} 時發生錯誤: {e}")
-        return False, None
+        return False, None, None
 
 
 def run_processor():
@@ -177,13 +257,18 @@ def run_processor():
         for filename in files:
             source_path = os.path.join(source_category_path, filename)
             output_path = os.path.join(output_category_path, filename)
-            success, color = process_image(source_path, output_path, target_width=portfolio_resize_width, add_watermark=True)
+            success, color, gps_info = process_image(source_path, output_path, target_width=portfolio_resize_width, add_watermark=True)
             if success:
                 # Store object instead of string
-                all_photo_data[category].append({
+                img_data = {
                     "filename": filename,
                     "color": color # (r, g, b)
-                })
+                }
+                # 如果有 GPS 資訊才加入
+                if gps_info:
+                    img_data["gps"] = gps_info
+                
+                all_photo_data[category].append(img_data)
 
     # 確保 public 資料夾存在 (即使沒有照片也該建立)
     os.makedirs(output_parent_folder, exist_ok=True)

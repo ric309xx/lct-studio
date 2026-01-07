@@ -300,6 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
         categories.forEach(category => {
             renderGallery(category);
         });
+
     };
 
     const fetchPhotoData = async () => {
