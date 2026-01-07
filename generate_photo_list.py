@@ -88,17 +88,30 @@ def process_image(source_path, output_path, target_width, add_watermark=True):
                 txt_layer = Image.new('RGBA', img.size, (255, 255, 255, 0))
                 draw = ImageDraw.Draw(txt_layer)
                 
+                # --- 動態計算字體大小 (短邊的 8%) ---
+                # 原因：在網頁縮圖(object-cover)時，顯示比例通常取決於短邊。
+                # 為了讓浮水印在正方形縮圖中看起來大小一致，需以 min(width, height) 為基準。
+                short_side = min(img.width, img.height)
+                dynamic_font_size = int(short_side * 0.08)
+                if dynamic_font_size < 12: dynamic_font_size = 12 # 最小限制
+
+                try:
+                    current_font = ImageFont.truetype(font_file, dynamic_font_size)
+                except IOError:
+                    print(f"警告: 找不到字型 {font_file}，嘗試使用預設字型。")
+                    current_font = ImageFont.load_default()
+
                 # 計算文字位置 (置中)
                 # Pillow 9.2.0+ (anchor='mm')
                 try:
                     x, y = img.width / 2, img.height / 2
-                    draw.text((x, y), watermark_text, font=font, fill=font_color, anchor='mm')
+                    draw.text((x, y), watermark_text, font=current_font, fill=font_color, anchor='mm')
                 except AttributeError:
                     # 舊版 Pillow 的置中寫法 (如果 anchor='mm' 不支援)
-                    text_width, text_height = draw.textsize(watermark_text, font)
+                    text_width, text_height = draw.textsize(watermark_text, current_font)
                     x = (img.width - text_width) / 2
                     y = (img.height - text_height) / 2
-                    draw.text((x, y), watermark_text, font=font, fill=font_color)
+                    draw.text((x, y), watermark_text, font=current_font, fill=font_color)
 
                 img = Image.alpha_composite(img, txt_layer)
 
@@ -138,16 +151,11 @@ def run_processor():
         print(f"錯誤：找不到來源資料夾 '{source_parent_folder}'。")
         return
 
-    # 載入字型 (定義為全域變數，供 process_image 使用)
-    global font
-    try:
-        font = ImageFont.truetype(font_file, font_size)
-    except IOError:
-        print(f"錯誤：找不到字型檔案 '{font_file}'。")
-        print("請確保字型檔與 Python 程式在同一目錄。")
-        return
+    # 確保 public 資料夾存在 (即使沒有照片也該建立)
+    os.makedirs(output_parent_folder, exist_ok=True)
     
     # --- 1. 處理作品集分類照片 (加浮水印，寬度 1280px) ---
+
     all_photo_data = {}
     print("\n--- 正在處理作品集照片 (將加上浮水印與計算顏色) ---")
     for category in portfolio_categories:

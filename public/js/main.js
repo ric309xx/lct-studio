@@ -128,34 +128,86 @@ document.addEventListener('DOMContentLoaded', () => {
         if (photoList.length > 0) {
             // Logic based on category
             if (categoryName === "大地映像") {
-                // --- Logic 1: Color Matching (Existing) ---
-                // 1. Pick Seed
-                const seedIndex = Math.floor(Math.random() * photoList.length);
-                const seedPhoto = photoList[seedIndex];
-                const seedPrefix = seedPhoto.filename.substring(0, 4);
+                // --- Logic 1: Category Round-Robin (Fixed Diversity) ---
+                // Goal: Pick 1 from Warm, 1 from Cool/Nature, 1 from Neutral/Purple
 
-                photosToDisplay.push(seedPhoto);
+                // Group 1 (Warm): Red/Orange/Yellow
+                // H < 40, H > 340, 40 <= H < 70
+                // Group 2 (Cool/Nature): Green/Blue/Cyan
+                // 70 <= H < 160, 160 <= H < 260
+                // Group 3 (Neutral/Purple): Purple/Magenta/Neutral
+                // 260 <= H < 340, Saturation < 0.15
 
-                // 2. Find Candidates sorted by color distance
-                let candidates = photoList.filter(p => p !== seedPhoto).map(p => {
-                    return {
-                        ...p,
-                        distance: getColorDistance(seedPhoto.color, p.color),
-                        prefix: p.filename.substring(0, 4)
-                    };
+                const groups = [[], [], []];
+
+                photoList.forEach(p => {
+                    const rgb = p.color;
+                    // RGB to HSV (Simple version for grouping)
+                    const r = rgb[0] / 255, g = rgb[1] / 255, b = rgb[2] / 255;
+                    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+                    let h, s, v = max;
+                    const d = max - min;
+                    s = max === 0 ? 0 : d / max;
+
+                    if (max === min) {
+                        h = 0; // achromatic
+                    } else {
+                        switch (max) {
+                            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                            case g: h = (b - r) / d + 2; break;
+                            case b: h = (r - g) / d + 4; break;
+                        }
+                        h /= 6;
+                    }
+                    const h_deg = h * 360;
+
+                    if (s < 0.15) {
+                        groups[2].push(p); // Neutral -> Group 3
+                    } else {
+                        if ((h_deg >= 0 && h_deg < 70) || (h_deg >= 340 && h_deg <= 360)) {
+                            groups[0].push(p); // Warm -> Group 1
+                        } else if (h_deg >= 70 && h_deg < 260) {
+                            groups[1].push(p); // Cool/Nature -> Group 2
+                        } else {
+                            groups[2].push(p); // Purple/Magenta -> Group 3
+                        }
+                    }
                 });
 
-                // Sort by color similarity (lowest distance first)
-                candidates.sort((a, b) => a.distance - b.distance);
+                // Pick 1 from each group if possible
+                let selectedPrefixes = new Set();
 
-                // 3. Select up to 2 matchers
-                let selectedPrefixes = new Set([seedPrefix]);
-                for (const candidate of candidates) {
-                    if (photosToDisplay.length >= 3) break;
-                    // Unique prefix check
-                    if (!selectedPrefixes.has(candidate.prefix)) {
-                        photosToDisplay.push(candidate);
-                        selectedPrefixes.add(candidate.prefix);
+                // Strategy: Try to pick one from each group.
+                // If a group is empty, we will fill from others later.
+                [0, 1, 2].forEach(groupIndex => {
+                    const group = groups[groupIndex];
+                    if (group.length > 0) {
+                        // Shuffle group
+                        group.sort(() => 0.5 - Math.random());
+
+                        for (const p of group) {
+                            const prefix = p.filename.substring(0, 4);
+                            if (!selectedPrefixes.has(prefix)) {
+                                photosToDisplay.push(p);
+                                selectedPrefixes.add(prefix);
+                                break; // Picked one from this group
+                            }
+                        }
+                    }
+                });
+
+                // Fallback: If we didn't get 3 photos (e.g. empty groups or duplicates), fill from remaining pool
+                if (photosToDisplay.length < 3) {
+                    const remaining = photoList.filter(p => !photosToDisplay.includes(p));
+                    remaining.sort(() => 0.5 - Math.random());
+
+                    for (const p of remaining) {
+                        if (photosToDisplay.length >= 3) break;
+                        const prefix = p.filename.substring(0, 4);
+                        if (!selectedPrefixes.has(prefix)) {
+                            photosToDisplay.push(p);
+                            selectedPrefixes.add(prefix);
+                        }
                     }
                 }
             } else {
