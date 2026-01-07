@@ -125,47 +125,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let photosToDisplay = [];
 
-        // "智慧隨機 + 色系搭配" 模式：
-        // 規則 1：隨機選 1 張「種子照片」。
-        // 規則 2：找出跟種子照片顏色最接近的候選人。
-        // 規則 3：確保地點 (前四字) 用於去重。
-
         if (photoList.length > 0) {
-            // 1. Pick Seed
-            const seedIndex = Math.floor(Math.random() * photoList.length);
-            const seedPhoto = photoList[seedIndex];
-            const seedPrefix = seedPhoto.filename.substring(0, 4);
+            // Logic based on category
+            if (categoryName === "大地映像") {
+                // --- Logic 1: Color Matching (Existing) ---
+                // 1. Pick Seed
+                const seedIndex = Math.floor(Math.random() * photoList.length);
+                const seedPhoto = photoList[seedIndex];
+                const seedPrefix = seedPhoto.filename.substring(0, 4);
 
-            photosToDisplay.push(seedPhoto);
+                photosToDisplay.push(seedPhoto);
 
-            // 2. Find Candidates sorted by color distance
-            let candidates = photoList.filter(p => p !== seedPhoto).map(p => {
-                return {
-                    ...p,
-                    distance: getColorDistance(seedPhoto.color, p.color),
-                    prefix: p.filename.substring(0, 4)
-                };
-            });
+                // 2. Find Candidates sorted by color distance
+                let candidates = photoList.filter(p => p !== seedPhoto).map(p => {
+                    return {
+                        ...p,
+                        distance: getColorDistance(seedPhoto.color, p.color),
+                        prefix: p.filename.substring(0, 4)
+                    };
+                });
 
-            // Sort by color similarity (lowest distance first)
-            candidates.sort((a, b) => a.distance - b.distance);
+                // Sort by color similarity (lowest distance first)
+                candidates.sort((a, b) => a.distance - b.distance);
 
-            // 3. Select 2 more
-            let selectedPrefixes = new Set([seedPrefix]);
+                // 3. Select up to 2 matchers
+                let selectedPrefixes = new Set([seedPrefix]);
+                for (const candidate of candidates) {
+                    if (photosToDisplay.length >= 3) break;
+                    // Unique prefix check
+                    if (!selectedPrefixes.has(candidate.prefix)) {
+                        photosToDisplay.push(candidate);
+                        selectedPrefixes.add(candidate.prefix);
+                    }
+                }
+            } else {
+                // --- Logic 2: Pure Random for others (e.g. 城市光影) ---
+                // Just shuffle and pick unique prefixes, ignoring color
+                let candidates = [...photoList].sort(() => 0.5 - Math.random());
+                let selectedPrefixes = new Set();
 
-            for (const candidate of candidates) {
-                if (photosToDisplay.length >= 3) break;
-
-                // Unique prefix check
-                if (!selectedPrefixes.has(candidate.prefix)) {
-                    photosToDisplay.push(candidate);
-                    selectedPrefixes.add(candidate.prefix);
+                for (const p of candidates) {
+                    if (photosToDisplay.length >= 3) break;
+                    const prefix = p.filename.substring(0, 4);
+                    if (!selectedPrefixes.has(prefix)) {
+                        photosToDisplay.push(p);
+                        selectedPrefixes.add(prefix);
+                    }
                 }
             }
 
-            // Fallback: If strict matching resulted in < 3 photos (rare, but possible if all matching colors are same location)
-            // Pick random others to fill constraints
+            // --- Fallbacks (Shared) ---
+            // Ensure we have 3 photos if possible, relaxing constraints if needed
             if (photosToDisplay.length < 3) {
+                const selectedPrefixes = new Set(photosToDisplay.map(p => p.filename.substring(0, 4)));
                 const remaining = photoList.filter(p => !photosToDisplay.includes(p));
                 // Shuffle remaining
                 remaining.sort(() => 0.5 - Math.random());
@@ -180,18 +192,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Final Fallback: If still < 3 (e.g. total locations < 3), just fill
+            // Final Fallback: Fill with duplicates allowed if still < 3 (e.g. only 2 unique locations exist)
             if (photosToDisplay.length < 3) {
                 const remaining = photoList.filter(p => !photosToDisplay.includes(p));
+                remaining.sort(() => 0.5 - Math.random());
                 for (const p of remaining) {
                     if (photosToDisplay.length >= 3) break;
                     photosToDisplay.push(p);
                 }
             }
 
-            // Optional: Shuffle the 3 selected photos so the "seed" isn't always first?
-            // Or keep them sorted by color? Keeping them sorted might look nice (gradient effect).
-            // Let's shuffle position to look more natural.
+            // Shuffle final result for display order
             photosToDisplay.sort(() => 0.5 - Math.random());
         }
 

@@ -17,7 +17,7 @@ jpeg_quality = 85
 # 3. 浮水印設定
 watermark_text = "©LCT"
 font_file = 'NotoSansTC-Bold.otf' # 請確保此字型檔與 .py 檔在同一目錄
-font_size = 48
+font_size = 72
 font_color = (255, 255, 255, 128) # RGBA，A=128 為半透明
 
 # 4. 資料夾設定
