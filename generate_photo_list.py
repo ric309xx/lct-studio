@@ -139,6 +139,45 @@ def get_gps_info(img):
     return None
 
 
+def get_dominant_color(img):
+    """
+    使用 Quantize 方法提取圖片的顯著色 (Dominant Color)。
+    比單純平均 (Average) 更能反映肉眼看到的「主色」。
+    """
+    try:
+        # 1. 轉為 RGB 並縮小以加速處理
+        img_copy = img.copy()
+        if img_copy.mode != 'RGB':
+            img_copy = img_copy.convert('RGB')
+        img_copy.thumbnail((150, 150))
+
+        # 2. 減色處理 (Quantize)，只取主要 5 色
+        # 使用 MAXCOVERAGE 或預設算法皆可
+        quantized = img_copy.quantize(colors=5, method=Image.MAXCOVERAGE)
+        
+        # 3. 找出佔比最多的顏色索引
+        # getcolors() 回傳 [(count, index), ...]
+        counts = quantized.getcolors(maxcolors=256)
+        if not counts:
+            return (128, 128, 128) # Fallback
+
+        # 排序：數量多的在前面
+        counts.sort(key=lambda x: x[0], reverse=True)
+        dominant_index = counts[0][1]
+
+        # 4. 從色盤 (Palette) 取出 RGB
+        palette = quantized.getpalette()
+        r = palette[dominant_index * 3]
+        g = palette[dominant_index * 3 + 1]
+        b = palette[dominant_index * 3 + 2]
+        
+        return (r, g, b)
+        
+    except Exception as e:
+        print(f"  ! 計算主色時發生錯誤: {e}, 改用預設灰色")
+        return (128, 128, 128)
+
+
 def process_image(source_path, output_path, target_width, add_watermark=True):
     """
     統一處理單一圖片的函式 (可指定縮放寬度、可選浮水印)。
@@ -204,12 +243,8 @@ def process_image(source_path, output_path, target_width, add_watermark=True):
             
             print(f"  - 已處理: {os.path.basename(source_path)} (寬度 -> {img.width}px)")
             
-            # 計算平均顏色 (Resize to 1x1)
-            # 必須使用原始圖片(無浮水印)或處理後的圖片皆可，這裡使用處理後的 img
-            # Convert to RGB just in case (e.g. PNG with alpha) for color calculation
-            img_for_color = img.convert('RGB')
-            img_1x1 = img_for_color.resize((1, 1), Image.Resampling.LANCZOS)
-            dominant_color = img_1x1.getpixel((0, 0)) # Returns (r, g, b)
+            # --- 改用顯著色算法 (Dominant Color) ---
+            dominant_color = get_dominant_color(img)
             
             return True, dominant_color, current_gps_info
             

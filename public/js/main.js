@@ -166,10 +166,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         if ((h_deg >= 0 && h_deg < 70) || (h_deg >= 340 && h_deg <= 360)) {
                             groups[0].push(p); // Warm -> Group 1
-                        } else if (h_deg >= 70 && h_deg < 260) {
-                            groups[1].push(p); // Cool/Nature -> Group 2
+                        } else if (h_deg >= 160 && h_deg < 260) {
+                            groups[1].push(p); // Blue/Cyan -> Group 2 (Independent)
                         } else {
-                            groups[2].push(p); // Purple/Magenta -> Group 3
+                            groups[2].push(p); // Green/Purple/Magenta -> Group 3 (Combined with Neutral)
                         }
                     }
                 });
