@@ -1,7 +1,8 @@
 import os
 import json
 import shutil
-from PIL import Image, ImageDraw, ImageFont, ExifTags
+import io
+from PIL import Image, ImageDraw, ImageFont, ExifTags, ImageCms
 
 # --- 設定區 ---
 # 1. 來源與輸出路徑
@@ -29,49 +30,64 @@ supported_extensions = ['.jpg', '.jpeg', '.png', '.gif']
 # --- 結束設定 ---
 
 
+import stat
+import time
+
+def remove_readonly(func, path, _):
+    """
+    錯誤處理函式：嘗試移除唯讀屬性後重試刪除。
+    用來解決 Windows 上 [WinError 5] 存取被拒的問題。
+    """
+    try:
+        os.chmod(path, stat.S_IWRITE)
+        func(path)
+    except Exception as e:
+        print(f"  ! 無法移除唯讀屬性或刪除失敗: {path}, {e}")
+
 def clean_output():
     """
-    (已修正) 刪除舊的 public/photos 和 public/assets 資料夾及 JSON 檔案。
-    增加錯誤處理，防止因檔案被占用而閃退。
+    刪除舊的 public/photos 和 public/assets 資料夾及 JSON 檔案。
     """
     print("--- 正在清理舊檔案... ---")
     
-    # 統一處理要刪除的資料夾路徑
-    paths_to_delete = [os.path.join(output_parent_folder, 'photos')]
+    paths_to_delete = [
+        os.path.join(output_parent_folder, 'photos'),
+    ]
     for asset_folder in asset_folders:
         paths_to_delete.append(os.path.join(output_parent_folder, asset_folder))
     
-    # 刪除資料夾
     for path in paths_to_delete:
         if os.path.exists(path):
             try:
-                shutil.rmtree(path)
+                # onerror=remove_readonly 可自動處理唯讀檔案無法刪除的問題
+                shutil.rmtree(path, onerror=remove_readonly)
                 print(f"已刪除舊的資料夾: '{path}'")
-            except (PermissionError, OSError) as e:
-                print(f"\n!!! 錯誤：無法刪除資料夾 '{path}'。")
-                print(f"    請檢查是否被其他程式占用。 錯誤訊息: {e}")
-                return False # 清理失敗，回傳 False
+            except Exception as e:
+                print(f"\n!!! 警告：刪除資料夾 '{path}' 時遇到阻礙。")
+                print(f"    錯誤訊息: {e}")
+                print("    嘗試等待 1 秒後重試...")
+                time.sleep(1)
+                try:
+                    shutil.rmtree(path, onerror=remove_readonly)
+                    print(f"    (重試成功) 已刪除: '{path}'")
+                except Exception as e2:
+                    print(f"    (重試失敗) 請手動刪除該資料夾，或關閉佔用程式。錯誤: {e2}")
+                    # 不強制 return False，讓程式嘗試繼續執行，或讓使用者自行決定
+                    # return False 
 
-    # 刪除 JSON 檔案
     if os.path.exists(output_json_file):
         try:
             os.remove(output_json_file)
             print(f"已刪除舊的 JSON 檔案: '{output_json_file}'")
-        except (PermissionError, OSError) as e:
-            print(f"\n!!! 錯誤：無法刪除 JSON 檔案 '{output_json_file}'。")
-            print(f"    請檢查是否被其他程式占用。 錯誤訊息: {e}")
-            return False # 清理失敗，回傳 False
+        except Exception as e:
+            print(f"警告：無法刪除 JSON 檔案 '{output_json_file}' ({e})，將直接嘗試覆寫。")
             
-    print("清理完成。")
-    return True # 清理成功，回傳 True
+    print("清理作業結束，繼續執行...")
+    return True
 
 
 def get_decimal_from_dms(dms, ref):
-    """
-    將度/分/秒 (DMS) 格式轉換為十進位度數。
-    dms: (Degrees, Minutes, Seconds)
-    ref: 'N', 'S', 'E', 'W'
-    """
+    """將度/分/秒 (DMS) 格式轉換為十進位度數。"""
     degrees = dms[0]
     minutes = dms[1]
     seconds = dms[2]
@@ -83,11 +99,9 @@ def get_decimal_from_dms(dms, ref):
         
     return decimal
 
+
 def get_gps_info(img):
-    """
-    從圖片的 EXIF 資料中提取 GPS 經緯度和高度。
-    回傳: 包含 lat, lng, alt 的字典，若無資料則回傳 None。
-    """
+    """從圖片的 EXIF 資料中提取 GPS 經緯度。"""
     try:
         exif_data = img._getexif()
         if not exif_data:
@@ -103,8 +117,6 @@ def get_gps_info(img):
         if not gps_info:
             return None
 
-        # 提取經緯度需要的標籤 ID
-        # 1: GPSLatitudeRef, 2: GPSLatitude, 3: GPSLongitudeRef, 4: GPSLongitude, 6: GPSAltitude
         gps_lat_ref = gps_info.get(1)
         gps_lat = gps_info.get(2)
         gps_lng_ref = gps_info.get(3)
@@ -119,17 +131,12 @@ def get_gps_info(img):
                 "lat": round(lat, 6),
                 "lng": round(lng, 6)
             }
-            
-            # 高度是選擇性的
             if gps_alt is not None:
-                # gps_alt 可能是 (numerator, denominator) 或直接是數值
                 try:
-                    # Pillow 的 IFDRational 處理
                     alt_val = float(gps_alt)
                 except:
                     alt_val = 0
                 result["alt"] = round(alt_val, 2)
-            
             return result
 
     except Exception as e:
@@ -140,79 +147,89 @@ def get_gps_info(img):
 
 
 def get_dominant_color(img):
-    """
-    使用 Quantize 方法提取圖片的顯著色 (Dominant Color)。
-    比單純平均 (Average) 更能反映肉眼看到的「主色」。
-    """
+    """提取圖片的顯著色 (Dominant Color)。"""
     try:
-        # 1. 轉為 RGB 並縮小以加速處理
         img_copy = img.copy()
         if img_copy.mode != 'RGB':
             img_copy = img_copy.convert('RGB')
         img_copy.thumbnail((150, 150))
 
-        # 2. 減色處理 (Quantize)，只取主要 5 色
-        # 使用 MAXCOVERAGE 或預設算法皆可
         quantized = img_copy.quantize(colors=5, method=Image.MAXCOVERAGE)
-        
-        # 3. 找出佔比最多的顏色索引
-        # getcolors() 回傳 [(count, index), ...]
         counts = quantized.getcolors(maxcolors=256)
         if not counts:
-            return (128, 128, 128) # Fallback
+            return (128, 128, 128)
 
-        # 排序：數量多的在前面
         counts.sort(key=lambda x: x[0], reverse=True)
         dominant_index = counts[0][1]
-
-        # 4. 從色盤 (Palette) 取出 RGB
         palette = quantized.getpalette()
         r = palette[dominant_index * 3]
         g = palette[dominant_index * 3 + 1]
         b = palette[dominant_index * 3 + 2]
         
         return (r, g, b)
-        
     except Exception as e:
         print(f"  ! 計算主色時發生錯誤: {e}, 改用預設灰色")
         return (128, 128, 128)
 
 
-def process_image(source_path, output_path, target_width, add_watermark=True):
+def convert_to_srgb(img):
     """
-    統一處理單一圖片的函式 (可指定縮放寬度、可選浮水印)。
-    (已優化：移除了不必要的 'global font')
+    【關鍵新增】將圖片強制轉換為 sRGB 色彩空間。
+    解決廣色域照片在瀏覽器變螢光色、過亮的問題。
     """
-    # 注意：'font' 變數是在 run_processor() 中定義的全域變數，
-    # 這裡僅為讀取，不需要 'global' 關鍵字。
+    icc = img.info.get('icc_profile')
+    
+    # 如果原本沒有 ICC Profile，通常假設它已經是 RGB/sRGB，直接回傳
+    if not icc:
+        return img.convert('RGB')
+
     try:
-        current_gps_info = None # 初始化 GPS 變數
+        # 讀取圖片原本的描述檔 (Source Profile)
+        src_profile = ImageCms.ImageCmsProfile(io.BytesIO(icc))
+        # 建立標準 sRGB 描述檔 (Destination Profile)
+        srgb_profile = ImageCms.createProfile('sRGB')
+
+        # 執行轉換：將原本的顏色數值 映射到 sRGB 空間
+        # inPlace=False 代表回傳新的圖片物件
+        img_srgb = ImageCms.profileToProfile(img, src_profile, srgb_profile)
+        
+        return img_srgb.convert('RGB')
+
+    except Exception as e:
+        print(f"  ! 色彩空間轉換警告: {e} (將維持原樣)")
+        return img.convert('RGB')
+
+
+def process_image(source_path, output_path, target_width, add_watermark=True):
+    """處理單一圖片：讀取GPS -> 轉sRGB -> 縮放 -> 加浮水印 -> 存檔"""
+    try:
+        current_gps_info = None
         
         with Image.open(source_path) as img:
-            # 1. 先嘗試讀取 GPS 資訊 (在縮放之前)
+            # 1. 先讀取 GPS (最保險，確保在任何轉換前拿到 EXIF)
             current_gps_info = get_gps_info(img)
             if current_gps_info:
                 print(f"  * 發現 GPS: {current_gps_info}")
+            
+            # 2. 【關鍵步驟】轉換為 sRGB
+            # 這會修正「網頁看起來太亮/螢光」的問題
+            img = convert_to_srgb(img)
 
-            # 使用傳入的 target_width 進行縮放
+            # 3. 縮放處理
             if img.width > target_width:
                 aspect_ratio = img.height / img.width
                 new_height = int(target_width * aspect_ratio)
                 img = img.resize((target_width, new_height), Image.Resampling.LANCZOS)
 
-            # 加上浮水印 (如果需要)
+            # 4. 加上浮水印
             if add_watermark:
                 if img.mode != 'RGBA': img = img.convert('RGBA')
-                # 建立一個透明的圖層用於繪製文字
                 txt_layer = Image.new('RGBA', img.size, (255, 255, 255, 0))
                 draw = ImageDraw.Draw(txt_layer)
                 
-                # --- 動態計算字體大小 (短邊的 8%) ---
-                # 原因：在網頁縮圖(object-cover)時，顯示比例通常取決於短邊。
-                # 為了讓浮水印在正方形縮圖中看起來大小一致，需以 min(width, height) 為基準。
                 short_side = min(img.width, img.height)
                 dynamic_font_size = int(short_side * 0.08)
-                if dynamic_font_size < 12: dynamic_font_size = 12 # 最小限制
+                if dynamic_font_size < 12: dynamic_font_size = 12
 
                 try:
                     current_font = ImageFont.truetype(font_file, dynamic_font_size)
@@ -220,13 +237,10 @@ def process_image(source_path, output_path, target_width, add_watermark=True):
                     print(f"警告: 找不到字型 {font_file}，嘗試使用預設字型。")
                     current_font = ImageFont.load_default()
 
-                # 計算文字位置 (置中)
-                # Pillow 9.2.0+ (anchor='mm')
                 try:
                     x, y = img.width / 2, img.height / 2
                     draw.text((x, y), watermark_text, font=current_font, fill=font_color, anchor='mm')
                 except AttributeError:
-                    # 舊版 Pillow 的置中寫法 (如果 anchor='mm' 不支援)
                     text_width, text_height = draw.textsize(watermark_text, current_font)
                     x = (img.width - text_width) / 2
                     y = (img.height - text_height) / 2
@@ -234,16 +248,16 @@ def process_image(source_path, output_path, target_width, add_watermark=True):
 
                 img = Image.alpha_composite(img, txt_layer)
 
-            # 儲存處理後的圖片
+            # 5. 存檔 (去除所有 metadata 以縮小體積，因為 GPS 已經存在 JSON 了)
             if output_path.lower().endswith(('.jpg', '.jpeg')):
                 if img.mode == 'RGBA': img = img.convert('RGB')
+                # icc_profile=None 確保不寫入舊的 Profile，讓瀏覽器預設使用 sRGB
                 img.save(output_path, 'JPEG', quality=jpeg_quality, optimize=True)
             else:
                 img.save(output_path)
             
-            print(f"  - 已處理: {os.path.basename(source_path)} (寬度 -> {img.width}px)")
+            print(f"  - 已處理: {os.path.basename(source_path)} (轉sRGB -> 寬{img.width})")
             
-            # --- 改用顯著色算法 (Dominant Color) ---
             dominant_color = get_dominant_color(img)
             
             return True, dominant_color, current_gps_info
@@ -256,23 +270,20 @@ def process_image(source_path, output_path, target_width, add_watermark=True):
 def run_processor():
     """主執行函式"""
     
-    # (已修正) 執行清理，如果失敗 (回傳 False)，則停止程式
     if not clean_output():
         print("\n--- 程式因清理失敗而中止 ---")
-        input("請排除錯誤後按 Enter 鍵結束...") # 暫停，讓使用者看到錯誤訊息
+        input("請排除錯誤後按 Enter 鍵結束...") 
         return
 
     if not os.path.isdir(source_parent_folder):
         print(f"錯誤：找不到來源資料夾 '{source_parent_folder}'。")
         return
 
-    # 確保 public 資料夾存在 (即使沒有照片也該建立)
     os.makedirs(output_parent_folder, exist_ok=True)
     
-    # --- 1. 處理作品集分類照片 (加浮水印，寬度 1280px) ---
-
+    # --- 1. 處理作品集分類照片 ---
     all_photo_data = {}
-    print("\n--- 正在處理作品集照片 (將加上浮水印與計算顏色) ---")
+    print("\n--- 正在處理作品集照片 (sRGB轉換 + 浮水印) ---")
     for category in portfolio_categories:
         source_category_path = os.path.join(source_parent_folder, category)
         output_category_path = os.path.join(output_parent_folder, 'photos', category)
@@ -294,25 +305,22 @@ def run_processor():
             output_path = os.path.join(output_category_path, filename)
             success, color, gps_info = process_image(source_path, output_path, target_width=portfolio_resize_width, add_watermark=True)
             if success:
-                # Store object instead of string
                 img_data = {
                     "filename": filename,
-                    "color": color # (r, g, b)
+                    "color": color
                 }
-                # 如果有 GPS 資訊才加入
                 if gps_info:
                     img_data["gps"] = gps_info
                 
                 all_photo_data[category].append(img_data)
 
-    # 確保 public 資料夾存在 (即使沒有照片也該建立)
     os.makedirs(output_parent_folder, exist_ok=True)
     with open(output_json_file, 'w', encoding='utf-8') as f:
         json.dump(all_photo_data, f, ensure_ascii=False, indent=2)
     print(f"作品集 JSON 清單已寫入 '{output_json_file}'。")
 
-    # --- 2. 處理網站素材 (不加浮水印，寬度 300px) ---
-    print("\n--- 正在處理網站素材 (不加浮水印) ---")
+    # --- 2. 處理網站素材 ---
+    print("\n--- 正在處理網站素材 (sRGB轉換) ---")
     for asset_dir in asset_folders:
         source_asset_path = os.path.join(source_parent_folder, asset_dir)
         output_asset_path = os.path.join(output_parent_folder, asset_dir)
@@ -338,6 +346,4 @@ def run_processor():
 
 if __name__ == '__main__':
     run_processor()
-    # 在程式結束前暫停，方便在終端機查看所有 print 訊息
-    # input("請按 Enter 鍵結束...")
     pass
