@@ -504,7 +504,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const src = `./public/photos/${encodeURIComponent(p.category)}/${encodeURIComponent(p.filename)}`;
                 return `
                     <div class="relative group w-full h-full overflow-hidden rounded-lg shadow-md transition-transform duration-500 hover:-translate-y-1 hover:shadow-xl bg-gray-50">
-                        <img src="${src}" alt="${title}" class="w-full h-full ${className}">
+                        <img src="${src}" alt="${title}" loading="lazy" class="w-full h-full ${className}">
                         <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/60 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                              <p class="text-white text-xs md:text-sm font-medium tracking-widest text-shadow truncate">${title}</p>
                         </div>

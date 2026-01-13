@@ -12,7 +12,7 @@ output_json_file = 'public/photos.json'
 # 2. 圖片處理設定 (分別設定寬度)
 portfolio_resize_width = 1280  # 作品集照片寬度
 asset_resize_width = 300       # 素材照片寬度 (例如個人頭像)
-jpeg_quality = 85
+jpeg_quality = 70
 
 # 3. 浮水印設定
 watermark_text = "©LCT"
