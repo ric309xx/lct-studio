@@ -35,28 +35,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 3. Lightbox Logic ---
 
+    // --- 3. Lightbox Logic ---
+
     const updateLightboxImage = () => {
         if (currentPhotoIndex < 0 || currentPhotoIndex >= currentCategoryPhotos.length) return;
         const photo = currentCategoryPhotos[currentPhotoIndex];
         const { category, filename } = photo;
         const title = getBaseLocationName(filename);
         const imagePath = `./public/photos/${encodeURIComponent(category)}/${encodeURIComponent(filename)}`;
+        const captionEl = document.getElementById('modal-caption');
 
         // Fade out slightly
         modalImage.style.opacity = '0.5';
+        if (captionEl) captionEl.style.opacity = '0';
 
         setTimeout(() => {
             modalImage.src = imagePath;
             modalImage.alt = title;
+            if (captionEl) {
+                captionEl.textContent = title;
+                captionEl.style.opacity = '1';
+            }
             modalImage.onload = () => {
                 modalImage.style.opacity = '1';
             };
         }, 150);
     };
 
-    const openModal = (category, filename, photoListStr) => {
+    const openModal = (category, filename) => {
+        const title = getBaseLocationName(filename);
         modalImage.src = `./public/photos/${encodeURIComponent(category)}/${encodeURIComponent(filename)}`;
-        modalImage.alt = getBaseLocationName(filename);
+        modalImage.alt = title;
+
+        const captionEl = document.getElementById('modal-caption');
+        if (captionEl) {
+            captionEl.textContent = title;
+            // Delay showing caption slightly for effect
+            setTimeout(() => captionEl.style.opacity = '1', 200);
+        }
+
         photoModal.classList.remove('hidden');
         photoModal.classList.add('flex'); // Ensure flex display
 
@@ -68,7 +85,50 @@ document.addEventListener('DOMContentLoaded', () => {
         photoModal.classList.add('hidden');
         photoModal.classList.remove('flex');
         modalImage.src = '';
+        const captionEl = document.getElementById('modal-caption');
+        if (captionEl) captionEl.style.opacity = '0';
     };
+
+    prevBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (currentPhotoIndex > 0) {
+            currentPhotoIndex--;
+            updateLightboxImage();
+        } else {
+            // Loop to end?
+            currentPhotoIndex = currentCategoryPhotos.length - 1;
+            updateLightboxImage();
+        }
+    });
+
+    nextBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (currentPhotoIndex < currentCategoryPhotos.length - 1) {
+            currentPhotoIndex++;
+            updateLightboxImage();
+        } else {
+            // Loop to start
+            currentPhotoIndex = 0;
+            updateLightboxImage();
+        }
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+        if (photoModal.classList.contains('hidden')) return;
+        if (e.key === 'ArrowLeft') prevBtn.click();
+        if (e.key === 'ArrowRight') nextBtn.click();
+        if (e.key === 'Escape') closeLightbox();
+    });
+
+    // --- 4. Gallery Logic ---
+
+    // ... (Skipping unaffected sections for brevity in this tool call context - ensuring start/end lines match)
+    // Wait... I used replace_file_content for a large block. 
+    // Actually, I need to match the target content exactly.
+    // The previous tool call was too broad for `replace_file_content` if I don't paste the WHOLE intermediate code.
+    // I will use `multi_replace_file_content` for surgical edits to Main.js instead.
+
 
     prevBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -219,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Setup click events
         galleryContainer.querySelectorAll('.photo-card').forEach(card => {
             card.addEventListener('click', () => {
-                currentCategoryPhotos = photosToDisplay;
+                currentCategoryPhotos = photosToDisplay.map(p => ({ ...p, category: categoryName }));
                 openModal(card.dataset.category, card.dataset.filename);
             });
         });
@@ -419,6 +479,70 @@ document.addEventListener('DOMContentLoaded', () => {
         // 3. Generate Slides with 5 Layouts
         magazineWrapper.innerHTML = '';
 
+        // --- NEW: Generate Cover Slide ---
+        const generateCoverSlide = (pool) => {
+            // Filter "大地映像" photos
+            const earthPhotos = pool.filter(p => p.category === "大地映像");
+            // Pick random if available, else random from pool
+            const coverPhoto = earthPhotos.length > 0
+                ? earthPhotos[Math.floor(Math.random() * earthPhotos.length)]
+                : pool[Math.floor(Math.random() * pool.length)];
+
+            if (!coverPhoto) return; // Should not happen if pool > 0
+
+            const src = `./public/photos/${encodeURIComponent(coverPhoto.category)}/${encodeURIComponent(coverPhoto.filename)}`;
+            const year = new Date().getFullYear();
+
+            const slide = document.createElement('div');
+            // Remove padding to allow full A3 spread
+            slide.className = 'swiper-slide flex items-center justify-center p-4 md:p-8 box-border';
+
+            // HTML for 2-Page Spread (Left + Right)
+            // Left: The Art Cover
+            // Right: The Minimalist Intro
+            // Container acts as the "Open Book" (A3 size: 420mm x 297mm approx)
+
+            const coverHtml = `
+                <div class="relative bg-white shadow-2xl mx-auto flex flex-col overflow-hidden" 
+                     style="aspect-ratio: 210/297; height: 90vh; width: auto; max-width: 100%;">
+                   
+                   <!-- Border/Frame -->
+                   <div class="absolute inset-4 sm:inset-8 border border-black/80 pointer-events-none z-20"></div>
+
+                   <!-- Top Header -->
+                   <div class="p-8 sm:p-12 z-10">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h1 class="text-6xl sm:text-8xl font-bold tracking-tighter leading-none text-black font-sans">PORT-<br>FOLIO</h1>
+                            </div>
+                            <div class="text-right">
+                                <h2 class="text-4xl sm:text-6xl font-light tracking-wide text-black font-serif">${year}</h2>
+                            </div>
+                        </div>
+                   </div>
+
+                   <!-- Featured Photo (Middle/Bottom) -->
+                   <div class="flex-1 relative mt-4 mx-8 sm:mx-12 mb-24 overflow-hidden grayscale contrast-125">
+                        <img src="${src}" class="w-full h-full object-cover object-center" alt="Cover Photo">
+                   </div>
+
+                   <!-- Bottom Footer -->
+                   <div class="absolute bottom-12 left-0 w-full text-center z-10">
+                        <p class="text-sm font-bold tracking-[0.3em] uppercase text-gray-800">LCT STUDIO</p>
+                   </div>
+
+                   <!-- Sidebar Text (Vertical) -->
+                   <div class="absolute top-1/2 left-2 sm:left-4 transform -translate-y-1/2 -rotate-90 origin-left">
+                        <p class="text-xs font-medium tracking-widest text-gray-500">AERIAL PHOTOGRAPHY COLLECTION</p>
+                   </div>
+                </div>`;
+
+            slide.innerHTML = coverHtml;
+            magazineWrapper.appendChild(slide);
+        };
+
+        generateCoverSlide(photoPool);
+
         while (photoPool.length > 0) {
             // Randomly pick a target layout type (1-5)
             const layoutType = Math.floor(Math.random() * 5) + 1;
@@ -490,12 +614,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Using inline style for precise aspect-ratio. 
             // Max dimensions ensure it fits on screen without scrolling.
             const containerHtmlStart = `
-                <div class="relative bg-white shadow-2xl p-6 md:p-10 mx-auto flex items-center justify-center overflow-hidden" 
-                     style="aspect-ratio: 420/297; height: auto; width: auto; max-width: 100%; max-height: 85vh;">
-                   <div class="w-full h-full flex items-center justify-center">
-            `;
+                <div class="relative bg-white shadow-2xl p-6 md:p-10 mx-auto flex items-center justify-center overflow-hidden"
+            style="aspect-ratio: 420/297; height: auto; width: auto; max-width: 100%; max-height: 95vh;">
+                <div class="w-full h-full flex items-center justify-center">
+                    `;
             const containerHtmlEnd = `
-                   </div>
+                </div>
                 </div>`;
 
             // Helper for Image HTML
@@ -514,16 +638,13 @@ document.addEventListener('DOMContentLoaded', () => {
             let innerHtml = '';
 
             // Layout 1: Single Full (Contain)
+            // Layout 1: Single Full (Contain/Cover) - Using getImg for consistency
             if (finalLayout === 1) {
-                const p = batch[0];
-                const title = p.filename.replace(/[-_(\（].*|\.\w+$/g, '').trim();
-                const src = `./public/photos/${encodeURIComponent(p.category)}/${encodeURIComponent(p.filename)}`;
+                // Use the shared getImg helper to ensure same style (overlay title, rounded corners, shadow default from helper)
+                // Use "object-cover" to properly fill the layout frame like other grid items
                 innerHtml = `
-                    <div class="w-full h-full flex flex-col items-center justify-center">
-                        <img src="${src}" alt="${title}" class="rounded-lg shadow-lg max-w-full max-h-full object-contain">
-                        <div class="mt-4 text-center">
-                            <h4 class="text-gray-800 text-lg font-medium tracking-widest font-serif">${title}</h4>
-                        </div>
+                    <div class="w-full h-full">
+                        ${getImg(batch[0], "object-cover shadow-sm")} 
                     </div>
                  `;
             }
