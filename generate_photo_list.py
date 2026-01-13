@@ -282,14 +282,43 @@ def run_processor():
             print(f"  - 分類 '{category}' 中沒有找到圖片。")
             continue
 
+        # 用於追蹤已分派的檔名，確保不重複
+        used_filenames = set()
+
         for filename in files:
             source_path = os.path.join(source_category_path, filename)
-            output_path = os.path.join(output_category_path, filename)
+            
+            # --- 檔名清洗與去重邏輯 ---
+            # 1. 分離檔名與副檔名
+            name_part, ext = os.path.splitext(filename)
+            
+            # 2. 清洗: 去除首尾空白
+            name_part = name_part.strip()
+            
+            # 3. 統一副檔名: 小寫，jpeg -> jpg
+            ext = ext.lower()
+            if ext == '.jpeg': ext = '.jpg'
+            
+            # 4. 產生候選檔名
+            clean_filename = f"{name_part}{ext}"
+            final_filename = clean_filename
+            
+            # 5. 檢查重複並編號 (如: 基隆望幽谷-2.jpg)
+            counter = 1
+            while final_filename in used_filenames:
+                counter += 1
+                final_filename = f"{name_part}-{counter}{ext}"
+            
+            used_filenames.add(final_filename)
+            # ---------------------------
+
+            output_path = os.path.join(output_category_path, final_filename)
+            
             success, color, gps_info = process_image(source_path, output_path, target_width=portfolio_resize_width, add_watermark=True)
             if success:
                 # Store object instead of string
                 img_data = {
-                    "filename": filename,
+                    "filename": final_filename, # 使用新的乾淨檔名
                     "color": color # (r, g, b)
                 }
                 # 如果有 GPS 資訊才加入

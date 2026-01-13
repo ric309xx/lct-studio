@@ -25,7 +25,7 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "新北新店行政園區  .jpg",
+      "filename": "新北新店行政園區.jpg",
       "color": [
         0,
         0,
@@ -33,7 +33,7 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "新北新店行政園區.jpg",
+      "filename": "新北新店行政園區-2.jpg",
       "color": [
         156,
         183,
@@ -49,7 +49,7 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "新北林口和洲艾美  .jpg",
+      "filename": "新北林口和洲艾美.jpg",
       "color": [
         75,
         79,
@@ -57,7 +57,7 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "新北林口和洲艾美 .jpg",
+      "filename": "新北林口和洲艾美-2.jpg",
       "color": [
         170,
         99,
@@ -94,7 +94,7 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "板橋城市風景 .jpg",
+      "filename": "板橋城市風景.jpg",
       "color": [
         122,
         81,
@@ -107,7 +107,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "板橋城市風景.jpg",
+      "filename": "板橋城市風景-2.jpg",
       "color": [
         0,
         0,
@@ -120,7 +120,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "林口三發嵐海 .jpg",
+      "filename": "林口三發嵐海.jpg",
       "color": [
         171,
         110,
@@ -128,7 +128,7 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "林口三發嵐海.jpg",
+      "filename": "林口三發嵐海-2.jpg",
       "color": [
         29,
         29,
@@ -162,7 +162,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "桃園小檜溪重劃區河濱公園   .jpg",
+      "filename": "桃園小檜溪重劃區河濱公園.jpg",
       "color": [
         154,
         166,
@@ -175,7 +175,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "桃園小檜溪重劃區河濱公園  .jpg",
+      "filename": "桃園小檜溪重劃區河濱公園-2.jpg",
       "color": [
         64,
         122,
@@ -188,7 +188,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "桃園小檜溪重劃區河濱公園.jpg",
+      "filename": "桃園小檜溪重劃區河濱公園-3.jpg",
       "color": [
         227,
         231,
@@ -214,7 +214,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "桃園水綠方建案  .jpg",
+      "filename": "桃園水綠方建案.jpg",
       "color": [
         78,
         111,
@@ -227,7 +227,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "桃園水綠方建案 .jpg",
+      "filename": "桃園水綠方建案-2.jpg",
       "color": [
         57,
         87,
@@ -240,7 +240,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "桃園水綠方建案.jpg",
+      "filename": "桃園水綠方建案-3.jpg",
       "color": [
         158,
         145,
@@ -305,7 +305,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "高雄福懋站前之星 .jpg",
+      "filename": "高雄福懋站前之星.jpg",
       "color": [
         114,
         63,
@@ -321,7 +321,7 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "高雄舊高雄車站(高雄願景館) .jpg",
+      "filename": "高雄舊高雄車站(高雄願景館).jpg",
       "color": [
         58,
         87,
@@ -331,7 +331,7 @@ window.globalPhotoData = {
   ],
   "大地映像": [
     {
-      "filename": "南投日月潭  .jpg",
+      "filename": "南投日月潭.jpg",
       "color": [
         0,
         1,
@@ -339,7 +339,7 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "南投日月潭 .jpg",
+      "filename": "南投日月潭-2.jpg",
       "color": [
         87,
         73,
@@ -347,7 +347,7 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "南投日月潭.jpg",
+      "filename": "南投日月潭-3.jpg",
       "color": [
         34,
         121,
@@ -389,7 +389,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "台北市北投社子大橋 .jpg",
+      "filename": "台北市北投社子大橋.jpg",
       "color": [
         90,
         122,
@@ -405,7 +405,7 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "基隆外木山漁港  .jpg",
+      "filename": "基隆外木山漁港.jpg",
       "color": [
         188,
         94,
@@ -418,7 +418,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "基隆外木山漁港.jpg",
+      "filename": "基隆外木山漁港-2.jpg",
       "color": [
         11,
         11,
@@ -431,7 +431,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "基隆外木山濱海大道   .jpg",
+      "filename": "基隆外木山濱海大道.jpg",
       "color": [
         168,
         172,
@@ -444,7 +444,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "基隆外木山濱海大道  .jpg",
+      "filename": "基隆外木山濱海大道-2.jpg",
       "color": [
         27,
         127,
@@ -457,7 +457,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "基隆外木山濱海大道 .jpg",
+      "filename": "基隆外木山濱海大道-3.jpg",
       "color": [
         65,
         80,
@@ -483,7 +483,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "基隆大武崙白沙灘  .jpg",
+      "filename": "基隆大武崙白沙灘.jpg",
       "color": [
         0,
         1,
@@ -496,7 +496,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "基隆望幽谷      .jpg",
+      "filename": "基隆望幽谷.jpg",
       "color": [
         40,
         90,
@@ -509,7 +509,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "基隆望幽谷    .jpg",
+      "filename": "基隆望幽谷-2.jpg",
       "color": [
         1,
         0,
@@ -522,7 +522,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "基隆望幽谷   .jpg",
+      "filename": "基隆望幽谷-3.jpg",
       "color": [
         0,
         0,
@@ -535,7 +535,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "基隆望幽谷 .jpg",
+      "filename": "基隆望幽谷-4.jpg",
       "color": [
         0,
         0,
@@ -574,7 +574,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "宜蘭五結防潮閘門 .jpg",
+      "filename": "宜蘭五結防潮閘門.jpg",
       "color": [
         179,
         121,
@@ -600,7 +600,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "宜蘭冬山打那岸水閘門.JPG",
+      "filename": "宜蘭冬山打那岸水閘門.jpg",
       "color": [
         64,
         72,
@@ -665,7 +665,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "宜蘭冬山河黃昏美景 .jpg",
+      "filename": "宜蘭冬山河黃昏美景.jpg",
       "color": [
         80,
         89,
@@ -678,7 +678,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "宜蘭冬山田園景緻 .jpg",
+      "filename": "宜蘭冬山田園景緻.jpg",
       "color": [
         93,
         86,
@@ -691,7 +691,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "宜蘭冬山田園景緻.jpg",
+      "filename": "宜蘭冬山田園景緻-2.jpg",
       "color": [
         93,
         127,
@@ -704,7 +704,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "宜蘭冬山萬長春圳水門公園 .jpg",
+      "filename": "宜蘭冬山萬長春圳水門公園.jpg",
       "color": [
         0,
         0,
@@ -717,7 +717,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "宜蘭冬山萬長春圳水門公園.jpg",
+      "filename": "宜蘭冬山萬長春圳水門公園-2.jpg",
       "color": [
         2,
         4,
@@ -743,7 +743,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "新北林口竹林山寺公園  .jpg",
+      "filename": "新北林口竹林山寺公園.jpg",
       "color": [
         116,
         50,
@@ -751,7 +751,7 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "新北林口竹林山寺公園 .jpg",
+      "filename": "新北林口竹林山寺公園-2.jpg",
       "color": [
         148,
         163,
@@ -759,7 +759,7 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "新北林口竹林山寺公園.jpg",
+      "filename": "新北林口竹林山寺公園-3.jpg",
       "color": [
         69,
         129,
@@ -767,7 +767,7 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "新北林口竹林山觀音寺  .jpg",
+      "filename": "新北林口竹林山觀音寺.jpg",
       "color": [
         95,
         137,
@@ -775,7 +775,7 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "新北林口竹林山觀音寺.jpg",
+      "filename": "新北林口竹林山觀音寺-2.jpg",
       "color": [
         216,
         111,
@@ -799,7 +799,7 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "新北雙溪牡丹車站旁  .jpg",
+      "filename": "新北雙溪牡丹車站旁.jpg",
       "color": [
         44,
         80,
@@ -807,7 +807,7 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "新北雙溪牡丹車站旁 .jpg",
+      "filename": "新北雙溪牡丹車站旁-2.jpg",
       "color": [
         150,
         141,
@@ -904,7 +904,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "澎湖後寮天堂路 .JPG",
+      "filename": "澎湖後寮天堂路.jpg",
       "color": [
         80,
         79,
@@ -917,7 +917,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "澎湖湖西菓葉觀日樓.JPG",
+      "filename": "澎湖湖西菓葉觀日樓.jpg",
       "color": [
         73,
         71,
@@ -930,7 +930,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "花蓮和平火車站旁 .jpg",
+      "filename": "花蓮和平火車站旁.jpg",
       "color": [
         157,
         166,
@@ -943,7 +943,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "花蓮和平火車站旁.jpg",
+      "filename": "花蓮和平火車站旁-2.jpg",
       "color": [
         42,
         150,
@@ -969,7 +969,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "雲林北港女兒橋.JPG",
+      "filename": "雲林北港女兒橋.jpg",
       "color": [
         165,
         135,
@@ -982,7 +982,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "雲林北港朝天宮.JPG",
+      "filename": "雲林北港朝天宮.jpg",
       "color": [
         69,
         121,
@@ -995,7 +995,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "雲林斗六石榴火車站.JPG",
+      "filename": "雲林斗六石榴火車站.jpg",
       "color": [
         52,
         116,
@@ -1008,7 +1008,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "雲林西螺落日剪影.JPG",
+      "filename": "雲林西螺落日剪影.jpg",
       "color": [
         249,
         139,
@@ -1021,7 +1021,7 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "雲林西螺蝴蝶公園.JPG",
+      "filename": "雲林西螺蝴蝶公園.jpg",
       "color": [
         9,
         14,
@@ -1042,7 +1042,7 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "高雄車站  .jpg",
+      "filename": "高雄車站.jpg",
       "color": [
         44,
         83,
@@ -1050,7 +1050,7 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "高雄車站 .jpg",
+      "filename": "高雄車站-2.jpg",
       "color": [
         0,
         0,
@@ -1066,7 +1066,7 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "高雄車站.jpg",
+      "filename": "高雄車站-3.jpg",
       "color": [
         168,
         172,
@@ -1074,7 +1074,7 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "高雄輕軌 .jpg",
+      "filename": "高雄輕軌.jpg",
       "color": [
         48,
         90,
@@ -1082,7 +1082,7 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "高雄輕軌.jpg",
+      "filename": "高雄輕軌-2.jpg",
       "color": [
         39,
         105,
