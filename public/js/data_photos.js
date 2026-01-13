@@ -86,11 +86,19 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "新店美河市.jpg",
+      "filename": "新店美河市-LAPTOP-ASUS.jpg",
       "color": [
         151,
         158,
         71
+      ]
+    },
+    {
+      "filename": "新店美河市.jpg",
+      "color": [
+        151,
+        164,
+        70
       ]
     },
     {
@@ -613,11 +621,24 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "宜蘭冬山普悠瑪與希望之丘.jpg",
+      "filename": "宜蘭冬山普悠瑪與希望之丘-LAPTOP-ASUS.jpg",
       "color": [
         0,
         0,
         0
+      ],
+      "gps": {
+        "lat": 24.644349,
+        "lng": 121.788427,
+        "alt": 139.17
+      }
+    },
+    {
+      "filename": "宜蘭冬山普悠瑪與希望之丘.jpg",
+      "color": [
+        1,
+        2,
+        5
       ],
       "gps": {
         "lat": 24.644349,
@@ -652,11 +673,24 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "宜蘭冬山河與森之脈橋.jpg",
+      "filename": "宜蘭冬山河與森之脈橋-LAPTOP-ASUS.jpg",
       "color": [
         110,
         81,
         50
+      ],
+      "gps": {
+        "lat": 24.638348,
+        "lng": 121.793144,
+        "alt": 137.61
+      }
+    },
+    {
+      "filename": "宜蘭冬山河與森之脈橋.jpg",
+      "color": [
+        104,
+        76,
+        59
       ],
       "gps": {
         "lat": 24.638348,
@@ -759,11 +793,19 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "新北林口竹林山寺公園.jpg",
+      "filename": "新北林口竹林山寺公園-LAPTOP-ASUS.jpg",
       "color": [
         99,
         84,
         6
+      ]
+    },
+    {
+      "filename": "新北林口竹林山寺公園.jpg",
+      "color": [
+        69,
+        129,
+        28
       ]
     },
     {
