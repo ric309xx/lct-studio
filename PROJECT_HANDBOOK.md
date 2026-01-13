@@ -1,35 +1,28 @@
 # LCT Studio 專案開發手冊 (Project Handbook)
 
 這份文件記錄了 **LCT Studio** 空拍作品集網站的開發架構、工作流程、維護方式以及經驗復盤。
-目的在於讓未來的你（或協助你的 AI）能快速進入狀況，了解這個專案「是怎麼運作的」。
+目的在於讓未來的你（或協助你的 AI）能快速進入狀況，了解這個專案「是怎麼運作的」，以及我們「經歷了哪些改變」。
 
 ---
 
 ## 1. 專案架構與核心概念 (Architecture)
 
 ### 核心設計
-本網站是一個 **靜態網站 (Static Site)**，但結合了 **Python 自動化指令碼** 來生成內容數據。這是一個「半自動化」的架構，既保有靜態網站的快速與低成本，又擁有動態網站管理的便利性。
+本網站是一個 **靜態網站 (Static Site)**，結合 **Python 自動化** 與 **JavaScript 數據驅動** 的混合架構。
 
 *   **前端 (Frontend)**:
-    *   **HTML5**: 語意化標籤結構。
-    *   **Tailwind CSS (CDN)**: 使用 `cdn.tailwindcss.com` 直接在瀏覽器解析樣式。
-        *   *優點*: 開發快速，不需複雜的 Node.js 編譯環境。
-        *   *缺點*: 依賴網路，初次載入可能會有短暫樣式閃爍 (雖已優化)。
-    *   **JavaScript (Vanilla JS)**: 原生 JS 撰寫，無依賴大型框架 (如 React/Vue)。負責燈箱 (Lightbox)、相簿渲染邏輯、影片隨機播放等互動。
+    *   **HTML5 / Tailwind CSS**: 使用 CDN 版 Tailwind 快速開發。
+    *   **Vanilla JS**: 原生 JavaScript 負責所有互動邏輯。
     *   **Google Analytics 4**: 已埋設追蹤代碼。
 
 *   **資料層 (Data Layer)**:
-    *   **JSON 驅動**: 相簿內容不是寫死在 HTML，而是讀取 `public/photos.json`。
-    *   **自動生成**: 這個 JSON 是由 Python 程式掃描資料夾自動產生的。
+    *   ~~**JSON 驅動 (Deprecated)**: 相簿內容不是寫死在 HTML，而是讀取 `public/photos.json`。~~
+    *   **JS Data Objects (Current)**: 資料不再讀取 `json` 檔 (避免 CORS 問題)，而是讀取 `public/js/` 下的 `.js` 檔案，這些檔案會將數據掛載到全域變數 (`window.xxx`)。
+        *   `data_photos.js` -> `window.globalPhotoData` (照片數據 + 色彩資訊 + GPS)
+        *   `data_videos.js` -> `window.videoData` (影片清單)
 
-*   **後端/工具 (Backend Tools)**:
-    *   本專案**沒有**伺服器端後端 (Serverless)。
-    *   所有資料處理都在**本地端 (Local)** 完成，由 Python 腳本負責：
-        1.  圖片壓縮與縮放 (Resize)。
-        2.  浮水印壓制 (Watermarking)。
-        3.  EXIF GPS 資訊提取 (用於未來的地圖功能)。
-        4.  色彩空間轉換 (AdobeRGB -> sRGB，解決照片變螢光色的問題)。
-        5.  自動 Git 上傳 (Git Automation)。
+*   **自動化工具 (Automation)**:
+    *   `generate_photo_list.py`: 核心腳本。負責掃描照片、壓縮縮圖、壓制浮水印、分析主色調、提取 GPS，並生成 `data_photos.js` (~~舊版生成 photos.json~~)。
 
 ---
 
@@ -37,102 +30,102 @@
 
 ```text
 / (專案根目錄)
-├── index.html              # 網站首頁 (主要入口)
-├── photos/                 # [原始檔區] 你拍攝的原圖放這裡 (不會上傳到網頁，只供生成用)
-│   ├── 城市光影/            # 分類資料夾 1
-│   └── 大地映像/            # 分類資料夾 2
-├── public/                 # [發布區] 程式生成的網站資源 (會被上傳)
-│   ├── photos/             # 處理過、加浮水印的照片
-│   ├── photos.json         # 照片資料庫 index
-│   ├── js/                 # 前端程式碼 (main.js)
-│   └── css/                # 自定義樣式 (style.css)
-├── background/             # 背景影片與相關素材
-├── generate_photo_list.py  # [核心腳本] 照片處理與各類自動化生成
-├── git_auto.py             # [小工具] 一鍵上傳 GitHub
-├── optimize_videos.py      # [小工具] 影片壓縮工具
-└── .git/                   # Git 版本控制資料夾
+├── index.html              # 網站首頁
+├── photos/                 # [原始檔區] 放入高畫質原圖 (不會上傳)
+│   ├── 城市光影/            # 分類 1
+│   └── 大地映像/            # 分類 2
+├── public/                 # [發布區] 網站資源
+│   ├── photos/             # 經 Python 處理過、含浮水印的照片
+│   ├── js/
+│   │   ├── main.js         # 主要邏輯 (畫冊、畫廊、影片)
+│   │   ├── data_photos.js  # [自動生成] 照片數據
+│   │   └── data_videos.js  # [手動維護] 影片數據 (~~舊版寫死在 main.js~~)
+│   └── css/                # style.css
+├── background/             # 背景影片 (Hero Video)
+├── generate_photo_list.py  # [核心] 照片處理與數據生成腳本
+├── git_auto.py             # [工具] 一鍵 Git 上傳
+└── PROJECT_HANDBOOK.md     # 本手冊
 ```
 
 ---
 
-## 3. 日常維護流程 (SOP)
+## 3. 功能邏輯詳解 (Feature Logic)
+
+### A. 線上畫冊模式 (Magazine Mode)
+這是一個模擬實體畫冊閱讀體驗的功能，位於作品集區塊底部。
+*   **排版**: 隨機從 **5種版型** 中選擇 (Single, Dual, Master Left/Right, Grid)。
+*   **容器比例**: 強制固定為 **A3 橫式比例 (420:297)**，確保閱讀體驗一致。
+*   **篩選邏輯**:
+    *   **同地互斥**: 同一頁面上，絕對不會出現兩張來自同依地點 (檔名前4字相同) 的照片。
+    *   **色彩多樣**: 系統會計算 RGB 距離，盡量避免同頁面出現色調太接近的照片。
+
+### B. 精選照片 (Main Gallery)
+*   **數量**: 每個分類 (城市/大地) 預設顯示 **6張**。
+*   **邏輯**: 使用與畫冊相同的「多樣性演算法」，確保首頁看到的 6 張照片在**地點**與**色調**上都是豐富多變的。
+
+### C. 精選影片 (Videos)
+*   **選片邏輯**:
+    1.  **固定第一部**: 永遠顯示「商業空間 空拍紀實」。
+    2.  **隨機補位**: 從 `data_videos.js` 中隨機挑選另外 2 部不重複的影片。
+
+---
+
+## 4. 日常維護流程 (SOP)
 
 這是你最常需要查閱的部分，當你要更新網站時，請依照此流程：
 
 ### 情境 A：新增/更新照片
 1.  **整理照片**: 將修好的高畫質原圖，依分類放入 `photos/城市光影` 或 `photos/大地映像` 資料夾中。
 2.  **執行處理程式**:
-    *   在 VS Code 中開啟 `generate_photo_list.py`。
-    *   點擊執行 (Run Python File)。
-    *   *程式行為*: 它會自動清空舊的 `public/photos`，重新製作所有照片，並更新 `public/photos.json`。
-3.  **預覽 (可選)**: 在本地打開 `index.html` 確認顯示正常。
-4.  **上傳發布**:
+    *   在 VS Code 中開啟 `generate_photo_list.py` 並執行。
+    *   程式自動清空舊的 `public/photos`，重新製作，並更新 `public/js/data_photos.js` (~~舊版更新 public/photos.json~~)。
+3.  **上傳發布**:
     *   執行 `git_auto.py`。
-    *   輸入備註 (例如: "新增高雄空拍照片")。
     *   等待程式跑完 (git add -> commit -> push)。
-5.  **線上確認**: 等待約 1-2 分鐘，GitHub Pages 更新後，重新整理網頁確認。
 
-### 情境 B：修改網站文字或影片
-1.  **修改 HTML/JS**:
-    *   文字內容直接編輯 `index.html`。
-    *   影片連結目前位於 `public/js/main.js` 中的 `setupRandomVideos` 函式陣列裡。
-2.  **上傳發布**: 同樣執行 `git_auto.py` 即可。
+### 情境 B：修改影片
+1.  **修改檔案**:
+    *   ~~舊版：直接修改 `main.js` 中的 `setupRandomVideos` 函式陣列。~~
+    *   **新版**：直接編輯 `public/js/data_videos.js` 物件內容。
+2.  **上傳發布**: 執行 `git_auto.py`。
 
 ### 情境 C：影片檔案過大
-1.  將原始影片放入資料夾。
-2.  執行 `optimize_videos.py` (需確保有安裝 ffmpeg 相關依賴，若無則跳過)。
-3.  將產出的 `.webm` 或 `.mp4` 放到 `background/` 資料夾取代舊檔。
+1.  執行 `optimize_videos.py` 將影片轉為 `.webm`。
 
 ---
 
-## 4. 復盤：做對了什麼？做錯了什麼？(Experience)
+## 5. 復盤：做對了什麼？做錯了什麼？(Experience)
 
 ### ✅ 做對的地方 (Good Practice)
-1.  **流程自動化**:
-    *   初期原本可能需要手動縮圖、手動改 HTML 插入 `<img>` 標籤，這非常耗時。
-    *   後來寫了 Python 腳本一次解決「縮圖+浮水印+資料庫建立」，這讓維護網站變得極度輕鬆。
-2.  **色彩管理 (Color Management)**:
-    *   **問題**: 剛開始上傳照片時，發現網頁上的顏色變得異常鮮豔刺眼（螢光感）。
-    *   **原因**: 相機拍攝時使用了 AdobeRGB 廣色域，但瀏覽器通常預設為 sRGB。
-    *   **解法**: 在 `generate_photo_list.py` 加入了 `ImageCms` 轉換功能，強制轉為 sRGB，解決了色偏問題。
-3.  **Git 簡易化**:
-    *   對於不熟悉指令的操作者，`git_auto.py` 是一個很好的橋樑，避免了 `git add .`, `git commit` 等繁瑣指令的記憶。
+1.  **流程自動化**: 寫了 Python 腳本一次解決「縮圖+浮水印+資料庫建立」，維護輕鬆。
+2.  **色彩管理 (Color Management)**: 在腳本中加入 `ImageCms` 強制轉 sRGB，解決 AdobeRGB 照片變螢光色的問題。
+3.  ~~**Git 簡易化**: `git_auto.py` 幫助不熟悉指令的人快速上傳。~~ (這依然是好的實踐，保留)
+4.  **數據載入優化 (Data Loading)**: (New)
+    *   **問題**: `fetch('photos.json')` 在本地預覽會有 CORS 錯誤。
+    *   **解法**: 改用 `data_photos.js` 全域變數載入，本地預覽完全正常。
 
 ### ⚠️ 曾遇到的問題與修正 (Lessons Learned)
 1.  **檔案鎖定 (Permission Denied)**:
-    *   **狀況**: 在 Windows 執行腳本時，偶爾會報錯 `[WinError 5] 存取被拒`，無法刪除舊資料夾。
-    *   **原因**: 某個程式（可能是檔案總管或 VS Code 預覽）正佔用著該圖片。
-    *   **解法**: 腳本中加入了 `remove_readonly` 和重試機制 (Retry logic)，讓程式更強健。
+    *   **狀況**: Windows 執行腳本報錯 `[WinError 5]`。
+    *   **解法**: 加入 `remove_readonly` 和重試機制。
 2.  **快取問題 (Caching)**:
-    *   **狀況**: 更新了照片，但在瀏覽器上卻看不到變化。
-    *   **原因**: 瀏覽器或 CDN 快取了舊的 `photos.json`。
-    *   **解法**: 在 `main.js` 的 fetch url 後面加上了 `?v=${Date.now()}`，強制每次讀取最新版本。
+    *   **狀況**: 更新照片後瀏覽器無變化。
+    *   **解法**: fetch url 加上 `?v=${Date.now()}` (舊版解法)。新版 JS 檔如果快取，可透過在 `index.html` 引入時加版號解決。
+3.  **內容一致性**:
+    *   **狀況**: 新增 js 邏輯但 html 結構沒跟上導致白畫面。
+    *   **教訓**: 漸進式修改，確認 DOM 存在再綁定事件。
 
 ### 🔧 未來可以優化的方向 (Roadmap)
-1.  **移除 Tailwind CDN**: 
-    *   目前的寫法主要為了開發方便。若未來流量變大，建議改用 Tailwind CLI 編譯出一個靜態的 `style.css`，可以提升載入速度並減少瀏覽器負擔。
-2.  **影片配置檔外移**:
-    *   目前影片清單寫死在 `main.js` 裡。未來應該像照片一樣，建立一個 `videos.json`，讓管理影片也能透過改文字檔完成，不用動到程式碼。
-3.  **網域設定檔 (CNAME)**:
-    *   GitHub Pages 若綁定網域，標準做法是在專案根目錄放一個名為 `CNAME` 的檔案（內容為你的網域名稱）。
-    *   **注意**: 若你發現網域偶爾失效，可能是因為這個檔案遺失。建議在根目錄建立此檔案並提交。
+1.  **移除 Tailwind CDN**: 改用 Tailwind CLI 編譯靜態 CSS。
+2.  **完全自動化**: 讓 Python 也自動掃描生成影片清單 `data_videos.js`。
+3.  ~~**地圖模式回歸**: 若有需要可重啟 Map 功能。~~
 
 ---
 
-## 5. 環境設定備忘 (Environment Setup)
-
-若你換了新電腦，需要安裝以下軟體才能運作此專案：
-
-1.  **Python**: 下載最新版 Python。
-2.  **Visual Studio Code**: 推薦的編輯器。
-3.  **Git**: 用於版本控制。
-4.  **Python 套件**:
-    開啟終端機，執行以下指令安裝依賴庫：
-    ```bash
-    pip install Pillow
-    ```
-    *(若 `optimize_videos.py` 需要用到 ffmpeg，則需另外安裝)*
+## 6. 環境設定備忘 (Environment Setup)
+1.  Python 3.x
+2.  Git
+3.  `pip install Pillow`
 
 ---
-
-*最後更新日期: 2026-01-11*
+*最後更新日期: 2026-01-13*

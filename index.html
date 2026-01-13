@@ -93,58 +93,68 @@
         </div>
     </section>
 
-    <section id="portfolio" class="py-16 md:py-24 container mx-auto px-6 md:px-20">
+    <section id="portfolio" class="pt-16 pb-8 md:pt-24 md:pb-12 container mx-auto px-6 md:px-20">
         <h2 class="text-4xl font-bold text-center mb-6 text-white reveal">精選照片</h2>
 
         <div class="text-center mb-16 reveal">
-            <button onclick="openMagazine()"
-                class="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white px-6 py-3 rounded-full text-base transition-colors border border-gray-700 inline-flex items-center shadow-lg group">
-                <svg class="w-5 h-5 mr-3 text-blue-400 group-hover:text-blue-300 transition-colors" fill="none"
-                    stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
-                    </path>
-                </svg>
-                開啟線上畫冊模式
-            </button>
-        </div>
 
-        <div class="reveal">
-            <div class="text-center mb-4">
-                <div class="flex items-center justify-center space-x-4">
-                    <span class="h-px w-16 bg-gray-600"></span>
-                    <h3 class="text-2xl font-semibold text-gray-200 tracking-widest">城市光影</h3>
-                    <span class="h-px w-16 bg-gray-600"></span>
+
+            <div class="reveal">
+                <div class="text-center mb-4">
+                    <div class="flex items-center justify-center space-x-4">
+                        <span class="h-px w-16 bg-gray-600"></span>
+                        <h3 class="text-2xl font-semibold text-gray-200 tracking-widest">城市光影</h3>
+                        <span class="h-px w-16 bg-gray-600"></span>
+                    </div>
                 </div>
-            </div>
-            <p class="text-center text-lg text-gray-400 max-w-2xl mx-auto mb-12">
-                捕捉都會的幾何線條、璀璨夜色與人文脈動。
-            </p>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto" id="gallery-城市光影">
-                <!-- Photos will be inserted here -->
-            </div>
-
-        </div>
-
-        <div class="mt-24 reveal">
-            <div class="text-center mb-4">
-                <div class="flex items-center justify-center space-x-4">
-                    <span class="h-px w-16 bg-gray-600"></span>
-                    <h3 class="text-2xl font-semibold text-gray-200 tracking-widest">大地映像</h3>
-                    <span class="h-px w-16 bg-gray-600"></span>
+                <p class="text-center text-lg text-gray-400 max-w-2xl mx-auto mb-12">
+                    捕捉都會的幾何線條、璀璨夜色與人文脈動。
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto" id="gallery-城市光影">
+                    <!-- Photos will be inserted here -->
                 </div>
-            </div>
-            <p class="text-center text-lg text-gray-400 max-w-2xl mx-auto mb-12">
-                記錄山川的壯麗脈絡、無垠海岸與自然紋理。
-            </p>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto" id="gallery-大地映像">
-                <!-- Photos will be inserted here -->
+
             </div>
 
-        </div>
+            <div class="mt-24 reveal">
+                <div class="text-center mb-4">
+                    <div class="flex items-center justify-center space-x-4">
+                        <span class="h-px w-16 bg-gray-600"></span>
+                        <h3 class="text-2xl font-semibold text-gray-200 tracking-widest">大地映像</h3>
+                        <span class="h-px w-16 bg-gray-600"></span>
+                    </div>
+                </div>
+                <p class="text-center text-lg text-gray-400 max-w-2xl mx-auto mb-12">
+                    記錄山川的壯麗脈絡、無垠海岸與自然紋理。
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto" id="gallery-大地映像">
+                    <!-- Photos will be inserted here -->
+                </div>
+
+            </div>
+
+            <!-- Magazine Button -->
+            <div class="text-center mt-8 mb-2 reveal">
+                <p
+                    class="text-gray-500 mb-6 text-sm tracking-[0.2em] font-light uppercase border-b border-gray-800 inline-block pb-1">
+                    Immersive View</p>
+                <br>
+                <button onclick="openMagazine()"
+                    class="bg-gray-800 hover:bg-gray-700 text-white px-8 py-4 rounded-full text-lg transition-all duration-300 border border-gray-600 inline-flex items-center shadow-2xl hover:shadow-blue-900/20 group hover:-translate-y-1">
+                    <!-- White Book Icon -->
+                    <svg class="w-6 h-6 mr-3 text-white group-hover:scale-110 transition-transform" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
+                        </path>
+                    </svg>
+                    開啟線上畫冊模式
+                </button>
+            </div>
+
     </section>
 
-    <section id="videos" class="py-16 md:py-24 bg-gray-900">
+    <section id="videos" class="pt-8 pb-16 md:pb-24 bg-gray-900">
         <div class="container mx-auto px-6 md:px-20">
             <h2 class="text-4xl font-bold text-center mb-12 text-white reveal">精選影片</h2>
 
@@ -238,7 +248,8 @@
                                         d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
                                     </path>
                                 </svg>
-                                <h3 class="text-lg md:text-2xl font-bold text-[#F0F0F0] tracking-wide">高空視野</h3>
+                                <h3 class="text-lg md:text-2xl font-bold text-[#F0F0F0] tracking-wide">
+                                    高空視野</h3>
                             </div>
                             <p class="text-[#BEBEBE] leading-relaxed text-lg pl-2 border-l-2 border-gray-700">
                                 我看見人與環境的緊密關係，也希望能把那些稍縱卽逝的美好時刻，真實地留存下來。
@@ -257,7 +268,8 @@
                                     <path stroke-linecap="round" stroke-linejoin="round"
                                         d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                 </svg>
-                                <h3 class="text-lg md:text-2xl font-bold text-[#F0F0F0] tracking-wide">影像敘事</h3>
+                                <h3 class="text-lg md:text-2xl font-bold text-[#F0F0F0] tracking-wide">
+                                    影像敘事</h3>
                             </div>
                             <p class="text-[#BEBEBE] leading-relaxed text-lg pl-2 border-l-2 border-gray-700">
                                 致力於用影像說好每一個故事，透過不同角度的視野，讓人重新發現那些熟悉卻常被忽略的細節與美感。
@@ -286,7 +298,8 @@
                             class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg py-3 px-4 focus:outline-none focus:border-blue-500 transition-colors">
                     </div>
                     <div>
-                        <label for="email" class="block text-gray-300 text-sm font-bold mb-2">您的 Email</label>
+                        <label for="email" class="block text-gray-300 text-sm font-bold mb-2">您的
+                            Email</label>
                         <input type="email" id="email" name="email" placeholder="方便我回信給您" required
                             class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg py-3 px-4 focus:outline-none focus:border-blue-500 transition-colors">
                     </div>

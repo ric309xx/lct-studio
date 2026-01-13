@@ -116,147 +116,82 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     };
 
-    const renderGallery = (categoryName) => {
-        // photoList is now Array of { filename, color }
-        const photoList = globalPhotoData[categoryName] || [];
-        const galleryContainer = document.getElementById(`gallery-${categoryName}`);
+    // --- Helper: Color Similarity ---
+    const areColorsSimilar = (c1, c2, threshold = 100) => {
+        if (!c1 || !c2 || c1.length < 3 || c2.length < 3) return false;
+        // Euclidean distance in RGB space
+        const dist = Math.sqrt(
+            Math.pow(c1[0] - c2[0], 2) +
+            Math.pow(c1[1] - c2[1], 2) +
+            Math.pow(c1[2] - c2[2], 2)
+        );
+        return dist < threshold;
+    };
 
+    // --- Helper: Select Diverse Photos (Prefix + Color) ---
+    const selectDiversePhotos = (pool, count) => {
+        let candidates = [...pool]; // Copy
+        candidates.sort(() => 0.5 - Math.random()); // Shuffle
+
+        const selected = [];
+
+        // Pass 1: Strict (Unique Prefix + Diverse Color)
+        for (let i = 0; i < candidates.length && selected.length < count; i++) {
+            const p = candidates[i];
+            const prefix = p.filename.substring(0, 4);
+
+            const isLocationConflict = selected.some(s => s.filename.substring(0, 4) === prefix);
+            const isColorConflict = selected.some(s => areColorsSimilar(s.color, p.color, 120)); // Threshold 120
+
+            if (!isLocationConflict && !isColorConflict) {
+                selected.push(p);
+            }
+        }
+
+        // Pass 2: Relax Color (Unique Prefix only)
+        if (selected.length < count) {
+            const usedFilenames = new Set(selected.map(s => s.filename));
+            for (let i = 0; i < candidates.length && selected.length < count; i++) {
+                const p = candidates[i];
+                if (usedFilenames.has(p.filename)) continue;
+
+                const prefix = p.filename.substring(0, 4);
+                const isLocationConflict = selected.some(s => s.filename.substring(0, 4) === prefix);
+
+                if (!isLocationConflict) {
+                    selected.push(p);
+                    usedFilenames.add(p.filename);
+                }
+            }
+        }
+
+        // Pass 3: Fill if needed (Any unique file)
+        if (selected.length < count) {
+            const usedFilenames = new Set(selected.map(s => s.filename));
+            for (let i = 0; i < candidates.length && selected.length < count; i++) {
+                const p = candidates[i];
+                if (!usedFilenames.has(p.filename)) {
+                    selected.push(p);
+                    usedFilenames.add(p.filename);
+                }
+            }
+        }
+
+        return selected;
+    };
+
+    const renderGallery = (categoryName) => {
+        const galleryContainer = document.getElementById(`gallery-${categoryName}`);
         if (!galleryContainer) return;
 
-        let photosToDisplay = [];
-
-        if (photoList.length > 0) {
-            // Logic based on category
-            if (categoryName === "大地映像") {
-                // --- Logic 1: Category Round-Robin (Fixed Diversity) ---
-                // Goal: Pick 1 from Warm, 1 from Cool/Nature, 1 from Neutral/Purple
-
-                // Group 1 (Warm): Red/Orange/Yellow
-                // H < 40, H > 340, 40 <= H < 70
-                // Group 2 (Cool/Nature): Green/Blue/Cyan
-                // 70 <= H < 160, 160 <= H < 260
-                // Group 3 (Neutral/Purple): Purple/Magenta/Neutral
-                // 260 <= H < 340, Saturation < 0.15
-
-                const groups = [[], [], []];
-
-                photoList.forEach(p => {
-                    const rgb = p.color;
-                    // RGB to HSV (Simple version for grouping)
-                    const r = rgb[0] / 255, g = rgb[1] / 255, b = rgb[2] / 255;
-                    const max = Math.max(r, g, b), min = Math.min(r, g, b);
-                    let h, s, v = max;
-                    const d = max - min;
-                    s = max === 0 ? 0 : d / max;
-
-                    if (max === min) {
-                        h = 0; // achromatic
-                    } else {
-                        switch (max) {
-                            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-                            case g: h = (b - r) / d + 2; break;
-                            case b: h = (r - g) / d + 4; break;
-                        }
-                        h /= 6;
-                    }
-                    const h_deg = h * 360;
-
-                    if (s < 0.15) {
-                        groups[2].push(p); // Neutral -> Group 3
-                    } else {
-                        if ((h_deg >= 0 && h_deg < 70) || (h_deg >= 340 && h_deg <= 360)) {
-                            groups[0].push(p); // Warm -> Group 1
-                        } else if (h_deg >= 160 && h_deg < 260) {
-                            groups[1].push(p); // Blue/Cyan -> Group 2 (Independent)
-                        } else {
-                            groups[2].push(p); // Green/Purple/Magenta -> Group 3 (Combined with Neutral)
-                        }
-                    }
-                });
-
-                // Pick 1 from each group if possible
-                let selectedPrefixes = new Set();
-
-                // Strategy: Try to pick one from each group.
-                // If a group is empty, we will fill from others later.
-                [0, 1, 2].forEach(groupIndex => {
-                    const group = groups[groupIndex];
-                    if (group.length > 0) {
-                        // Shuffle group
-                        group.sort(() => 0.5 - Math.random());
-
-                        for (const p of group) {
-                            const prefix = p.filename.substring(0, 4);
-                            if (!selectedPrefixes.has(prefix)) {
-                                photosToDisplay.push(p);
-                                selectedPrefixes.add(prefix);
-                                break; // Picked one from this group
-                            }
-                        }
-                    }
-                });
-
-                // Fallback: If we didn't get 3 photos (e.g. empty groups or duplicates), fill from remaining pool
-                if (photosToDisplay.length < 3) {
-                    const remaining = photoList.filter(p => !photosToDisplay.includes(p));
-                    remaining.sort(() => 0.5 - Math.random());
-
-                    for (const p of remaining) {
-                        if (photosToDisplay.length >= 3) break;
-                        const prefix = p.filename.substring(0, 4);
-                        if (!selectedPrefixes.has(prefix)) {
-                            photosToDisplay.push(p);
-                            selectedPrefixes.add(prefix);
-                        }
-                    }
-                }
-            } else {
-                // --- Logic 2: Pure Random for others (e.g. 城市光影) ---
-                // Just shuffle and pick unique prefixes, ignoring color
-                let candidates = [...photoList].sort(() => 0.5 - Math.random());
-                let selectedPrefixes = new Set();
-
-                for (const p of candidates) {
-                    if (photosToDisplay.length >= 3) break;
-                    const prefix = p.filename.substring(0, 4);
-                    if (!selectedPrefixes.has(prefix)) {
-                        photosToDisplay.push(p);
-                        selectedPrefixes.add(prefix);
-                    }
-                }
-            }
-
-            // --- Fallbacks (Shared) ---
-            // Ensure we have 3 photos if possible, relaxing constraints if needed
-            if (photosToDisplay.length < 3) {
-                const selectedPrefixes = new Set(photosToDisplay.map(p => p.filename.substring(0, 4)));
-                const remaining = photoList.filter(p => !photosToDisplay.includes(p));
-                // Shuffle remaining
-                remaining.sort(() => 0.5 - Math.random());
-
-                for (const p of remaining) {
-                    if (photosToDisplay.length >= 3) break;
-                    const prefix = p.filename.substring(0, 4);
-                    if (!selectedPrefixes.has(prefix)) {
-                        photosToDisplay.push(p);
-                        selectedPrefixes.add(prefix);
-                    }
-                }
-            }
-
-            // Final Fallback: Fill with duplicates allowed if still < 3 (e.g. only 2 unique locations exist)
-            if (photosToDisplay.length < 3) {
-                const remaining = photoList.filter(p => !photosToDisplay.includes(p));
-                remaining.sort(() => 0.5 - Math.random());
-                for (const p of remaining) {
-                    if (photosToDisplay.length >= 3) break;
-                    photosToDisplay.push(p);
-                }
-            }
-
-            // Shuffle final result for display order
-            photosToDisplay.sort(() => 0.5 - Math.random());
+        let photoList = window.globalPhotoData ? window.globalPhotoData[categoryName] : [];
+        if (!photoList || photoList.length === 0) {
+            galleryContainer.innerHTML = `<p class="text-center text-gray-400 col-span-full">載入中...</p>`;
+            return;
         }
+
+        // Select 6 Diverse Photos
+        const photosToDisplay = selectDiversePhotos(photoList, 6);
 
         // Render
         galleryContainer.innerHTML = '';
@@ -266,7 +201,6 @@ document.addEventListener('DOMContentLoaded', () => {
             photosToDisplay.forEach((photo, index) => {
                 const title = getBaseLocationName(photo.filename);
                 const imagePath = `./public/photos/${encodeURIComponent(categoryName)}/${encodeURIComponent(photo.filename)}`;
-                // Add reveal class for animation
                 const delayClass = (index % 3 === 0) ? 'reveal-delay-100' : (index % 3 === 1) ? 'reveal-delay-200' : 'reveal-delay-300';
 
                 const cardHtml = `
@@ -282,16 +216,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Setup click events for this batch
+        // Setup click events
         galleryContainer.querySelectorAll('.photo-card').forEach(card => {
             card.addEventListener('click', () => {
-                // Update Global List for Lightbox based on context
                 currentCategoryPhotos = photosToDisplay;
                 openModal(card.dataset.category, card.dataset.filename);
             });
         });
-
-        // Re-trigger scroll observer for new elements logic is handled by 'active' class immediately for updates to avoid flicker
     };
 
     const updateGalleries = (allPhotosData) => {
@@ -304,7 +235,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const fetchPhotoData = async () => {
+        if (window.globalPhotoData) {
+            console.log('Using pre-loaded photo data from data_photos.js');
+            updateGalleries(window.globalPhotoData);
+            return;
+        }
+
         try {
+            console.warn('window.globalPhotoData not found, attempting to fetch photos.json...');
             const response = await fetch(`public/photos.json?v=${Date.now()}`);
             if (!response.ok) throw new Error(`無法讀取 photos.json`);
             const data = await response.json();
@@ -331,51 +269,93 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- 6. Videos ---
-    const setupRandomVideos = () => {
-        const videoContainer = document.getElementById('video-container');
-        if (!videoContainer) return;
-        const videoSlots = [
-            [{ url: "https://www.youtube.com/embed/X_-eCxOpJd8", title: "商業空間 空拍紀實" }],
-            [
-                { url: "https://www.youtube.com/embed/Kma5I6TBfr0", title: "基隆外木山漁港(片段)" },
-                { url: "https://www.youtube.com/embed/B7IaqlqIa5o", title: "基隆望幽谷步道(片段)" },
-                { url: "https://www.youtube.com/embed/WH8pKIyZAeA", title: "嘉義竹崎鹿麻產車站" },
-                { url: "https://www.youtube.com/embed/fq3i3KnmQqI", title: "台中洲際棒球場" }
-            ],
-            [
-                { url: "https://www.youtube.com/embed/yiUg4NowM1E", title: "台中南屯建案工程紀錄(鉅虹天蒔、鉅虹天麗)" },
-                { url: "https://www.youtube.com/embed/38j96eEWfjk", title: "新北林口建案工程紀錄(長虹天聚)" }
-            ],
-            [
-                { url: "https://www.youtube.com/embed/xlddOq_OnmY", title: "高雄車站、舊高雄車站(片段)" },
-                { url: "https://www.youtube.com/embed/zQ6AjCtiSYk", title: "桃園中壢太陽能板" }
-            ]
-        ];
-        const getVideoId = (url) => url.split('/').pop().split('?')[0];
+    const setupVideoSection = () => {
+        const mainPlayerContainer = document.getElementById('main-video-player');
+        const mainTitle = document.getElementById('main-video-title');
+        const playlistContainer = document.getElementById('video-playlist');
 
-        videoContainer.innerHTML = '';
-        videoSlots.forEach((pool, index) => {
-            if (pool.length === 0) return;
-            const randomIndex = Math.floor(Math.random() * pool.length);
-            const videoData = pool[randomIndex];
-            const videoId = getVideoId(videoData.url);
-            const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-            const slotId = `video-slot-${index}`;
+        if (!mainPlayerContainer || !playlistContainer) return;
 
-            const cardHtml = `
-                <div id="${slotId}" class="relative w-full pb-[56.25%] rounded-xl overflow-hidden shadow-2xl bg-gray-900 group cursor-pointer border border-gray-800 reveal" onclick="playVideo('${slotId}', '${videoData.url}')">
-                    <img src="${thumbnailUrl}" alt="${videoData.title}" class="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-transform duration-500 ease-out">
-                    <div class="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-all duration-300"></div>
-                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div class="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/50 group-hover:scale-110 group-hover:bg-red-600 group-hover:border-red-600 transition-all duration-300 shadow-lg">
-                            <svg class="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                        </div>
+        // Flatten videos from window.videoData
+        const allVideos = [];
+        if (window.videoData && window.videoData.categories) {
+            Object.values(window.videoData.categories).forEach(cat => allVideos.push(...cat));
+        }
+
+        // Target Fixed Video: "商業空間 空拍紀實"
+        // ID: X_-eCxOpJd8
+        const fixedVideoUrl = "https://www.youtube.com/embed/X_-eCxOpJd8";
+        const fixedVideo = allVideos.find(v => v.url.includes("X_-eCxOpJd8")) || {
+            url: fixedVideoUrl,
+            title: "商業空間 空拍紀實",
+            duration: "01:30"
+        };
+
+        // Filter out the fixed video from the pool
+        const otherVideos = allVideos.filter(v => !v.url.includes("X_-eCxOpJd8"));
+
+        // Shuffle and pick 2
+        otherVideos.sort(() => 0.5 - Math.random());
+        const randomVideos = otherVideos.slice(0, 2);
+
+        // Final List: Fixed + 2 Random = 3 Total
+        const finalVideos = [fixedVideo, ...randomVideos];
+
+        // Helper to extract ID
+        const getVideoId = (url) => {
+            if (!url) return '';
+            const parts = url.split('/');
+            return parts[parts.length - 1].split('?')[0];
+        };
+
+        // Function to play video in main player
+        window.playVideoManual = (url, title) => {
+            if (!mainPlayerContainer) return;
+            mainPlayerContainer.innerHTML = `<iframe class="absolute top-0 left-0 w-full h-full animate-fade-in" src="${url}?autoplay=1&rel=0" title="${title}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+            if (mainTitle) mainTitle.textContent = title;
+        };
+
+        // Initial Setup (Display First Video in Main Player)
+        if (finalVideos.length > 0) {
+            const firstVideo = finalVideos[0];
+            const videoId = getVideoId(firstVideo.url);
+
+            // Render thumbnail with play button for first video
+            mainPlayerContainer.innerHTML = `
+                <img src="https://img.youtube.com/vi/${videoId}/maxresdefault.jpg" class="absolute inset-0 w-full h-full object-cover">
+                <div class="absolute inset-0 flex items-center justify-center group cursor-pointer" onclick="window.playVideoManual('${firstVideo.url}', '${firstVideo.title}')">
+                    <div class="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/50 group-hover:scale-110 group-hover:bg-red-600 transition-all duration-300 shadow-lg">
+                        <svg class="w-10 h-10 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                     </div>
-                    <div class="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out">
-                        <p class="text-white text-lg font-bold tracking-wide drop-shadow-md">${videoData.title}</p>
-                    </div>
-                </div>`;
-            videoContainer.insertAdjacentHTML('beforeend', cardHtml);
+                </div>
+            `;
+            if (mainTitle) mainTitle.textContent = firstVideo.title;
+        }
+
+        // Render Playlist (All 3 videos)
+        playlistContainer.innerHTML = '';
+        finalVideos.forEach(video => {
+            const videoId = getVideoId(video.url);
+            const card = document.createElement('div');
+            card.className = "relative w-full pb-[56.25%] rounded-xl overflow-hidden shadow-lg bg-gray-900 group cursor-pointer border border-gray-800 transition-transform transform hover:scale-105";
+            card.innerHTML = `
+                <img src="https://img.youtube.com/vi/${videoId}/mqdefault.jpg" alt="${video.title}" class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity">
+                <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all"></div>
+                <div class="absolute bottom-0 left-0 w-full p-2 bg-gradient-to-t from-black/90 to-transparent">
+                    <p class="text-white text-sm font-medium truncate">${video.title}</p>
+                </div>
+                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                     <svg class="w-12 h-12 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </div>
+             `;
+            card.onclick = () => {
+                window.playVideoManual(video.url, video.title);
+                window.scrollTo({
+                    top: mainPlayerContainer.getBoundingClientRect().top + window.scrollY - 100, // Offset for header
+                    behavior: 'smooth'
+                });
+            };
+            playlistContainer.appendChild(card);
         });
     };
 
@@ -383,12 +363,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const heroVideo = document.getElementById('hero-video');
         if (!heroVideo) return;
 
-        // Randomly select video 1 to 4
-        const videoCount = 4;
-        const randomIndex = Math.floor(Math.random() * videoCount) + 1;
-        const baseFilename = `your-hero-video${randomIndex}`;
+        // Currently only video 4 exists in the folder
+        const baseFilename = `your-hero-video4`;
 
-        // Set Poster (First frame)
+        // Set Poster (First frame or image)
         heroVideo.poster = `background/${baseFilename}.jpg`;
 
         // Clear existing content (fallback text/sources)
@@ -409,16 +387,242 @@ document.addEventListener('DOMContentLoaded', () => {
         // Fallback text
         heroVideo.appendChild(document.createTextNode('您的瀏覽器不支援此影片格式。'));
 
+        // Load and attempt play
         heroVideo.load();
+        const playPromise = heroVideo.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.log("Auto-play was prevented by the browser", error);
+            });
+        }
     };
 
-    window.playVideo = (elementId, videoUrl) => {
-        const container = document.getElementById(elementId);
-        if (!container) return;
-        container.innerHTML = `<iframe class="absolute top-0 left-0 w-full h-full animate-fade-in" src="${videoUrl}?autoplay=1&rel=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
+    // --- 7. Magazine Mode (Online Art Album/Gallery) ---
+    window.openMagazine = () => {
+        const magazineModal = document.getElementById('magazine-modal');
+        const magazineWrapper = document.getElementById('magazine-wrapper');
+
+        if (!magazineModal || !magazineWrapper) return;
+
+        // 1. Flatten all photos
+        let photoPool = [];
+        if (window.globalPhotoData) {
+            Object.keys(window.globalPhotoData).forEach(category => {
+                const photos = window.globalPhotoData[category].map(p => ({ ...p, category }));
+                photoPool = photoPool.concat(photos);
+            });
+        }
+
+        // 2. Random shuffle
+        photoPool.sort(() => 0.5 - Math.random());
+
+        // 3. Generate Slides with 5 Layouts
+        magazineWrapper.innerHTML = '';
+
+        while (photoPool.length > 0) {
+            // Randomly pick a target layout type (1-5)
+            const layoutType = Math.floor(Math.random() * 5) + 1;
+            let targetCount = 1;
+            if (layoutType === 2) targetCount = 2;
+            if (layoutType === 3 || layoutType === 5) targetCount = 3;
+            if (layoutType === 4) targetCount = 4;
+
+            // Select photos ensuring unique prefixes AND diverse colors
+            const batch = [];
+
+            // Pick first available from pool
+            if (photoPool.length > 0) {
+                batch.push(photoPool.shift());
+            }
+
+            // Fill remainder with non-conflicting photos
+            // Iterate through the pool and pick compatible ones
+            let i = 0;
+            while (batch.length < targetCount && i < photoPool.length) {
+                const p = photoPool[i];
+                const prefix = p.filename.substring(0, 4);
+
+                // Constraints
+                const isLocationConflict = batch.some(b => b.filename.substring(0, 4) === prefix);
+                const isColorConflict = batch.some(b => areColorsSimilar(b.color, p.color, 100)); // Stricter for magazine
+
+                if (!isLocationConflict && !isColorConflict) {
+                    batch.push(p);
+                    photoPool.splice(i, 1); // Remove picked photo from pool
+                    // Don't increment i because array shifted left
+                } else {
+                    i++; // Skip this photo, check next
+                }
+            }
+
+            // Fallback: If still not full, relax Color constraint, keep Location constraint
+            if (batch.length < targetCount) {
+                let j = 0;
+                while (batch.length < targetCount && j < photoPool.length) {
+                    const p = photoPool[j];
+                    const prefix = p.filename.substring(0, 4);
+                    const isLocationConflict = batch.some(b => b.filename.substring(0, 4) === prefix);
+
+                    if (!isLocationConflict) {
+                        batch.push(p);
+                        photoPool.splice(j, 1);
+                    } else {
+                        j++;
+                    }
+                }
+            }
+
+            // Determine final layout based on actual count
+            const count = batch.length;
+            let finalLayout = layoutType;
+
+            if (count === 1) finalLayout = 1;
+            else if (count === 2) finalLayout = 2;
+            else if (count === 3 && (layoutType !== 3 && layoutType !== 5)) finalLayout = 3; // Default to Master Left for 3
+            else if (count === 4) finalLayout = 4;
+
+            // Generate HTML
+            const slide = document.createElement('div');
+            // Base padding and centering - Slide itself fills viewport
+            slide.className = 'swiper-slide flex items-center justify-center p-4 md:p-8 box-border';
+
+            // Layout Container with A3 Aspect Ratio (Landscape 420x297 for Spread/Screen view)
+            // Using inline style for precise aspect-ratio. 
+            // Max dimensions ensure it fits on screen without scrolling.
+            const containerHtmlStart = `
+                <div class="relative bg-white shadow-2xl p-6 md:p-10 mx-auto flex items-center justify-center overflow-hidden" 
+                     style="aspect-ratio: 420/297; height: auto; width: auto; max-width: 100%; max-height: 85vh;">
+                   <div class="w-full h-full flex items-center justify-center">
+            `;
+            const containerHtmlEnd = `
+                   </div>
+                </div>`;
+
+            // Helper for Image HTML
+            const getImg = (p, className = "") => {
+                const title = p.filename.replace(/[-_(\（].*|\.\w+$/g, '').trim();
+                const src = `./public/photos/${encodeURIComponent(p.category)}/${encodeURIComponent(p.filename)}`;
+                return `
+                    <div class="relative group w-full h-full overflow-hidden rounded-lg shadow-md transition-transform duration-500 hover:-translate-y-1 hover:shadow-xl bg-gray-50">
+                        <img src="${src}" alt="${title}" class="w-full h-full ${className}">
+                        <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/60 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                             <p class="text-white text-xs md:text-sm font-medium tracking-widest text-shadow truncate">${title}</p>
+                        </div>
+                    </div>`;
+            };
+
+            let innerHtml = '';
+
+            // Layout 1: Single Full (Contain)
+            if (finalLayout === 1) {
+                const p = batch[0];
+                const title = p.filename.replace(/[-_(\（].*|\.\w+$/g, '').trim();
+                const src = `./public/photos/${encodeURIComponent(p.category)}/${encodeURIComponent(p.filename)}`;
+                innerHtml = `
+                    <div class="w-full h-full flex flex-col items-center justify-center">
+                        <img src="${src}" alt="${title}" class="rounded-lg shadow-lg max-w-full max-h-full object-contain">
+                        <div class="mt-4 text-center">
+                            <h4 class="text-gray-800 text-lg font-medium tracking-widest font-serif">${title}</h4>
+                        </div>
+                    </div>
+                 `;
+            }
+            // Layout 2: Dual Split (Cover)
+            else if (finalLayout === 2) {
+                innerHtml = `
+                    <div class="grid grid-cols-2 gap-4 w-full h-full">
+                        ${getImg(batch[0], "object-cover")}
+                        ${getImg(batch[1], "object-cover")}
+                    </div>
+                `;
+            }
+            // Layout 3: Master Left (3 Photos)
+            else if (finalLayout === 3) {
+                innerHtml = `
+                    <div class="grid grid-cols-2 gap-4 w-full h-full">
+                        <div class="h-full">${getImg(batch[0], "object-cover")}</div>
+                        <div class="flex flex-col gap-4 h-full">
+                            <div class="flex-1">${getImg(batch[1], "object-cover")}</div>
+                            <div class="flex-1">${getImg(batch[2], "object-cover")}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            // Layout 4: Grid (4 Photos)
+            else if (finalLayout === 4) {
+                innerHtml = `
+                    <div class="grid grid-cols-2 grid-rows-2 gap-4 w-full h-full">
+                        ${batch.map(p => getImg(p, "object-cover")).join('')}
+                    </div>
+                `;
+            }
+            // Layout 5: Master Right (3 Photos)
+            else if (finalLayout === 5) {
+                innerHtml = `
+                    <div class="grid grid-cols-2 gap-4 w-full h-full">
+                        <div class="flex flex-col gap-4 h-full order-2 md:order-1">
+                            <div class="flex-1">${getImg(batch[1], "object-cover")}</div>
+                            <div class="flex-1">${getImg(batch[2], "object-cover")}</div>
+                        </div>
+                        <div class="h-full order-1 md:order-2">${getImg(batch[0], "object-cover")}</div>
+                    </div>
+                `;
+            }
+
+            slide.innerHTML = containerHtmlStart + innerHtml + containerHtmlEnd;
+            magazineWrapper.appendChild(slide);
+        }
+
+        // Theme: Switch Modal to Light Mode
+        magazineModal.classList.remove('bg-black/95');
+        magazineModal.classList.add('bg-[#F9F9F9]');
+
+        // Change Close Button Color
+        const closeBtn = document.getElementById('close-magazine-btn');
+        if (closeBtn) {
+            closeBtn.classList.remove('text-gray-400', 'hover:text-white');
+            closeBtn.classList.add('text-gray-600', 'hover:text-black');
+        }
+
+        // Show Modal
+        magazineModal.classList.remove('hidden');
+        magazineModal.classList.add('flex');
+
+        // Initialize Swiper
+        if (window.magazineSwiper) {
+            window.magazineSwiper.destroy(true, true);
+        }
+
+        window.magazineSwiper = new Swiper('.magazine-container', {
+            slidesPerView: 1,
+            spaceBetween: 40,
+            keyboard: { enabled: true },
+            pagination: {
+                el: '.swiper-pagination',
+                clickable: true,
+                dynamicBullets: true,
+            },
+            navigation: {
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev',
+            },
+            effect: 'fade',
+            fadeEffect: { crossFade: true },
+            speed: 600,
+        });
     };
 
-    // --- 7. Event Listeners ---
+    // Close Magazine Modal
+    const closeMagazineBtn = document.getElementById('close-magazine-btn');
+    if (closeMagazineBtn) {
+        closeMagazineBtn.addEventListener('click', () => {
+            const magazineModal = document.getElementById('magazine-modal');
+            magazineModal.classList.add('hidden');
+            magazineModal.classList.remove('flex');
+        });
+    }
+
+    // --- 8. Event Listeners ---
     mobileMenuButton.addEventListener('click', () => { mobileMenu.classList.toggle('hidden'); });
     mobileMenuLinks.forEach(link => { link.addEventListener('click', () => { mobileMenu.classList.add('hidden'); }); });
     window.addEventListener('scroll', () => { header.classList.toggle('header-scrolled', window.scrollY > 50); });
@@ -431,7 +635,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize
     fetchPhotoData();
-    setupRandomVideos();
+    setupVideoSection();
     setupHeroVideo();
 
     // Initial Observe for static elements
