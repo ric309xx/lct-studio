@@ -510,13 +510,13 @@ document.addEventListener('DOMContentLoaded', () => {
                    <div class="absolute inset-4 sm:inset-8 border border-black/80 pointer-events-none z-20"></div>
 
                    <!-- Top Header -->
-                   <div class="p-8 sm:p-12 z-10">
+                   <div class="p-6 md:p-8 z-10">
                         <div class="flex justify-between items-start">
                             <div>
-                                <h1 class="text-6xl sm:text-8xl font-bold tracking-tighter leading-none text-black font-sans">PORT-<br>FOLIO</h1>
+                                <h1 class="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tighter leading-none text-black font-sans">PORT-<br>FOLIO</h1>
                             </div>
                             <div class="text-right">
-                                <h2 class="text-4xl sm:text-6xl font-light tracking-wide text-black font-serif">${year}</h2>
+                                <h2 class="text-3xl sm:text-4xl md:text-5xl font-light tracking-wide text-black font-serif">${year}</h2>
                             </div>
                         </div>
                    </div>
