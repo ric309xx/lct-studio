@@ -718,6 +718,9 @@ document.addEventListener('DOMContentLoaded', () => {
             slidesPerView: 1,
             spaceBetween: 40,
             keyboard: { enabled: true },
+            observer: true,
+            observeParents: true,
+            resizeObserver: true,
             pagination: {
                 el: '.swiper-pagination',
                 clickable: true,
@@ -761,4 +764,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial Observe for static elements
     setTimeout(observeElements, 500); // Wait for initial render
+
+    // --- 9. Basic Protection (基本保護) ---
+    // Disable Right Click
+    document.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+    });
+
+    // Disable common DevTools shortcuts
+    document.addEventListener('keydown', (e) => {
+        // F12
+        if (e.key === 'F12') {
+            e.preventDefault();
+        }
+        // Ctrl+Shift+I (Windows) / Cmd+Opt+I (Mac)
+        if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) {
+            e.preventDefault();
+        }
+        // Ctrl+U (View Source)
+        if (e.ctrlKey && (e.key === 'U' || e.key === 'u')) {
+            e.preventDefault();
+        }
+    });
+
+    // --- 10. Advanced Protection (進階保護) ---
+
+    // 1. Anti-Debugging Loop (防偵錯迴圈)
+    // 當開發者工具開啟時，會不斷觸發 debugger 中斷點，干擾操作。
+    // 注意：這在開發階段可能會有點煩人，如果您要除錯，請暫時註解掉這一行。
+    setInterval(() => {
+        // Function constructor debugger trick
+        (function () { }.constructor('debugger')());
+    }, 2000);
+
+    // 2. Domain/Protocol Check (網域鎖定)
+    // 防止網站被部署到未經授權的網域 (例如被複製到 malicious-site.com)
+    // 注意：為了不影響您本地開發 (file:// 或 localhost)，這裡預設只會顯示警告。
+    // 發布時，您可以將您的真實網域加入 ALLOWED_DOMAINS 列表。
+    const checkDomain = () => {
+        const allowedDomains = ['localhost', '127.0.0.1', '']; // '' allows file://
+        // 若您有正式網域，請加入，例如： 'your-website.com'
+
+        const hostname = window.location.hostname;
+
+        // 如果不在允許列表中 (且不是空的 file protocol)
+        if (hostname && !allowedDomains.includes(hostname) && !hostname.endsWith('.github.io')) {
+            // 在這裡執行保護動作，例如：
+            // alert('這不是官方網站！');
+            // document.body.innerHTML = ''; 
+            console.warn('Warning: Unauthorized domain access.');
+        }
+    };
+    checkDomain();
 });
