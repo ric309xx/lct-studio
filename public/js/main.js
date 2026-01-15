@@ -668,11 +668,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (batch.length === 1) {
                     innerHtml = `<div class="w-full h-full min-h-0">${getImg(batch[0], "object-cover")}</div>`;
                 } else {
-                    // Grid Rows 2
+                    // Flex Col Center with Explicit Height Control (38% per photo)
+                    // Total photo height = 76%. Remaining 24% is whitespace.
+                    // justify-center keeps them in the middle, leaving top/bottom margins.
                     innerHtml = `
-                        <div class="grid grid-rows-2 gap-2 w-full h-full min-h-0">
-                            <div class="min-h-0">${getImg(batch[0], "object-cover")}</div>
-                            <div class="min-h-0">${getImg(batch[1], "object-cover")}</div>
+                        <div class="flex flex-col justify-center items-center gap-6 w-full h-full min-h-0">
+                            <div class="w-full h-[38%] min-h-0 relative shadow-sm">${getImg(batch[0], "object-cover")}</div>
+                            <div class="w-full h-[38%] min-h-0 relative shadow-sm">${getImg(batch[1], "object-cover")}</div>
                         </div>
                      `;
                 }
