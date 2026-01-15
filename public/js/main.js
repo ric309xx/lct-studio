@@ -510,25 +510,25 @@ document.addEventListener('DOMContentLoaded', () => {
                    <div class="absolute inset-4 sm:inset-8 border border-black/80 pointer-events-none z-20"></div>
 
                    <!-- Top Header -->
-                   <div class="p-6 md:p-8 z-10">
+                   <div class="p-3 md:p-8 z-10">
                         <div class="flex justify-between items-start">
                             <div>
-                                <h1 class="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tighter leading-none text-black font-sans">PORT-<br>FOLIO</h1>
+                                <h1 class="text-3xl sm:text-6xl md:text-7xl font-bold tracking-tighter leading-none text-black font-sans">PORT-<br>FOLIO</h1>
                             </div>
                             <div class="text-right">
-                                <h2 class="text-3xl sm:text-4xl md:text-5xl font-light tracking-wide text-black font-serif">${year}</h2>
+                                <h2 class="text-xl sm:text-4xl md:text-5xl font-light tracking-wide text-black font-serif">${year}</h2>
                             </div>
                         </div>
                    </div>
 
                    <!-- Featured Photo (Middle/Bottom) -->
-                   <div class="flex-1 relative mt-4 mx-8 sm:mx-12 mb-24 overflow-hidden grayscale contrast-125 min-h-0">
+                   <div class="flex-1 relative mt-2 mx-4 sm:mx-12 mb-12 md:mb-24 overflow-hidden grayscale contrast-125 min-h-0">
                         <img src="${src}" class="w-full h-full object-cover object-center" alt="Cover Photo">
                    </div>
 
                    <!-- Bottom Footer -->
-                   <div class="absolute bottom-12 left-0 w-full text-center z-10">
-                        <p class="text-sm font-bold tracking-[0.3em] uppercase text-gray-800">LCT STUDIO</p>
+                   <div class="absolute bottom-4 md:bottom-12 left-0 w-full text-center z-10">
+                        <p class="text-xs md:text-sm font-bold tracking-[0.3em] uppercase text-gray-800">LCT STUDIO</p>
                    </div>
 
                    <!-- Sidebar Text (Vertical) -->
@@ -614,7 +614,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Using inline style for precise aspect-ratio. 
             // Max dimensions ensure it fits on screen without scrolling.
             const containerHtmlStart = `
-                <div class="relative bg-white shadow-2xl p-2 md:p-10 mx-auto flex items-center justify-center overflow-hidden"
+                <div class="relative bg-white shadow-2xl p-4 md:p-10 mx-auto flex items-center justify-center overflow-hidden"
             style="aspect-ratio: 420/297; height: auto; width: auto; max-width: 95vw; max-height: 70vh;">
                 <div class="w-full h-full flex items-center justify-center">
                     `;
