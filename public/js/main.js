@@ -464,6 +464,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!magazineModal || !magazineWrapper) return;
 
+        // Detect Mobile (Threshold 768px matches Tailwind 'md')
+        const isMobile = window.innerWidth < 768;
+
         // 1. Flatten all photos
         let photoPool = [];
         if (window.globalPhotoData) {
@@ -476,117 +479,152 @@ document.addEventListener('DOMContentLoaded', () => {
         // 2. Random shuffle
         photoPool.sort(() => 0.5 - Math.random());
 
-        // 3. Generate Slides with 5 Layouts
+        // 3. Generate Slides
         magazineWrapper.innerHTML = '';
 
-        // --- NEW: Generate Cover Slide ---
+        // Helper for Image HTML (Shared)
+        const getImg = (p, className = "") => {
+            const title = p.filename.replace(/[-_(\（].*|\.\w+$/g, '').trim();
+            const src = `./public/photos/${encodeURIComponent(p.category)}/${encodeURIComponent(p.filename)}`;
+            return `
+                <div class="relative group w-full h-full overflow-hidden rounded-lg shadow-md transition-transform duration-500 hover:-translate-y-1 hover:shadow-xl bg-gray-50 min-h-0">
+                    <img src="${src}" alt="${title}" loading="lazy" class="w-full h-full ${className}">
+                    <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/60 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                         <p class="text-white text-xs md:text-sm font-medium tracking-widest text-shadow truncate">${title}</p>
+                    </div>
+                </div>`;
+        };
+
+        // --- Cover Slide Generator ---
         const generateCoverSlide = (pool) => {
-            // Filter "大地映像" photos
             const earthPhotos = pool.filter(p => p.category === "大地映像");
-            // Pick random if available, else random from pool
             const coverPhoto = earthPhotos.length > 0
                 ? earthPhotos[Math.floor(Math.random() * earthPhotos.length)]
                 : pool[Math.floor(Math.random() * pool.length)];
 
-            if (!coverPhoto) return; // Should not happen if pool > 0
+            if (!coverPhoto) return;
 
             const src = `./public/photos/${encodeURIComponent(coverPhoto.category)}/${encodeURIComponent(coverPhoto.filename)}`;
             const year = new Date().getFullYear();
-
             const slide = document.createElement('div');
-            // Remove padding to allow full A3 spread
+
+            // Container Config based on Device
+            // Desktop: A3 Landscape (420/297)
+            // Mobile: A4 Portrait (297/420)
+            const aspectRatio = isMobile ? '297/420' : '420/297';
+            // Mobile Cover: More padding for vertical look? Or keep it clean.
+            // Let's use a vertical flex layout for mobile.
+
             slide.className = 'swiper-slide flex items-center justify-center p-1 md:p-8 box-border';
 
-            // HTML for 2-Page Spread (Left + Right)
-            // Left: The Art Cover
-            // Right: The Minimalist Intro
-            // Container acts as the "Open Book" (A3 size: 420mm x 297mm approx)
+            let coverInnerHtml = '';
 
-            const coverHtml = `
+            if (isMobile) {
+                // --- Mobile Portrait Cover ---
+                coverInnerHtml = `
                 <div class="relative bg-white shadow-2xl mx-auto flex flex-col overflow-hidden" 
-                     style="aspect-ratio: 420/297; height: auto; width: auto; max-width: 95vw; max-height: 70vh;">
+                     style="aspect-ratio: ${aspectRatio}; height: auto; width: auto; max-width: 95vw; max-height: 75vh;">
                    
                    <!-- Border/Frame -->
+                   <div class="absolute inset-4 border border-black/80 pointer-events-none z-20"></div>
+
+                   <!-- Top: Year & Title -->
+                   <div class="p-6 z-10 text-center">
+                        <h2 class="text-3xl font-light tracking-wide text-black font-serif mb-2">${year}</h2>
+                        <h1 class="text-5xl font-bold tracking-tighter leading-none text-black font-sans">PORT-<br>FOLIO</h1>
+                   </div>
+
+                   <!-- Middle: Photo -->
+                   <div class="flex-1 relative mx-6 mb-6 overflow-hidden grayscale contrast-125 min-h-0">
+                        <img src="${src}" class="w-full h-full object-cover object-center" alt="Cover Photo">
+                   </div>
+
+                   <!-- Bottom: Studio Name -->
+                   <div class="mb-8 text-center z-10">
+                        <p class="text-sm font-bold tracking-[0.3em] uppercase text-gray-800">LCT STUDIO</p>
+                   </div>
+                </div>`;
+            } else {
+                // --- Desktop Landscape Cover (Original) ---
+                coverInnerHtml = `
+                <div class="relative bg-white shadow-2xl mx-auto flex flex-col overflow-hidden" 
+                     style="aspect-ratio: ${aspectRatio}; height: auto; width: auto; max-width: 95vw; max-height: 70vh;">
+                   
                    <div class="absolute inset-4 sm:inset-8 border border-black/80 pointer-events-none z-20"></div>
 
-                   <!-- Top Header -->
-                   <div class="p-3 md:p-8 z-10">
+                   <div class="p-8 z-10">
                         <div class="flex justify-between items-start">
                             <div>
-                                <h1 class="text-3xl sm:text-6xl md:text-7xl font-bold tracking-tighter leading-none text-black font-sans">PORT-<br>FOLIO</h1>
+                                <h1 class="text-7xl font-bold tracking-tighter leading-none text-black font-sans">PORT-<br>FOLIO</h1>
                             </div>
                             <div class="text-right">
-                                <h2 class="text-xl sm:text-4xl md:text-5xl font-light tracking-wide text-black font-serif">${year}</h2>
+                                <h2 class="text-5xl font-light tracking-wide text-black font-serif">${year}</h2>
                             </div>
                         </div>
                    </div>
 
-                   <!-- Featured Photo (Middle/Bottom) -->
-                   <div class="flex-1 relative mt-2 mx-4 sm:mx-12 mb-12 md:mb-24 overflow-hidden grayscale contrast-125 min-h-0">
+                   <div class="flex-1 relative mt-4 mx-12 mb-24 overflow-hidden grayscale contrast-125 min-h-0">
                         <img src="${src}" class="w-full h-full object-cover object-center" alt="Cover Photo">
                    </div>
 
-                   <!-- Bottom Footer -->
-                   <div class="absolute bottom-4 md:bottom-12 left-0 w-full text-center z-10">
-                        <p class="text-xs md:text-sm font-bold tracking-[0.3em] uppercase text-gray-800">LCT STUDIO</p>
+                   <div class="absolute bottom-12 left-0 w-full text-center z-10">
+                        <p class="text-sm font-bold tracking-[0.3em] uppercase text-gray-800">LCT STUDIO</p>
                    </div>
-
-                   <!-- Sidebar Text (Vertical) -->
-                   <div class="absolute top-1/2 left-2 sm:left-4 transform -translate-y-1/2 -rotate-90 origin-left">
+                   <div class="absolute top-1/2 left-4 transform -translate-y-1/2 -rotate-90 origin-left">
                         <p class="text-xs font-medium tracking-widest text-gray-500">AERIAL PHOTOGRAPHY COLLECTION</p>
                    </div>
                 </div>`;
+            }
 
-            slide.innerHTML = coverHtml;
+            slide.innerHTML = coverInnerHtml;
             magazineWrapper.appendChild(slide);
         };
 
         generateCoverSlide(photoPool);
 
+        // --- Content Slides Generator ---
         while (photoPool.length > 0) {
-            // Randomly pick a target layout type (1-5)
-            const layoutType = Math.floor(Math.random() * 5) + 1;
             let targetCount = 1;
-            if (layoutType === 2) targetCount = 2;
-            if (layoutType === 3 || layoutType === 5) targetCount = 3;
-            if (layoutType === 4) targetCount = 4;
+            let finalLayout = 1;
 
-            // Select photos ensuring unique prefixes AND diverse colors
-            const batch = [];
-
-            // Pick first available from pool
-            if (photoPool.length > 0) {
-                batch.push(photoPool.shift());
+            if (isMobile) {
+                // --- Mobile: Always 2 photos, Vertical Split ---
+                targetCount = 2;
+                finalLayout = 'mobile-vertical';
+            } else {
+                // --- Desktop: Random 1-5 ---
+                const layoutType = Math.floor(Math.random() * 5) + 1;
+                if (layoutType === 2) targetCount = 2;
+                if (layoutType === 3 || layoutType === 5) targetCount = 3;
+                if (layoutType === 4) targetCount = 4;
+                finalLayout = layoutType;
             }
 
-            // Fill remainder with non-conflicting photos
-            // Iterate through the pool and pick compatible ones
+            // Select photos
+            const batch = [];
+            if (photoPool.length > 0) batch.push(photoPool.shift());
+
             let i = 0;
             while (batch.length < targetCount && i < photoPool.length) {
                 const p = photoPool[i];
                 const prefix = p.filename.substring(0, 4);
-
-                // Constraints
                 const isLocationConflict = batch.some(b => b.filename.substring(0, 4) === prefix);
-                const isColorConflict = batch.some(b => areColorsSimilar(b.color, p.color, 100)); // Stricter for magazine
+                const isColorConflict = batch.some(b => areColorsSimilar(b.color, p.color, 100));
 
                 if (!isLocationConflict && !isColorConflict) {
                     batch.push(p);
-                    photoPool.splice(i, 1); // Remove picked photo from pool
-                    // Don't increment i because array shifted left
+                    photoPool.splice(i, 1);
                 } else {
-                    i++; // Skip this photo, check next
+                    i++;
                 }
             }
-
-            // Fallback: If still not full, relax Color constraint, keep Location constraint
+            // Relaxed fill
             if (batch.length < targetCount) {
                 let j = 0;
                 while (batch.length < targetCount && j < photoPool.length) {
                     const p = photoPool[j];
                     const prefix = p.filename.substring(0, 4);
                     const isLocationConflict = batch.some(b => b.filename.substring(0, 4) === prefix);
-
                     if (!isLocationConflict) {
                         batch.push(p);
                         photoPool.splice(j, 1);
@@ -596,98 +634,82 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Determine final layout based on actual count
-            const count = batch.length;
-            let finalLayout = layoutType;
+            // Adjust layout if batch is smaller than target (end of pool)
+            if (!isMobile) {
+                const count = batch.length;
+                if (count === 1) finalLayout = 1;
+                else if (count === 2) finalLayout = 2;
+                else if (count === 3 && (finalLayout !== 3 && finalLayout !== 5)) finalLayout = 3;
+                else if (count === 4) finalLayout = 4;
+            }
 
-            if (count === 1) finalLayout = 1;
-            else if (count === 2) finalLayout = 2;
-            else if (count === 3 && (layoutType !== 3 && layoutType !== 5)) finalLayout = 3; // Default to Master Left for 3
-            else if (count === 4) finalLayout = 4;
-
-            // Generate HTML
             const slide = document.createElement('div');
-            // Base padding and centering - Slide itself fills viewport
+            // Unified Padding for Consistency
             slide.className = 'swiper-slide flex items-center justify-center p-1 md:p-8 box-border';
 
-            // Layout Container with A3 Aspect Ratio (Landscape 420x297 for Spread/Screen view)
-            // Using inline style for precise aspect-ratio. 
-            // Max dimensions ensure it fits on screen without scrolling.
+            const aspectRatio = isMobile ? '297/420' : '420/297';
+            // Mobile can go a bit taller, say 75vh, desktop safely 70vh
+            const maxHeight = isMobile ? '75vh' : '70vh';
+
             const containerHtmlStart = `
                 <div class="relative bg-white shadow-2xl p-4 md:p-10 mx-auto flex items-center justify-center overflow-hidden"
-            style="aspect-ratio: 420/297; height: auto; width: auto; max-width: 95vw; max-height: 70vh;">
+            style="aspect-ratio: ${aspectRatio}; height: auto; width: auto; max-width: 95vw; max-height: ${maxHeight};">
                 <div class="w-full h-full flex items-center justify-center">
                     `;
             const containerHtmlEnd = `
                 </div>
                 </div>`;
 
-            // Helper for Image HTML
-            const getImg = (p, className = "") => {
-                const title = p.filename.replace(/[-_(\（].*|\.\w+$/g, '').trim();
-                const src = `./public/photos/${encodeURIComponent(p.category)}/${encodeURIComponent(p.filename)}`;
-                return `
-                    <div class="relative group w-full h-full overflow-hidden rounded-lg shadow-md transition-transform duration-500 hover:-translate-y-1 hover:shadow-xl bg-gray-50">
-                        <img src="${src}" alt="${title}" loading="lazy" class="w-full h-full ${className}">
-                        <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/60 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                             <p class="text-white text-xs md:text-sm font-medium tracking-widest text-shadow truncate">${title}</p>
-                        </div>
-                    </div>`;
-            };
-
             let innerHtml = '';
 
-            // Layout 1: Single Full (Contain)
-            // Layout 1: Single Full (Contain/Cover) - Using getImg for consistency
-            if (finalLayout === 1) {
-                // Use the shared getImg helper to ensure same style (overlay title, rounded corners, shadow default from helper)
-                // Use "object-cover" to properly fill the layout frame like other grid items
-                innerHtml = `
-                    <div class="w-full h-full">
-                        ${getImg(batch[0], "object-cover shadow-sm")} 
-                    </div>
-                 `;
-            }
-            // Layout 2: Dual Split (Cover)
-            else if (finalLayout === 2) {
-                innerHtml = `
-                    <div class="grid grid-cols-2 gap-1 md:gap-4 w-full h-full">
-                        ${getImg(batch[0], "object-cover")}
-                        ${getImg(batch[1], "object-cover")}
-                    </div>
-                `;
-            }
-            // Layout 3: Master Left (3 Photos)
-            else if (finalLayout === 3) {
-                innerHtml = `
-                    <div class="grid grid-cols-2 gap-1 md:gap-4 w-full h-full min-h-0">
-                        <div class="h-full min-h-0">${getImg(batch[0], "object-cover")}</div>
-                        <div class="flex flex-col gap-1 md:gap-4 h-full min-h-0">
-                            <div class="flex-1 min-h-0">${getImg(batch[1], "object-cover")}</div>
-                            <div class="flex-1 min-h-0">${getImg(batch[2], "object-cover")}</div>
+            if (isMobile) {
+                // Mobile Vertical Layout (2 Photos Stacked)
+                // If only 1 photo remains at end of pool, show full.
+                if (batch.length === 1) {
+                    innerHtml = `<div class="w-full h-full min-h-0">${getImg(batch[0], "object-cover")}</div>`;
+                } else {
+                    // Grid Rows 2
+                    innerHtml = `
+                        <div class="grid grid-rows-2 gap-2 w-full h-full min-h-0">
+                            <div class="min-h-0">${getImg(batch[0], "object-cover")}</div>
+                            <div class="min-h-0">${getImg(batch[1], "object-cover")}</div>
                         </div>
-                    </div>
-                `;
-            }
-            // Layout 4: Grid (4 Photos)
-            else if (finalLayout === 4) {
-                innerHtml = `
-                    <div class="grid grid-cols-2 grid-rows-2 gap-1 md:gap-4 w-full h-full">
-                        ${batch.map(p => getImg(p, "object-cover")).join('')}
-                    </div>
-                `;
-            }
-            // Layout 5: Master Right (3 Photos)
-            else if (finalLayout === 5) {
-                innerHtml = `
-                    <div class="grid grid-cols-2 gap-1 md:gap-4 w-full h-full min-h-0">
-                        <div class="flex flex-col gap-1 md:gap-4 h-full order-2 md:order-1 min-h-0">
-                            <div class="flex-1 min-h-0">${getImg(batch[1], "object-cover")}</div>
-                            <div class="flex-1 min-h-0">${getImg(batch[2], "object-cover")}</div>
-                        </div>
-                        <div class="h-full order-1 md:order-2 min-h-0">${getImg(batch[0], "object-cover")}</div>
-                    </div>
-                `;
+                     `;
+                }
+            } else {
+                // Desktop Layouts
+                if (finalLayout === 1) {
+                    innerHtml = `<div class="w-full h-full min-h-0">${getImg(batch[0], "object-cover shadow-sm")}</div>`;
+                } else if (finalLayout === 2) {
+                    innerHtml = `
+                        <div class="grid grid-cols-2 gap-4 w-full h-full min-h-0">
+                            ${getImg(batch[0], "object-cover")}
+                            ${getImg(batch[1], "object-cover")}
+                        </div>`;
+                } else if (finalLayout === 3) {
+                    innerHtml = `
+                        <div class="grid grid-cols-2 gap-4 w-full h-full min-h-0">
+                            <div class="h-full min-h-0">${getImg(batch[0], "object-cover")}</div>
+                            <div class="flex flex-col gap-4 h-full min-h-0">
+                                <div class="flex-1 min-h-0">${getImg(batch[1], "object-cover")}</div>
+                                <div class="flex-1 min-h-0">${getImg(batch[2], "object-cover")}</div>
+                            </div>
+                        </div>`;
+                } else if (finalLayout === 4) {
+                    innerHtml = `
+                        <div class="grid grid-cols-2 grid-rows-2 gap-4 w-full h-full min-h-0">
+                            ${batch.map(p => getImg(p, "object-cover")).join('')}
+                        </div>`;
+                } else if (finalLayout === 5) {
+                    innerHtml = `
+                        <div class="grid grid-cols-2 gap-4 w-full h-full min-h-0">
+                            <div class="flex flex-col gap-4 h-full order-2 md:order-1 min-h-0">
+                                <div class="flex-1 min-h-0">${getImg(batch[1], "object-cover")}</div>
+                                <div class="flex-1 min-h-0">${getImg(batch[2], "object-cover")}</div>
+                            </div>
+                            <div class="h-full order-1 md:order-2 min-h-0">${getImg(batch[0], "object-cover")}</div>
+                        </div>`;
+                }
             }
 
             slide.innerHTML = containerHtmlStart + innerHtml + containerHtmlEnd;
