@@ -504,7 +504,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const coverHtml = `
                 <div class="relative bg-white shadow-2xl mx-auto flex flex-col overflow-hidden" 
-                     style="aspect-ratio: 210/297; height: 90vh; width: auto; max-width: 100%;">
+                     style="aspect-ratio: 210/297; height: 80vh; width: auto; max-width: 100%;">
                    
                    <!-- Border/Frame -->
                    <div class="absolute inset-4 sm:inset-8 border border-black/80 pointer-events-none z-20"></div>
@@ -615,7 +615,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Max dimensions ensure it fits on screen without scrolling.
             const containerHtmlStart = `
                 <div class="relative bg-white shadow-2xl p-6 md:p-10 mx-auto flex items-center justify-center overflow-hidden"
-            style="aspect-ratio: 420/297; height: auto; width: auto; max-width: 100%; max-height: 95vh;">
+            style="aspect-ratio: 420/297; height: auto; width: auto; max-width: 100%; max-height: 80vh;">
                 <div class="w-full h-full flex items-center justify-center">
                     `;
             const containerHtmlEnd = `
