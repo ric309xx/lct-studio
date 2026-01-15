@@ -652,7 +652,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const maxHeight = isMobile ? '75vh' : '70vh';
 
             const containerHtmlStart = `
-                <div class="relative bg-white shadow-2xl p-4 md:p-10 mx-auto flex items-center justify-center overflow-hidden"
+                <div class="relative bg-white shadow-2xl px-4 py-12 md:p-10 mx-auto flex items-center justify-center overflow-hidden"
             style="aspect-ratio: ${aspectRatio}; height: auto; width: auto; max-width: 95vw; max-height: ${maxHeight};">
                 <div class="w-full h-full flex items-center justify-center">
                     `;
