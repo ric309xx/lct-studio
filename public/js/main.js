@@ -495,7 +495,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const slide = document.createElement('div');
             // Remove padding to allow full A3 spread
-            slide.className = 'swiper-slide flex items-center justify-center p-4 md:p-8 box-border';
+            slide.className = 'swiper-slide flex items-center justify-center p-1 md:p-8 box-border';
 
             // HTML for 2-Page Spread (Left + Right)
             // Left: The Art Cover
@@ -504,7 +504,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const coverHtml = `
                 <div class="relative bg-white shadow-2xl mx-auto flex flex-col overflow-hidden" 
-                     style="aspect-ratio: 210/297; height: 80vh; width: auto; max-width: 100%;">
+                     style="aspect-ratio: 420/297; height: auto; width: auto; max-width: 95vw; max-height: 70vh;">
                    
                    <!-- Border/Frame -->
                    <div class="absolute inset-4 sm:inset-8 border border-black/80 pointer-events-none z-20"></div>
@@ -522,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
                    </div>
 
                    <!-- Featured Photo (Middle/Bottom) -->
-                   <div class="flex-1 relative mt-4 mx-8 sm:mx-12 mb-24 overflow-hidden grayscale contrast-125">
+                   <div class="flex-1 relative mt-4 mx-8 sm:mx-12 mb-24 overflow-hidden grayscale contrast-125 min-h-0">
                         <img src="${src}" class="w-full h-full object-cover object-center" alt="Cover Photo">
                    </div>
 
@@ -608,14 +608,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // Generate HTML
             const slide = document.createElement('div');
             // Base padding and centering - Slide itself fills viewport
-            slide.className = 'swiper-slide flex items-center justify-center p-4 md:p-8 box-border';
+            slide.className = 'swiper-slide flex items-center justify-center p-1 md:p-8 box-border';
 
             // Layout Container with A3 Aspect Ratio (Landscape 420x297 for Spread/Screen view)
             // Using inline style for precise aspect-ratio. 
             // Max dimensions ensure it fits on screen without scrolling.
             const containerHtmlStart = `
-                <div class="relative bg-white shadow-2xl p-6 md:p-10 mx-auto flex items-center justify-center overflow-hidden"
-            style="aspect-ratio: 420/297; height: auto; width: auto; max-width: 100%; max-height: 80vh;">
+                <div class="relative bg-white shadow-2xl p-2 md:p-10 mx-auto flex items-center justify-center overflow-hidden"
+            style="aspect-ratio: 420/297; height: auto; width: auto; max-width: 95vw; max-height: 70vh;">
                 <div class="w-full h-full flex items-center justify-center">
                     `;
             const containerHtmlEnd = `
@@ -651,7 +651,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Layout 2: Dual Split (Cover)
             else if (finalLayout === 2) {
                 innerHtml = `
-                    <div class="grid grid-cols-2 gap-4 w-full h-full">
+                    <div class="grid grid-cols-2 gap-1 md:gap-4 w-full h-full">
                         ${getImg(batch[0], "object-cover")}
                         ${getImg(batch[1], "object-cover")}
                     </div>
@@ -660,11 +660,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Layout 3: Master Left (3 Photos)
             else if (finalLayout === 3) {
                 innerHtml = `
-                    <div class="grid grid-cols-2 gap-4 w-full h-full">
-                        <div class="h-full">${getImg(batch[0], "object-cover")}</div>
-                        <div class="flex flex-col gap-4 h-full">
-                            <div class="flex-1">${getImg(batch[1], "object-cover")}</div>
-                            <div class="flex-1">${getImg(batch[2], "object-cover")}</div>
+                    <div class="grid grid-cols-2 gap-1 md:gap-4 w-full h-full min-h-0">
+                        <div class="h-full min-h-0">${getImg(batch[0], "object-cover")}</div>
+                        <div class="flex flex-col gap-1 md:gap-4 h-full min-h-0">
+                            <div class="flex-1 min-h-0">${getImg(batch[1], "object-cover")}</div>
+                            <div class="flex-1 min-h-0">${getImg(batch[2], "object-cover")}</div>
                         </div>
                     </div>
                 `;
@@ -672,7 +672,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Layout 4: Grid (4 Photos)
             else if (finalLayout === 4) {
                 innerHtml = `
-                    <div class="grid grid-cols-2 grid-rows-2 gap-4 w-full h-full">
+                    <div class="grid grid-cols-2 grid-rows-2 gap-1 md:gap-4 w-full h-full">
                         ${batch.map(p => getImg(p, "object-cover")).join('')}
                     </div>
                 `;
@@ -680,12 +680,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Layout 5: Master Right (3 Photos)
             else if (finalLayout === 5) {
                 innerHtml = `
-                    <div class="grid grid-cols-2 gap-4 w-full h-full">
-                        <div class="flex flex-col gap-4 h-full order-2 md:order-1">
-                            <div class="flex-1">${getImg(batch[1], "object-cover")}</div>
-                            <div class="flex-1">${getImg(batch[2], "object-cover")}</div>
+                    <div class="grid grid-cols-2 gap-1 md:gap-4 w-full h-full min-h-0">
+                        <div class="flex flex-col gap-1 md:gap-4 h-full order-2 md:order-1 min-h-0">
+                            <div class="flex-1 min-h-0">${getImg(batch[1], "object-cover")}</div>
+                            <div class="flex-1 min-h-0">${getImg(batch[2], "object-cover")}</div>
                         </div>
-                        <div class="h-full order-1 md:order-2">${getImg(batch[0], "object-cover")}</div>
+                        <div class="h-full order-1 md:order-2 min-h-0">${getImg(batch[0], "object-cover")}</div>
                     </div>
                 `;
             }
