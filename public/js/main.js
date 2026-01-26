@@ -760,6 +760,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+
+
     // Close Magazine Modal
     const closeMagazineBtn = document.getElementById('close-magazine-btn');
     if (closeMagazineBtn) {
