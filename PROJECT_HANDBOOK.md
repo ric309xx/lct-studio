@@ -119,57 +119,10 @@
 
 ## 6. 更新日誌存檔 (Update Log)
 
-### 2026-01-13 更新摘要
-*   **視覺風格 (Visual Style)**：
-    *   「關於我」轉型為「高科技極簡主義」，文字配色優化 (`#BEBEBE`)，加入拍立得裝飾。
-    *   「線上畫冊模式」更換為極簡藝廊風格，背景改為 Off-White，加入懸浮互動陰影。
-*   **介面調整 (UI Refinement)**：
-    *   縮小「關於我」整體區塊約 20% 以平衡視覺比重。
-    *   畫冊模式按鈕上方加入 "IMMERSIVE VIEW" 裝飾字樣。
-*   **系統優化 (Optimization)**：
-    *   **修復破圖**：Python 腳本加入檔名清洗功能 (Sanitization)。
-    *   **提升速度**：畫冊圖片加入 `loading="lazy"`，並將 JPEG 品質降至 70%。
-    *   **浮水印**：透明度調降至 30%，減少干擾。
-*   **功能增強 (Functional Enhancements) - Late Night**：
-    *   **雜誌封面 (Magazine Cover)**：新增「單頁式」封面設計 (A4 比例)，包含專屬年份與標題排版。
-    *   **版面最大化**：雜誌單圖模式 (Single Layout) 改為 `object-cover` 滿版顯示，並將容器高度增至 95vh (A3 比例)。
-    *   **燈箱優化 (Lightbox)**：
-        *   新增 **照片標題** (檔名) 顯示。
-        *   修正 **導覽邏輯**，限制僅在當前分類的前 6 張精選照片中循環，提升瀏覽體驗。
+**注意：** 自 2026-01-26 起，詳細的專案變更日誌已移至 [PROJECT_LOG.md](PROJECT_LOG.md) 統一維護。本區塊僅保留歷史存檔。
 
----
-### 2026-01-14 更新摘要
-*   **畫冊模式優化 (Magazine Mode Fix)**:
-    *   **封面響應式修復**: 解決了筆電/平板 (Medium Screens) 上 "PORT-FOLIO" 標題文字過大溢出的問題。移除 `lg:text-8xl` 強制設定，調整為 `text-5xl sm:text-6xl md:text-7xl`，確保文字都能完整容納於 A3 比例框線內。
-    *   **版面微調**: 略為縮減封面內距 (Padding) 與年份文字大小，增加呼吸空間。
+### 歷史日誌 (Archive)
 
----
-### 2026-01-15 更新摘要
-*   **響應式畫冊模式 (Responsive Magazine Mode)**:
-    *   **雙模式架構**: 實作了依據裝置寬度自動切換版型的邏輯 (`isMobile` 偵測)。
-    *   **電腦版**: 維持 A3 橫式 (Landscape) 與 5 種拼貼版型。
-    *   **手機版**: 
-        *   全面改為 **A4 直式 (Portrait)**，符合手機握持習慣。
-        *   **封面**: 重新設計為直式排版 (Logo在上，照片居中)。
-        *   **內頁**: 統一採用 **「上下兩張」 (Vertical Stack)** 排列，最大化照片顯示面積。
-    *   **白邊控制 (White Space Tuning)**: 為了確保手機版呈現「拍立得」般的留白質感，最終採用 **強制高度控制 (Height Percentages)** 方案，將每張照片高度鎖定為 `43%` 並置中，確保物理上保留 14% 的白色空間，解決了不同手機尺寸白邊不一致的問題。
+> [!NOTE]
+> 完整的歷史更新記錄已移至 [PROJECT_LOG.md](PROJECT_LOG.md)。
 
-*   **手機體驗優化 (Mobile UX)**:
-    *   **旋轉修正**: 在 Swiper 初始化加入 `observer: true`，解決手機橫放時輪播錯位的問題。
-    *   **版面微調**: 調整手機內距與字體大小，避免標題溢出。
-
-*   **前端代碼保護 (Security)**:
-    *   **基本防護**: 禁用右鍵選單 (`contextmenu`)、攔截 F12 與源碼檢視快捷鍵。
-    *   **進階防護**: 
-        *   **防偵錯迴圈 (Debugger Loop)**: 定時觸發 `debugger` 指令，干擾開發者工具使用。
-        *   **網域鎖定 (Domain Locking)**: 加入 `checkDomain()` 函數，檢查當前執行網域，防止網站被惡意鏡像或盜用。
-
----
-### 2026-01-19 更新摘要
-*   **功能歸檔 (Archived Feature)**:
-    *   **3D 懸浮藝廊 (3D Floating Gallery)**: 已完整實作 v15 版本 (True 3D, GSAP Physics, Orbit Controls, Mode Switching) 並歸檔備份。
-    *   **備份位置**: 專案根目錄 `ARCHIVE_3D_GALLERY.md`。
-    *   **程式碼清理**: 應要求從 `index.html` 與 `main.js` 中移除相關功能，還原至輕量化版本 (v16)。
-
----
-*最後更新日期: 2026-01-19*

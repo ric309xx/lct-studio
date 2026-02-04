@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 3. Lightbox Logic ---
 
-    // --- 3. Lightbox Logic ---
+
 
     const updateLightboxImage = () => {
         if (currentPhotoIndex < 0 || currentPhotoIndex >= currentCategoryPhotos.length) return;
@@ -123,46 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 4. Gallery Logic ---
 
-    // ... (Skipping unaffected sections for brevity in this tool call context - ensuring start/end lines match)
-    // Wait... I used replace_file_content for a large block. 
-    // Actually, I need to match the target content exactly.
-    // The previous tool call was too broad for `replace_file_content` if I don't paste the WHOLE intermediate code.
-    // I will use `multi_replace_file_content` for surgical edits to Main.js instead.
 
-
-    prevBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (currentPhotoIndex > 0) {
-            currentPhotoIndex--;
-            updateLightboxImage();
-        } else {
-            // Loop to end?
-            currentPhotoIndex = currentCategoryPhotos.length - 1;
-            updateLightboxImage();
-        }
-    });
-
-    nextBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (currentPhotoIndex < currentCategoryPhotos.length - 1) {
-            currentPhotoIndex++;
-            updateLightboxImage();
-        } else {
-            // Loop to start
-            currentPhotoIndex = 0;
-            updateLightboxImage();
-        }
-    });
-
-    // Keyboard navigation
-    document.addEventListener('keydown', (e) => {
-        if (photoModal.classList.contains('hidden')) return;
-        if (e.key === 'ArrowLeft') prevBtn.click();
-        if (e.key === 'ArrowRight') nextBtn.click();
-        if (e.key === 'Escape') closeLightbox();
-    });
-
-    // --- 4. Gallery Logic ---
 
     let globalPhotoData = {}; // Store fetched data
 
