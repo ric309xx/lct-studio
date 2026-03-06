@@ -48,6 +48,14 @@ body {
 }
 
 /* Photo Gallery */
+.photo-card img {
+    transition: transform 0.5s ease;
+}
+
+.photo-card:hover img {
+    transform: scale(1.08);
+}
+
 .photo-card .photo-overlay {
     opacity: 0;
     transition: opacity 0.3s ease-in-out;
