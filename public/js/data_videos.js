@@ -7,7 +7,6 @@ window.videoData = {
         "scenery": [
             { "url": "https://www.youtube.com/embed/Kma5I6TBfr0", "title": "基隆外木山漁港(片段)", "duration": "00:45" },
             { "url": "https://www.youtube.com/embed/B7IaqlqIa5o", "title": "基隆望幽谷步道(片段)", "duration": "00:50" },
-            { "url": "https://www.youtube.com/embed/WH8pKIyZAeA", "title": "嘉義竹崎鹿麻產車站", "duration": "01:10" },
             { "url": "https://www.youtube.com/embed/fq3i3KnmQqI", "title": "台中洲際棒球場", "duration": "00:40" }
         ],
         "construction": [
@@ -16,7 +15,7 @@ window.videoData = {
         ],
         "other": [
             { "url": "https://www.youtube.com/embed/xlddOq_OnmY", "title": "高雄車站、舊高雄車站(片段)", "duration": "00:55" },
-            { "url": "https://www.youtube.com/embed/zQ6AjCtiSYk", "title": "桃園中壢太陽能板", "duration": "01:05" }
+            { "url": "https://www.youtube.com/embed/XfJP4jaTr80", "title": "新北土城天好運建案", "duration": "02:10" }
         ]
     }
 };
