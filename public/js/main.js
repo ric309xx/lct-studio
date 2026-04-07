@@ -297,30 +297,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!mainPlayerContainer || !playlistContainer) return;
 
-        // Flatten videos from window.videoData
-        const allVideos = [];
+        const finalVideos = [];
+
         if (window.videoData && window.videoData.categories) {
-            Object.values(window.videoData.categories).forEach(cat => allVideos.push(...cat));
+            // 1. 預設放入所有 showcase 類別的影片
+            if (window.videoData.categories.showcase) {
+                finalVideos.push(...window.videoData.categories.showcase);
+            }
+
+            // 2. 其他類別個別隨機挑選一部影片
+            Object.keys(window.videoData.categories).forEach(catName => {
+                if (catName !== 'showcase') {
+                    const catVideos = window.videoData.categories[catName];
+                    if (catVideos && catVideos.length > 0) {
+                        const randomVideo = catVideos[Math.floor(Math.random() * catVideos.length)];
+                        finalVideos.push(randomVideo);
+                    }
+                }
+            });
         }
-
-        // Target Fixed Video: "商業空間 空拍紀實"
-        // ID: X_-eCxOpJd8
-        const fixedVideoUrl = "https://www.youtube.com/embed/X_-eCxOpJd8";
-        const fixedVideo = allVideos.find(v => v.url.includes("X_-eCxOpJd8")) || {
-            url: fixedVideoUrl,
-            title: "商業空間 空拍紀實",
-            duration: "01:30"
-        };
-
-        // Filter out the fixed video from the pool
-        const otherVideos = allVideos.filter(v => !v.url.includes("X_-eCxOpJd8"));
-
-        // Shuffle and pick 2
-        otherVideos.sort(() => 0.5 - Math.random());
-        const randomVideos = otherVideos.slice(0, 2);
-
-        // Final List: Fixed + 2 Random = 3 Total
-        const finalVideos = [fixedVideo, ...randomVideos];
 
         // Helper to extract ID
         const getVideoId = (url) => {

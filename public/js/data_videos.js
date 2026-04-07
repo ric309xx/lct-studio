@@ -1,7 +1,8 @@
 window.videoData = {
     "categories": {
         "showcase": [
-            { "url": "https://www.youtube.com/embed/X_-eCxOpJd8", "title": "商業空間 空拍紀實", "duration": "01:30" }
+            { "url": "https://www.youtube.com/embed/X_-eCxOpJd8", "title": "商業空間 空拍紀實", "duration": "01:30" },
+            { "url": "https://www.youtube.com/embed/6VqYWdNpkoQ", "title": "林口空拍 (日+夜)", "duration": "01:38" }
         ],
         "scenery": [
             { "url": "https://www.youtube.com/embed/Kma5I6TBfr0", "title": "基隆外木山漁港(片段)", "duration": "00:45" },
