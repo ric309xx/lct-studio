@@ -14,8 +14,7 @@ window.videoData = {
             { "url": "https://www.youtube.com/embed/38j96eEWfjk", "title": "新北林口建案工程紀錄", "duration": "01:50" }
         ],
         "other": [
-            { "url": "https://www.youtube.com/embed/xlddOq_OnmY", "title": "高雄車站、舊高雄車站(片段)", "duration": "00:55" },
-            { "url": "https://www.youtube.com/embed/XfJP4jaTr80", "title": "新北土城天好運建案", "duration": "02:10" }
+            { "url": "https://www.youtube.com/embed/xlddOq_OnmY", "title": "高雄車站、舊高雄車站(片段)", "duration": "00:55" }
         ]
     }
 };
