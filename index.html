@@ -44,6 +44,7 @@
             <div class="hidden md:flex space-x-8">
                 <a href="#portfolio" class="text-white hover:text-gray-300 transition-colors text-lg">精選照片</a>
                 <a href="#videos" class="text-white hover:text-gray-300 transition-colors text-lg">精選影片</a>
+                <a href="#services" class="text-white hover:text-gray-300 transition-colors text-lg">服務案例</a>
                 <a href="#about" class="text-white hover:text-gray-300 transition-colors text-lg">關於我</a>
                 <a href="#contact" class="text-white hover:text-gray-300 transition-colors text-lg">聯絡我</a>
             </div>
@@ -64,8 +65,8 @@
                     class="text-white hover:text-gray-300 transition-colors text-2xl mobile-menu-link">精選照片</a>
                 <a href="#videos"
                     class="text-white hover:text-gray-300 transition-colors text-2xl mobile-menu-link">精選影片</a>
-                <a href="#about"
-                    class="text-white hover:text-gray-300 transition-colors text-2xl mobile-menu-link">精選影片</a>
+                <a href="#services"
+                    class="text-white hover:text-gray-300 transition-colors text-2xl mobile-menu-link">服務案例</a>
                 <a href="#about"
                     class="text-white hover:text-gray-300 transition-colors text-2xl mobile-menu-link">關於我</a>
                 <a href="#contact"
@@ -74,36 +75,47 @@
         </div>
     </header>
 
-    <section id="hero" class="relative h-screen flex items-center justify-center text-center overflow-hidden">
+    <section id="hero" class="cinematic-hero relative h-screen flex items-center justify-center text-center overflow-hidden">
         <video id="hero-video" class="hero-video" autoplay muted loop playsinline>
             <!-- Source will be set by JS -->
             <source src="background/your-hero-video1.mp4" type="video/mp4">
             您的瀏覽器不支援此影片格式。
         </video>
         <div class="hero-overlay"></div>
-        <div class="z-10 px-4 reveal">
+        <div class="hero-vignette"></div>
+        <div class="hero-content z-10 px-4">
+            <p class="hero-kicker">Aerial Storytelling / Taiwan</p>
             <h1
-                class="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tighter text-white mb-4 drop-shadow-2xl hero-text-shadow">
-                從不一樣的角度，看見世界
+                class="hero-title text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-6 drop-shadow-2xl hero-text-shadow">
+                <span class="hero-title-line">以空中視角，看見地景的壯闊</span>
+                <span class="hero-title-line">與細節之美</span>
             </h1>
-            <p class="text-lg sm:text-xl md:text-2xl text-gray-200 mb-8 drop-shadow-lg hero-text-shadow">
-                捕捉那些平常無法企及的壯麗瞬間
+            <p class="hero-subtitle text-lg sm:text-xl md:text-2xl text-gray-200 mb-10 drop-shadow-lg hero-text-shadow">
+                從城市紋理、自然地貌到工程現場，記錄每一個值得被看見的瞬間。
             </p>
             <a href="#portfolio"
-                class="bg-gray-800 text-white font-semibold py-3 px-8 rounded-full text-lg shadow-xl hover:bg-gray-700 transition-colors duration-300">
+                class="cinema-cta bg-gray-800 text-white font-semibold py-3 px-8 rounded-full text-lg shadow-xl hover:bg-gray-700 transition-colors duration-300">
                 探索我的作品集
             </a>
-            </a>
+        </div>
+        <div class="scroll-cue" aria-hidden="true">
+            <span></span>
         </div>
     </section>
 
-    <section id="portfolio" class="pt-16 pb-8 md:pt-24 md:pb-12 container mx-auto px-6 md:px-20">
-        <h2 class="text-4xl font-bold text-center mb-6 text-white reveal">精選照片</h2>
+    <section id="portfolio" class="portfolio-section pt-16 pb-8 md:pt-24 md:pb-12 container mx-auto px-6 md:px-20">
+        <div class="section-intro text-center reveal">
+            <p class="section-kicker">Selected Frames</p>
+            <h2 class="text-4xl font-bold text-center mb-6 text-white">精選照片</h2>
+            <p class="text-gray-400 max-w-2xl mx-auto mb-12">
+                每一張照片都保留現場的尺度與方向感，讓城市、自然與工程場域能被快速理解。
+            </p>
+        </div>
 
         <div class="text-center mb-16 reveal">
 
 
-            <div class="reveal">
+            <div>
                 <div class="text-center mb-4">
                     <div class="flex items-center justify-center space-x-4">
                         <span class="h-px w-24 bg-gray-600"></span>
@@ -120,7 +132,7 @@
 
             </div>
 
-            <div class="mt-24 reveal">
+            <div class="mt-24">
                 <div class="text-center mb-4">
                     <div class="flex items-center justify-center space-x-4">
                         <span class="h-px w-24 bg-gray-600"></span>
@@ -158,9 +170,15 @@
 
     </section>
 
-    <section id="videos" class="pt-8 pb-16 md:pb-24 bg-gray-900">
+    <section id="videos" class="video-section pt-8 pb-16 md:pb-24 bg-gray-900">
         <div class="container mx-auto px-6 md:px-20">
-            <h2 class="text-4xl font-bold text-center mb-12 text-white reveal">精選影片</h2>
+            <div class="section-intro video-intro text-center">
+                <p class="section-kicker">Motion Reel</p>
+                <h2 class="text-4xl font-bold text-center mb-4 text-white">精選影片</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto mb-12">
+                    用移動鏡頭補足照片之外的節奏，呈現案場動線、建築量體與自然地貌。
+                </p>
+            </div>
 
             <!-- Master-Detail Cinema Grid Layout -->
             <div class="max-w-6xl mx-auto">
@@ -187,6 +205,44 @@
                     </div>
                 </div>
 
+            </div>
+        </div>
+    </section>
+
+    <section id="services" class="services-section py-16 md:py-24">
+        <div class="container mx-auto px-6 md:px-20">
+            <div class="max-w-6xl mx-auto">
+                <div class="section-intro reveal">
+                    <p class="section-kicker">Commercial Use Cases</p>
+                    <h2 class="text-4xl md:text-5xl font-bold text-white mb-6">讓空拍成為專案的第一個說服力</h2>
+                    <p class="text-lg md:text-xl text-gray-300 max-w-3xl leading-relaxed">
+                        LCT Studio 可以把作品集的影像語言延伸到建案、工程進度、廠房與太陽能場域，
+                        用清楚的視覺敘事幫客戶說明規模、效率與信任感。
+                    </p>
+                </div>
+
+                <div class="service-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mt-12">
+                    <article class="service-card reveal">
+                        <span class="service-number">01</span>
+                        <h3>空拍攝影</h3>
+                        <p>以高空視角建立品牌第一印象，適合形象官網、作品集與社群主視覺。</p>
+                    </article>
+                    <article class="service-card reveal reveal-delay-100">
+                        <span class="service-number">02</span>
+                        <h3>工程紀錄</h3>
+                        <p>用定期拍攝與影片剪輯呈現進度，讓業主、團隊與銷售端快速掌握現況。</p>
+                    </article>
+                    <article class="service-card reveal reveal-delay-200">
+                        <span class="service-number">03</span>
+                        <h3>建案視覺</h3>
+                        <p>凸顯基地周邊、交通動線與城市紋理，讓空間價值不只停留在平面圖。</p>
+                    </article>
+                    <article class="service-card reveal reveal-delay-300">
+                        <span class="service-number">04</span>
+                        <h3>太陽能場域</h3>
+                        <p>以全區俯瞰、設備排列與廠房尺度呈現能源專案的規模與專業度。</p>
+                    </article>
+                </div>
             </div>
         </div>
     </section>
@@ -374,9 +430,11 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
     <script src="public/js/data_videos.js"></script>
     <script src="public/js/data_photos.js"></script>
-    <script src="public/js/main.js?v=16"></script>
+    <script src="public/js/main.js?v=17"></script>
 
 </body>
 

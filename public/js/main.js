@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mobileMenuButton = document.getElementById('mobile-menu-button');
     const mobileMenu = document.getElementById('mobile-menu');
     const mobileMenuLinks = document.querySelectorAll('.mobile-menu-link');
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     // Lightbox Navigation Elements (Created dynamically or selected if in HTML)
     let currentCategoryPhotos = []; // Stores the current list of photos being viewed
@@ -222,10 +223,8 @@ document.addEventListener('DOMContentLoaded', () => {
             photosToDisplay.forEach((photo, index) => {
                 const title = getBaseLocationName(photo.filename);
                 const imagePath = `./public/photos/${encodeURIComponent(categoryName)}/${encodeURIComponent(photo.filename)}`;
-                const delayClass = (index % 3 === 0) ? 'reveal-delay-100' : (index % 3 === 1) ? 'reveal-delay-200' : 'reveal-delay-300';
-
                 const cardHtml = `
-                    <div class="relative w-full h-80 rounded-xl overflow-hidden shadow-2xl photo-card transition-transform transform hover:scale-105 cursor-pointer reveal ${delayClass} active" 
+                    <div class="relative w-full h-80 rounded-xl overflow-hidden shadow-2xl photo-card transition-transform transform hover:scale-105 cursor-pointer" 
                          data-category="${categoryName}" 
                          data-filename="${photo.filename}">
                         <img src="${imagePath}" alt="${title}" class="w-full h-full object-cover">
@@ -287,6 +286,88 @@ document.addEventListener('DOMContentLoaded', () => {
         }, { threshold: 0.1 });
 
         document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    };
+
+    const refreshScrollCinematics = () => {
+        if (window.ScrollTrigger && !prefersReducedMotion) {
+            window.ScrollTrigger.refresh();
+        }
+    };
+
+    const setupScrollCinematics = () => {
+        if (prefersReducedMotion || !window.gsap || !window.ScrollTrigger) {
+            document.documentElement.classList.add('reduced-motion');
+            return;
+        }
+
+        gsap.registerPlugin(ScrollTrigger);
+
+        const hero = document.getElementById('hero');
+        const heroVideo = document.getElementById('hero-video');
+        const heroContent = document.querySelector('.hero-content');
+        const heroOverlay = document.querySelector('.hero-overlay');
+
+        if (hero && heroVideo && heroContent) {
+            gsap.set(heroContent, { opacity: 1, yPercent: 0 });
+            gsap.timeline({
+                scrollTrigger: {
+                    trigger: hero,
+                    start: 'top top',
+                    end: 'bottom top',
+                    scrub: 0.8,
+                    onLeaveBack: () => {
+                        gsap.set(heroContent, { opacity: 1, yPercent: 0 });
+                    }
+                }
+            })
+                .to(heroVideo, { scale: 1.16, yPercent: 7, filter: 'saturate(0.78) contrast(1.18)', ease: 'none' }, 0)
+                .to(heroContent, { yPercent: 32, opacity: 0, ease: 'none' }, 0)
+                .to(heroOverlay, { opacity: 1, ease: 'none' }, 0);
+        }
+
+        gsap.utils.toArray('.section-intro:not(.video-intro)').forEach((section) => {
+            gsap.from(section, {
+                y: 48,
+                opacity: 0,
+                duration: 1.1,
+                ease: 'power3.out',
+                scrollTrigger: {
+                    trigger: section,
+                    start: 'top 78%',
+                    once: true
+                }
+            });
+        });
+
+        gsap.utils.toArray('.service-card').forEach((card, index) => {
+            gsap.from(card, {
+                y: 48,
+                opacity: 0,
+                duration: 0.9,
+                delay: index * 0.08,
+                ease: 'power3.out',
+                scrollTrigger: {
+                    trigger: card,
+                    start: 'top 84%',
+                    once: true
+                }
+            });
+        });
+
+        const videoPlayer = document.getElementById('main-video-player');
+        if (videoPlayer) {
+            gsap.from(videoPlayer, {
+                scale: 0.94,
+                opacity: 0.35,
+                duration: 1,
+                ease: 'power2.out',
+                scrollTrigger: {
+                    trigger: videoPlayer,
+                    start: 'top 82%',
+                    once: true
+                }
+            });
+        }
     };
 
     // --- 6. Videos ---
@@ -689,6 +770,17 @@ document.addEventListener('DOMContentLoaded', () => {
         magazineModal.classList.remove('hidden');
         magazineModal.classList.add('flex');
 
+        if (window.gsap && !prefersReducedMotion) {
+            gsap.fromTo(magazineModal,
+                { opacity: 0 },
+                { opacity: 1, duration: 0.35, ease: 'power2.out' }
+            );
+            gsap.fromTo('.magazine-container',
+                { y: 28, scale: 0.96 },
+                { y: 0, scale: 1, duration: 0.55, ease: 'power3.out' }
+            );
+        }
+
         // Initialize Swiper
         if (window.magazineSwiper) {
             window.magazineSwiper.destroy(true, true);
@@ -743,58 +835,20 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchPhotoData();
     setupVideoSection();
     setupHeroVideo();
+    setupScrollCinematics();
 
     // Initial Observe for static elements
     setTimeout(observeElements, 500); // Wait for initial render
 
-    // --- 9. Basic Protection (基本保護) ---
-    // Disable Right Click
-    document.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-    });
-
-    // Disable common DevTools shortcuts
-    document.addEventListener('keydown', (e) => {
-        // F12
-        if (e.key === 'F12') {
-            e.preventDefault();
-        }
-        // Ctrl+Shift+I (Windows) / Cmd+Opt+I (Mac)
-        if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) {
-            e.preventDefault();
-        }
-        // Ctrl+U (View Source)
-        if (e.ctrlKey && (e.key === 'U' || e.key === 'u')) {
-            e.preventDefault();
-        }
-    });
-
-    // --- 10. Advanced Protection (進階保護) ---
-
-    // 1. Anti-Debugging Loop (防偵錯迴圈)
-    // 當開發者工具開啟時，會不斷觸發 debugger 中斷點，干擾操作。
-    // 注意：這在開發階段可能會有點煩人，如果您要除錯，請暫時註解掉這一行。
-    setInterval(() => {
-        // Function constructor debugger trick
-        (function () { }.constructor('debugger')());
-    }, 2000);
-
-    // 2. Domain/Protocol Check (網域鎖定)
-    // 防止網站被部署到未經授權的網域 (例如被複製到 malicious-site.com)
-    // 注意：為了不影響您本地開發 (file:// 或 localhost)，這裡預設只會顯示警告。
-    // 發布時，您可以將您的真實網域加入 ALLOWED_DOMAINS 列表。
+    // --- 9. Lightweight domain hint ---
+    // Keep development and SEO friendly: no right-click blocking or anti-debug loops.
     const checkDomain = () => {
-        const allowedDomains = ['localhost', '127.0.0.1', '']; // '' allows file://
-        // 若您有正式網域，請加入，例如： 'your-website.com'
+        const allowedDomains = ['localhost', '127.0.0.1', '', 'lctstudio.tw', 'www.lctstudio.tw'];
 
         const hostname = window.location.hostname;
 
-        // 如果不在允許列表中 (且不是空的 file protocol)
         if (hostname && !allowedDomains.includes(hostname) && !hostname.endsWith('.github.io')) {
-            // 在這裡執行保護動作，例如：
-            // alert('這不是官方網站！');
-            // document.body.innerHTML = ''; 
-            console.warn('Warning: Unauthorized domain access.');
+            console.warn('This deployment is not on the configured LCT Studio domains.');
         }
     };
     checkDomain();
