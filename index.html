@@ -26,7 +26,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+TC:wght@400;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="public/css/style.css">
+    <link rel="stylesheet" href="public/css/style.css?v=41">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
 </head>
@@ -100,6 +100,85 @@
         </div>
         <div class="scroll-cue" aria-hidden="true">
             <span></span>
+        </div>
+    </section>
+
+    <section id="scroll-story" class="scroll-story" aria-label="空拍敘事流程">
+        <div class="story-pin">
+            <div class="story-photo-stage" aria-label="光線階段照片展示">
+                <figure class="story-photo-panel story-photo-sunrise">
+                    <img src="public/assets/story-sunrise-qingjing.png" alt="南投清境農場日出空拍照片">
+                    <figcaption>SUNRISE / QINGJING</figcaption>
+                </figure>
+                <figure class="story-photo-panel story-photo-morning">
+                    <img src="public/assets/story-morning-qingjing-cloudsea.png" alt="南投清境農場雲海空拍照片">
+                    <figcaption>MORNING LIGHT / QINGJING</figcaption>
+                </figure>
+                <figure class="story-photo-panel story-photo-golden">
+                    <img src="public/assets/story-golden-xiluo-silhouette.jpg" alt="雲林西螺落日剪影空拍照片">
+                    <figcaption>GOLDEN HOUR / XILUO</figcaption>
+                </figure>
+                <figure class="story-photo-panel story-photo-sunset">
+                    <img src="public/assets/story-sunset-yilan-wujie.png" alt="宜蘭五結日落空拍照片">
+                    <figcaption>SUNSET / YILAN WUJIE</figcaption>
+                </figure>
+            </div>
+
+            <div class="story-orbit" aria-hidden="true">
+                <svg class="story-route" viewBox="0 0 520 340" preserveAspectRatio="none">
+                    <path class="story-route-guide" d="M 36 268 C 150 88 370 88 484 268" />
+                    <path class="story-route-progress" d="M 36 268 C 150 88 370 88 484 268" />
+                </svg>
+                <span class="story-sun"></span>
+            </div>
+
+            <div class="story-scanlines" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+
+            <div class="story-flight-meta" aria-hidden="true">
+                <span>SUNRISE</span>
+                <span>MORNING LIGHT</span>
+                <span>GOLDEN HOUR</span>
+                <span>SUNSET</span>
+            </div>
+
+            <p class="story-label">Sun Path / Aerial Light</p>
+
+            <div class="story-rail" aria-hidden="true">
+                <span>SUNRISE</span>
+                <span>LIGHT</span>
+                <span>GOLDEN HOUR</span>
+                <span>SUNSET</span>
+            </div>
+
+            <div class="story-copy">
+                <article class="story-panel is-active">
+                    <span>01</span>
+                    <h2>日出，讓地景慢慢被看見。</h2>
+                    <p>從第一道光開始，山海、城市與基地輪廓逐漸浮現，空拍畫面自然有了開場。</p>
+                </article>
+
+                <article class="story-panel">
+                    <span>02</span>
+                    <h2>光線升高，畫面開始有層次。</h2>
+                    <p>雲霧、水面反光、建築陰影與道路線條，會在不同高度的光裡呈現不同表情。</p>
+                </article>
+
+                <article class="story-panel">
+                    <span>03</span>
+                    <h2>黃金時刻，留下關鍵細節。</h2>
+                    <p>透過黃金時刻的柔和光線，讓建築、工程與場域細節，在影像中被完整呈現。</p>
+                </article>
+
+                <article class="story-panel">
+                    <span>04</span>
+                    <h2>日落，收束成能被記住的影像。</h2>
+                    <p>當光線逐漸收斂，場域的輪廓與情緒，也被整理成更有記憶點的影像。</p>
+                </article>
+            </div>
         </div>
     </section>
 
@@ -209,7 +288,7 @@
         </div>
     </section>
 
-    <section id="services" class="services-section py-16 md:py-24">
+    <section id="services" class="services-section pt-16 pb-4 md:pt-20 md:pb-6">
         <div class="container mx-auto px-6 md:px-20">
             <div class="max-w-6xl mx-auto">
                 <div class="section-intro reveal">
@@ -247,7 +326,7 @@
         </div>
     </section>
 
-    <section id="about" class="py-12 md:py-16 container mx-auto px-6 md:px-20 relative overflow-hidden">
+    <section id="about" class="py-8 md:py-10 container mx-auto px-6 md:px-20 relative overflow-hidden">
         <div class="max-w-4xl mx-auto reveal relative z-10">
 
             <!-- Title Centered & Matched with Contact -->
@@ -432,9 +511,10 @@
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/MotionPathPlugin.min.js"></script>
     <script src="public/js/data_videos.js"></script>
     <script src="public/js/data_photos.js"></script>
-    <script src="public/js/main.js?v=17"></script>
+    <script src="public/js/main.js?v=41"></script>
 
 </body>
 

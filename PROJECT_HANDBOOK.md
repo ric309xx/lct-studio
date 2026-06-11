@@ -164,3 +164,42 @@
 3.  若之後要更換 Hero 影片，優先放入 `background/your-hero-video4.mp4`、`.webm` 與 `.jpg` poster，維持 `setupHeroVideo()` 目前命名契約。
 4.  若未來替太陽能客戶製作網站，可沿用「服務案例」敘事與 GSAP Hero 推鏡架構，但建議使用客戶實景或高品質 AI 氣氛短片作為背景。
 
+---
+
+## 8. 2026-06-11 Sun Path / Aerial Light 滾動敘事段落
+
+### A. 段落定位
+本次新增並穩定「Sun Path / Aerial Light」段落，作為 LCT Studio 空拍作品集的滾動敘事示範。此段落放在 Hero 之後、精選照片之前，用一天光線變化包裝空拍服務價值，讓網站可以展示：
+
+* 空拍影像不只是展示照片，而是能以時間、光線、場域關係說故事。
+* 未來太陽能、工程紀錄、建案與廠房巡檢網站，也能沿用這種「滾動分鏡 + 場域照片」的互動方式。
+* 效果走克制電影感，不走過度炫技路線。
+
+### B. 技術結構
+* `index.html`
+  * 新增 `#scroll-story`。
+  * 使用四個 `.story-photo-panel` 對應 `SUNRISE`、`MORNING LIGHT`、`GOLDEN HOUR`、`SUNSET`。
+  * 四張故事照片集中放在 `public/assets/story-*.png|jpg`，不走自動照片清單流程。
+* `public/css/style.css`
+  * 新增 `.scroll-story`、`.story-pin`、`.story-orbit`、`.story-sun`、`.story-photo-stage`、`.story-panel` 等樣式。
+  * 作品、影片、服務、關於、聯絡段落改為共用連續深色背景，避免段落交界出現明顯色塊。
+  * 日落照片使用較淡 overlay 與較高顯示透明度，避免畫面過暗。
+* `public/js/main.js`
+  * `setupScrollCinematics()` 加入 ScrollTrigger + MotionPathPlugin。
+  * 太陽沿 SVG path 移動，文字與照片依四階段切換。
+  * 最後 `SUNSET` 階段保留一段停留時間，避免日落剛出現就立刻跳到下一段。
+  * 背景大字 `.story-rail` 已校正到最後對齊 `SUNSET`。
+
+### C. 目前故事照片
+* `public/assets/story-sunrise-qingjing.png`
+* `public/assets/story-morning-qingjing-cloudsea.png`
+* `public/assets/story-golden-xiluo-silhouette.jpg`
+* `public/assets/story-sunset-yilan-wujie.png`
+
+若未來替換照片，建議直接輸出網站用寬版裁切圖，優先使用 16:9 或 21:9，並預留文字區域，會比只靠 `object-position` 更穩。
+
+### D. 注意事項
+1. 照片自動更新流程仍維持原契約：`photos/` 原圖 -> `generate_photo_list.py` -> `public/photos/` + `public/js/data_photos.js`。
+2. Sun Path 四張故事圖是首頁敘事素材，不屬於自動照片清單，需手動放在 `public/assets/`。
+3. 每次修改 CSS/JS 後需更新 `index.html` 的 `style.css?v=` 與 `main.js?v=`，避免正式站吃到舊快取。
+4. 若後續覺得段落過長，優先調整 `.scroll-story` 的 `min-height` 與 JS timeline 留白，不要用大 padding 製造空白。

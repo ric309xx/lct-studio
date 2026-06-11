@@ -87,3 +87,30 @@
 - **下一步**:
   - 線上站更新後，實際檢查 `https://lctstudio.tw/` 的 Hero、作品照片、影片標題、服務案例與手機版排版。
   - 若要使用 AI 影片，優先作為太陽能/廠房/能源場域的氣氛型 Hero 短片；LCT 本站仍建議以真實空拍素材為主。
+---
+
+## [2026-06-11] Sun Path / Aerial Light 滾動敘事段落與首頁視覺收斂
+- **變更類型**: 互動設計 / 首頁視覺 / 作品集展示 / 筆記更新
+- **主要變更**:
+  - 新增 `#scroll-story` 日光敘事段落，使用 `SUNRISE`、`MORNING LIGHT`、`GOLDEN HOUR`、`SUNSET` 四階段建立空拍分鏡。
+  - 使用 GSAP ScrollTrigger + MotionPathPlugin，讓太陽沿弧線移動，並同步切換階段標籤、文字與背景照片。
+  - 新增四張首頁敘事素材：
+    - `public/assets/story-sunrise-qingjing.png`
+    - `public/assets/story-morning-qingjing-cloudsea.png`
+    - `public/assets/story-golden-xiluo-silhouette.jpg`
+    - `public/assets/story-sunset-yilan-wujie.png`
+  - 將作品、影片、服務、關於、聯絡區改成共用連續深色背景，移除造成段落分界明顯的色塊與上下遮罩。
+  - 調整 `#about` 與 `#services` 的段落間距，移除關於我上方過大的空白。
+  - 調整日落照片亮度：降低日落階段 overlay，並提高日落照片顯示透明度。
+  - 修正日出故事圖路徑，從不存在的 `story-sunrise-qingjing-a.png` 改為 `story-sunrise-qingjing.png`。
+  - 更新黃金時刻與日落階段文案：
+    - 黃金時刻：`透過黃金時刻的柔和光線，讓建築、工程與場域細節，在影像中被完整呈現。`
+    - 日落：`當光線逐漸收斂，場域的輪廓與情緒，也被整理成更有記憶點的影像。`
+  - 校正背景大字 `.story-rail` 的位移，讓最後階段對齊 `SUNSET`。
+  - 版本快取更新至 `style.css?v=41` 與 `main.js?v=41`。
+- **驗證**:
+  - `node --check public/js/main.js`
+  - 確認 `public/assets/story-sunrise-qingjing.png`、`public/assets/story-sunset-yilan-wujie.png` 存在。
+- **備註**:
+  - Sun Path 四張故事圖屬於首頁敘事素材，不會由 `generate_photo_list.py` 自動產生。
+  - 未來若替換敘事圖，建議先裁成網站用寬版圖，減少依賴 `object-position`。

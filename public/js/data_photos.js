@@ -236,9 +236,9 @@ window.globalPhotoData = {
     {
       "filename": "新北淡水台北灣：第3期(江南頤和) (2).jpg",
       "color": [
-        145,
-        141,
-        115
+        46,
+        63,
+        92
       ]
     },
     {
@@ -662,6 +662,22 @@ window.globalPhotoData = {
       ]
     },
     {
+      "filename": "南投清境農場日出.jpg",
+      "color": [
+        7,
+        3,
+        2
+      ]
+    },
+    {
+      "filename": "南投清境農場雲海A.png",
+      "color": [
+        98,
+        129,
+        163
+      ]
+    },
+    {
       "filename": "台中洲際棒球場.jpg",
       "color": [
         71,
@@ -881,6 +897,14 @@ window.globalPhotoData = {
       }
     },
     {
+      "filename": "宜蘭五結日落 (1)A.png",
+      "color": [
+        167,
+        131,
+        87
+      ]
+    },
+    {
       "filename": "宜蘭五結防潮閘門.jpg",
       "color": [
         80,
@@ -918,6 +942,22 @@ window.globalPhotoData = {
         "lng": 121.83588,
         "alt": 138.39
       }
+    },
+    {
+      "filename": "宜蘭五結黃金 (1).jpg",
+      "color": [
+        10,
+        16,
+        18
+      ]
+    },
+    {
+      "filename": "宜蘭五結黃金 (3).jpg",
+      "color": [
+        18,
+        21,
+        18
+      ]
     },
     {
       "filename": "宜蘭冬山打那岸水閘門.jpg",
@@ -1103,6 +1143,14 @@ window.globalPhotoData = {
       }
     },
     {
+      "filename": "新北淡水淡江大橋.png",
+      "color": [
+        198,
+        179,
+        159
+      ]
+    },
+    {
       "filename": "新北淡水輕軌 (1).jpg",
       "color": [
         129,
@@ -1240,17 +1288,12 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "澎湖後寮天堂路.jpg",
+      "filename": "澎湖後寮天堂路  (2).jpg",
       "color": [
-        80,
-        79,
-        74
-      ],
-      "gps": {
-        "lat": 23.676606,
-        "lng": 119.579373,
-        "alt": 47.45
-      }
+        77,
+        70,
+        77
+      ]
     },
     {
       "filename": "澎湖湖西菓葉觀日樓.jpg",
@@ -1344,17 +1387,12 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "雲林西螺落日剪影.jpg",
+      "filename": "雲林西螺落日剪影 (2).jpg",
       "color": [
-        249,
-        139,
-        13
-      ],
-      "gps": {
-        "lat": 23.807901,
-        "lng": 120.461586,
-        "alt": 82.16
-      }
+        246,
+        138,
+        8
+      ]
     },
     {
       "filename": "雲林西螺蝴蝶公園.jpg",

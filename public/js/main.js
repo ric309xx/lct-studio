@@ -300,7 +300,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        gsap.registerPlugin(ScrollTrigger);
+        if (window.MotionPathPlugin) {
+            gsap.registerPlugin(ScrollTrigger, MotionPathPlugin);
+        } else {
+            gsap.registerPlugin(ScrollTrigger);
+        }
 
         const hero = document.getElementById('hero');
         const heroVideo = document.getElementById('hero-video');
@@ -323,6 +327,74 @@ document.addEventListener('DOMContentLoaded', () => {
                 .to(heroVideo, { scale: 1.16, yPercent: 7, filter: 'saturate(0.78) contrast(1.18)', ease: 'none' }, 0)
                 .to(heroContent, { yPercent: 32, opacity: 0, ease: 'none' }, 0)
                 .to(heroOverlay, { opacity: 1, ease: 'none' }, 0);
+        }
+
+        const story = document.querySelector('.scroll-story');
+        const storyPin = document.querySelector('.story-pin');
+        const storyPanels = gsap.utils.toArray('.story-panel');
+
+        if (story && storyPin && storyPanels.length > 1) {
+            gsap.set(storyPanels.slice(1), { y: 56, opacity: 0 });
+            gsap.set('.story-sun', { transformOrigin: '50% 50%' });
+            const phaseLabels = gsap.utils.toArray('.story-flight-meta span');
+            const storyPhotos = gsap.utils.toArray('.story-photo-panel');
+            gsap.set(phaseLabels, {
+                opacity: 0.34,
+                color: 'rgba(237, 242, 244, 0.72)',
+                backgroundColor: 'rgba(7, 10, 15, 0.22)',
+                borderColor: 'rgba(229, 231, 235, 0.12)'
+            });
+            gsap.set(storyPhotos, { opacity: 0, scale: 1.025 });
+
+            const storyTimeline = gsap.timeline({
+                defaults: { ease: 'none' },
+                scrollTrigger: {
+                    trigger: story,
+                    start: 'top top',
+                    end: 'bottom bottom',
+                    scrub: 0.8,
+                    pin: storyPin,
+                    anticipatePin: 1
+                }
+            });
+
+            storyTimeline
+                .to('.story-rail', { xPercent: -82, duration: 0.82 }, 0)
+                .to('.story-route-progress', { strokeDashoffset: 0, duration: 0.82 }, 0)
+                .to('.story-sun', window.MotionPathPlugin ? {
+                    motionPath: {
+                        path: '.story-route-progress',
+                        align: '.story-route-progress',
+                        alignOrigin: [0.5, 0.5],
+                        start: 0,
+                        end: 1
+                    },
+                    duration: 0.82
+                } : { x: '38vw', y: '0vh', duration: 0.82 }, 0)
+                .to('.story-sun', { scale: 1.16, duration: 0.42, ease: 'sine.inOut' }, 0.18)
+                .to('.story-sun', { scale: 0.98, duration: 0.4, ease: 'sine.inOut' }, 0.6)
+                .to('.story-orbit', { scale: 1.04, duration: 0.82 }, 0)
+                .to('.story-photo-sunrise', { opacity: 0.62, scale: 1, duration: 0.16, ease: 'power2.out' }, 0)
+                .to('.story-photo-sunrise', { opacity: 0, scale: 1.015, duration: 0.14, ease: 'power2.in' }, 0.2)
+                .to(phaseLabels[0], { opacity: 1, color: '#fff0bf', backgroundColor: 'rgba(241, 188, 94, 0.18)', borderColor: 'rgba(241, 188, 94, 0.48)', duration: 0.1 }, 0)
+                .to(phaseLabels[0], { opacity: 0.34, color: 'rgba(237, 242, 244, 0.72)', backgroundColor: 'rgba(7, 10, 15, 0.22)', borderColor: 'rgba(229, 231, 235, 0.12)', duration: 0.1 }, 0.2)
+                .to('.story-photo-morning', { opacity: 0.62, scale: 1, duration: 0.16, ease: 'power2.out' }, 0.23)
+                .to('.story-photo-morning', { opacity: 0, scale: 1.015, duration: 0.14, ease: 'power2.in' }, 0.43)
+                .to(phaseLabels[1], { opacity: 1, color: '#fff0bf', backgroundColor: 'rgba(241, 188, 94, 0.18)', borderColor: 'rgba(241, 188, 94, 0.48)', duration: 0.1 }, 0.23)
+                .to(phaseLabels[1], { opacity: 0.34, color: 'rgba(237, 242, 244, 0.72)', backgroundColor: 'rgba(7, 10, 15, 0.22)', borderColor: 'rgba(229, 231, 235, 0.12)', duration: 0.1 }, 0.43)
+                .to('.story-photo-golden', { opacity: 0.62, scale: 1, duration: 0.16, ease: 'power2.out' }, 0.46)
+                .to('.story-photo-golden', { opacity: 0, scale: 1.015, duration: 0.14, ease: 'power2.in' }, 0.7)
+                .to(phaseLabels[2], { opacity: 1, color: '#fff0bf', backgroundColor: 'rgba(241, 188, 94, 0.18)', borderColor: 'rgba(241, 188, 94, 0.48)', duration: 0.1 }, 0.46)
+                .to(phaseLabels[2], { opacity: 0.34, color: 'rgba(237, 242, 244, 0.72)', backgroundColor: 'rgba(7, 10, 15, 0.22)', borderColor: 'rgba(229, 231, 235, 0.12)', duration: 0.1 }, 0.7)
+                .to(phaseLabels[3], { opacity: 1, color: '#fff0bf', backgroundColor: 'rgba(241, 188, 94, 0.18)', borderColor: 'rgba(241, 188, 94, 0.48)', duration: 0.1 }, 0.74)
+                .to('.story-photo-sunset', { opacity: 0.72, scale: 1, duration: 0.18, ease: 'power2.out' }, 0.72)
+                .to(storyPanels[0], { y: -58, opacity: 0, duration: 0.18 }, 0.16)
+                .to(storyPanels[1], { y: 0, opacity: 1, duration: 0.18 }, 0.24)
+                .to(storyPanels[1], { y: -58, opacity: 0, duration: 0.18 }, 0.42)
+                .to(storyPanels[2], { y: 0, opacity: 1, duration: 0.18 }, 0.5)
+                .to(storyPanels[2], { y: -58, opacity: 0, duration: 0.18 }, 0.68)
+                .to(storyPanels[3], { y: 0, opacity: 1, duration: 0.18 }, 0.76)
+                .to({}, { duration: 0.18 }, 0.82);
         }
 
         gsap.utils.toArray('.section-intro:not(.video-intro)').forEach((section) => {
