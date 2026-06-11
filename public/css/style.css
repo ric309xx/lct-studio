@@ -734,17 +734,45 @@ body::before {
     }
 
     .story-flight-meta {
-        left: 7vw;
-        top: 49vh;
-        width: 78vw;
+        left: 1.35rem;
+        right: 1.35rem;
+        top: auto;
+        bottom: 5.25rem;
+        width: auto;
         height: auto;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        font-size: 0.62rem;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.32rem;
+        font-size: 0.48rem;
+    }
+
+    .story-flight-meta span {
+        min-height: 2.15rem;
+        padding: 0.42rem 0.2rem;
+        letter-spacing: 0.1em;
+        text-align: center;
     }
 
     .story-orbit {
         inset: 14vh auto auto 7vw;
         width: 78vw;
+    }
+
+    .story-sun {
+        width: clamp(2rem, 10vw, 2.55rem);
+        box-shadow:
+            0 0 0.75rem rgba(255, 230, 154, 0.62),
+            0 0 2.1rem rgba(241, 188, 94, 0.28),
+            0 0 4.5rem rgba(241, 188, 94, 0.16);
+    }
+
+    .story-sun::before {
+        width: 185%;
+        height: 185%;
+    }
+
+    .story-sun::after {
+        width: 250%;
+        height: 250%;
     }
 
     .story-rail {
@@ -754,7 +782,7 @@ body::before {
     }
 
     .story-copy {
-        min-height: 22rem;
+        min-height: 25rem;
     }
 
     .story-panel {
