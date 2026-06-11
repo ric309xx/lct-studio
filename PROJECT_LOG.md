@@ -114,3 +114,37 @@
 - **備註**:
   - Sun Path 四張故事圖屬於首頁敘事素材，不會由 `generate_photo_list.py` 自動產生。
   - 未來若替換敘事圖，建議先裁成網站用寬版圖，減少依賴 `object-position`。
+
+---
+
+## [2026-06-12] Sun Path 微調工具、導覽與段落小標更新
+- **更新類型**: 視覺微調 / 文案更新 / 前端工具 / GitHub 上線
+- **主要調整**:
+  - 導覽列與手機選單的「服務案例」改為「影像服務」，讓該段更符合目前內容定位。
+  - `Sun Path / Aerial Light` 四階段文案更新：
+    - 01 日出｜喚醒地景的第一道光
+    - 02 晨光｜視角攀升，層次隨之展開
+    - 03 黃金時刻｜捕捉光影的最佳純度
+    - 04 日落｜餘暉凝結，成就雋永影像
+  - 背景大字改為完整 `SUNRISE / MORNING LIGHT / GOLDEN HOUR / SUNSET`。
+  - 背景大字間距與頭尾對齊改為 CSS 可調參數：
+    - `--story-rail-start-x: 2.5vw`
+    - `--story-rail-base-gap: 2.5rem`
+    - `--story-rail-gap-sunrise: 40vw`
+    - `--story-rail-gap-morning: 12vw`
+    - `--story-rail-gap-golden: 6vw`
+    - `--story-rail-end-x: -1vw`
+  - 新增 `?railTune=1` 調整面板，可在網站畫面上用滑桿即時調整背景大字的位置與間距，調整結果可直接複製回 CSS。
+  - 桌機版太陽尺寸縮小，並重新設計高光、內陰影與外圈光暈，使太陽更精緻且不過度搶畫面。
+  - 手機版太陽縮小，四個階段標籤移到下方，降低與主標題互相遮擋的情況。
+  - 補上橘黃色英文小標：
+    - 城市光影：`City Lights`
+    - 大地映像：`Earthscapes`
+    - 關於我：`About LCT`
+    - 聯絡我：`Contact`
+  - 更新前端 cache 版本至 `v=53`。
+- **驗證**:
+  - `node --check public/js/main.js`
+- **備註**:
+  - `?railTune=1` 僅供調整使用，正常網址不會顯示調整面板。
+  - 工作區仍有既有未處理檔案狀態：`public/assets/logo-2.png` 刪除狀態、`public/assets/logo (1).png`、`public/assets/logo (2).png`、`scroll-animation-technique.md` 未追蹤；本次不上傳這些檔案。

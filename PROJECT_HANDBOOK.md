@@ -203,3 +203,63 @@
 2. Sun Path 四張故事圖是首頁敘事素材，不屬於自動照片清單，需手動放在 `public/assets/`。
 3. 每次修改 CSS/JS 後需更新 `index.html` 的 `style.css?v=` 與 `main.js?v=`，避免正式站吃到舊快取。
 4. 若後續覺得段落過長，優先調整 `.scroll-story` 的 `min-height` 與 JS timeline 留白，不要用大 padding 製造空白。
+
+---
+
+## 9. 2026-06-12 Sun Path / Aerial Light 可調參數與維護備註
+
+### A. 背景大字調整參數
+`Sun Path / Aerial Light` 段落的背景大字使用 `.story-rail`，目前參數集中在 `public/css/style.css`：
+
+```css
+--story-rail-start-x: 2.5vw;
+--story-rail-base-gap: 2.5rem;
+--story-rail-gap-sunrise: 40vw;
+--story-rail-gap-morning: 12vw;
+--story-rail-gap-golden: 6vw;
+--story-rail-end-x: -1vw;
+```
+
+參數用途：
+- `--story-rail-start-x`: `SUNRISE` 一開始的位置，數值越大越往右。
+- `--story-rail-base-gap`: 每個背景英文之間的基本間距。
+- `--story-rail-gap-sunrise`: `SUNRISE` 到 `MORNING LIGHT` 的額外間距。
+- `--story-rail-gap-morning`: `MORNING LIGHT` 到 `GOLDEN HOUR` 的額外間距。
+- `--story-rail-gap-golden`: `GOLDEN HOUR` 到 `SUNSET` 的額外間距。
+- `--story-rail-end-x`: 最後 `SUNSET` 停留的位置，數值越大越往右。
+
+### B. 畫面調整模式
+若需要在網站畫面上直接調整背景大字間距，可在網址加上：
+
+```text
+?railTune=1
+```
+
+範例：
+
+```text
+http://127.0.0.1:4173/?railTune=1#scroll-story
+```
+
+調整面板只會在網址含有 `railTune=1` 時出現，正常網站不會顯示。調整完成後可按 `Copy Params` 複製目前參數，再寫回 `public/css/style.css`。
+
+### C. 本次前端命名與內容
+- 導覽列「服務案例」已改為「影像服務」。
+- 作品分類新增橘黃色英文小標：
+  - 城市光影：`City Lights`
+  - 大地映像：`Earthscapes`
+  - 關於我：`About LCT`
+  - 聯絡我：`Contact`
+- `Sun Path / Aerial Light` 背景字應完整維持：
+  - `SUNRISE`
+  - `MORNING LIGHT`
+  - `GOLDEN HOUR`
+  - `SUNSET`
+
+### D. 上線注意事項
+- 修改 `public/css/style.css` 或 `public/js/main.js` 後，需同步更新 `index.html` 內的 cache query，例如 `style.css?v=53`、`main.js?v=53`。
+- 正式推送前至少執行：
+
+```powershell
+node --check public/js/main.js
+```

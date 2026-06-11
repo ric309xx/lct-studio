@@ -34,6 +34,21 @@ document.addEventListener('DOMContentLoaded', () => {
         return filename.replace(/[-_(\（].*|\.\w+$/g, '').trim();
     };
 
+    const cssLengthToPx = (value, fallback = 0) => {
+        const rawValue = `${value || ''}`.trim();
+        const amount = parseFloat(rawValue);
+
+        if (!Number.isFinite(amount)) return fallback;
+        if (rawValue.endsWith('vw')) return window.innerWidth * amount / 100;
+        if (rawValue.endsWith('vh')) return window.innerHeight * amount / 100;
+        if (rawValue.endsWith('rem')) {
+            const rootSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+            return amount * rootSize;
+        }
+        if (rawValue.endsWith('%')) return window.innerWidth * amount / 100;
+        return amount;
+    };
+
     // --- 3. Lightbox Logic ---
 
 
@@ -334,6 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const storyPanels = gsap.utils.toArray('.story-panel');
 
         if (story && storyPin && storyPanels.length > 1) {
+            const storyRail = document.querySelector('.story-rail');
             gsap.set(storyPanels.slice(1), { y: 56, opacity: 0 });
             gsap.set('.story-sun', { transformOrigin: '50% 50%' });
             const phaseLabels = gsap.utils.toArray('.story-flight-meta span');
@@ -354,12 +370,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     end: 'bottom bottom',
                     scrub: 0.8,
                     pin: storyPin,
-                    anticipatePin: 1
+                    anticipatePin: 1,
+                    invalidateOnRefresh: true
                 }
             });
 
             storyTimeline
-                .to('.story-rail', { xPercent: -82, duration: 0.82 }, 0)
+                .to(storyRail, {
+                    x: () => {
+                        const sunsetWord = storyRail?.lastElementChild;
+                        if (!storyRail || !sunsetWord) return 0;
+                        const railStyle = getComputedStyle(storyRail);
+                        const endX = cssLengthToPx(railStyle.getPropertyValue('--story-rail-end-x'), window.innerWidth * 0.06);
+                        return endX - sunsetWord.offsetLeft;
+                    },
+                    duration: 0.82
+                }, 0)
                 .to('.story-route-progress', { strokeDashoffset: 0, duration: 0.82 }, 0)
                 .to('.story-sun', window.MotionPathPlugin ? {
                     motionPath: {
@@ -881,6 +907,76 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
+    const setupRailTuningPanel = () => {
+        const params = new URLSearchParams(window.location.search);
+        if (!params.has('railTune')) return;
+
+        const rail = document.querySelector('.story-rail');
+        if (!rail) return;
+
+        const controls = [
+            { label: 'Start X', key: '--story-rail-start-x', unit: 'vw', min: -20, max: 30, step: 0.5, value: 4 },
+            { label: 'Base Gap', key: '--story-rail-base-gap', unit: 'rem', min: 0, max: 12, step: 0.1, value: 4.6 },
+            { label: 'Sunrise Gap', key: '--story-rail-gap-sunrise', unit: 'vw', min: 0, max: 40, step: 0.5, value: 17 },
+            { label: 'Morning Gap', key: '--story-rail-gap-morning', unit: 'vw', min: 0, max: 35, step: 0.5, value: 12 },
+            { label: 'Golden Gap', key: '--story-rail-gap-golden', unit: 'vw', min: 0, max: 30, step: 0.5, value: 6 },
+            { label: 'End X', key: '--story-rail-end-x', unit: 'vw', min: -20, max: 35, step: 0.5, value: 6 }
+        ];
+
+        const panel = document.createElement('aside');
+        panel.className = 'rail-tune-panel';
+        panel.innerHTML = '<strong>Story Rail Tune</strong><div class="rail-tune-controls"></div><textarea readonly></textarea><button type="button">Copy Params</button>';
+
+        const controlsWrap = panel.querySelector('.rail-tune-controls');
+        const output = panel.querySelector('textarea');
+        const copyBtn = panel.querySelector('button');
+
+        const updateOutput = () => {
+            output.value = controls
+                .map(({ label, key }) => `${label}: ${rail.style.getPropertyValue(key).trim() || getComputedStyle(rail).getPropertyValue(key).trim()}`)
+                .join('\n');
+        };
+
+        const refreshMotion = () => {
+            refreshScrollCinematics();
+            updateOutput();
+        };
+
+        controls.forEach((control) => {
+            const row = document.createElement('label');
+            const paramKey = control.key.replace('--story-rail-', '');
+            const current = params.get(paramKey) || control.value;
+            rail.style.setProperty(control.key, `${current}${control.unit}`);
+            row.innerHTML = `<span>${control.label}</span><input type="range" min="${control.min}" max="${control.max}" step="${control.step}" value="${current}"><em>${current}${control.unit}</em>`;
+
+            const input = row.querySelector('input');
+            const valueText = row.querySelector('em');
+
+            input.addEventListener('input', () => {
+                const nextValue = `${input.value}${control.unit}`;
+                valueText.textContent = nextValue;
+                rail.style.setProperty(control.key, nextValue);
+                refreshMotion();
+            });
+
+            controlsWrap.appendChild(row);
+        });
+
+        copyBtn.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(output.value);
+                copyBtn.textContent = 'Copied';
+                setTimeout(() => { copyBtn.textContent = 'Copy Params'; }, 1200);
+            } catch {
+                output.select();
+            }
+        });
+
+        document.body.appendChild(panel);
+        refreshMotion();
+    };
+
+
 
     // Close Magazine Modal
     const closeMagazineBtn = document.getElementById('close-magazine-btn');
@@ -908,6 +1004,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupVideoSection();
     setupHeroVideo();
     setupScrollCinematics();
+    setupRailTuningPanel();
 
     // Initial Observe for static elements
     setTimeout(observeElements, 500); // Wait for initial render
