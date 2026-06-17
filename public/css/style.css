@@ -294,7 +294,7 @@ body::before {
 
 .map-journey-shell {
     display: grid;
-    grid-template-columns: minmax(0, 1.05fr) minmax(20rem, 0.95fr);
+    grid-template-columns: minmax(18rem, 0.78fr) minmax(24rem, 1.22fr);
     gap: clamp(1.25rem, 3vw, 2.5rem);
     align-items: stretch;
 }
@@ -350,6 +350,50 @@ body::before {
     color: #fff0bf;
 }
 
+.map-edit-controls {
+    position: absolute;
+    top: 3.35rem;
+    left: 1.25rem;
+    right: 1.25rem;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: rgba(229, 231, 235, 0.58);
+    font-size: 0.72rem;
+    letter-spacing: 0;
+}
+
+.map-edit-btn {
+    min-height: 2rem;
+    padding: 0 0.8rem;
+    border: 1px solid rgba(70, 217, 255, 0.34);
+    border-radius: 999px;
+    color: rgba(229, 231, 235, 0.88);
+    background: rgba(7, 10, 15, 0.62);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035), 0 0 1.1rem rgba(70, 217, 255, 0.08);
+    transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.map-edit-btn:hover,
+.map-route-panel.is-editing .map-edit-btn:first-child {
+    color: #fff0bf;
+    border-color: rgba(255, 240, 191, 0.64);
+    background: rgba(200, 161, 90, 0.16);
+    box-shadow: 0 0 1.4rem rgba(200, 161, 90, 0.18);
+}
+
+.map-edit-btn-muted {
+    border-color: rgba(255, 255, 255, 0.14);
+    color: rgba(229, 231, 235, 0.58);
+}
+
+#map-edit-status {
+    margin-left: auto;
+    text-align: right;
+    line-height: 1.35;
+}
+
 .map-route-hint {
     bottom: 1.25rem;
     letter-spacing: 0.08em;
@@ -363,7 +407,7 @@ body::before {
 
 .map-canvas-wrap {
     position: absolute;
-    inset: 3.75rem 1.25rem 3.75rem;
+    inset: 5.85rem 1.25rem 3.75rem;
     overflow: hidden;
     border-radius: 8px;
     background:
@@ -438,6 +482,16 @@ body::before {
     box-shadow: 0 0 0 0.45rem rgba(200, 161, 90, 0.12), 0 0 2rem rgba(200, 161, 90, 0.34);
 }
 
+.map-route-panel.is-editing .map-pin {
+    cursor: grab;
+    border-color: rgba(70, 217, 255, 0.86);
+    box-shadow: 0 0 0 0.35rem rgba(70, 217, 255, 0.12), 0 0 1.8rem rgba(70, 217, 255, 0.34);
+}
+
+.map-route-panel.is-editing .map-pin:active {
+    cursor: grabbing;
+}
+
 .map-preview-card {
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto;
@@ -445,7 +499,7 @@ body::before {
 
 .map-preview-image {
     position: relative;
-    min-height: 21rem;
+    min-height: 25rem;
     overflow: hidden;
 }
 
@@ -482,22 +536,22 @@ body::before {
 .map-preview-content {
     position: relative;
     z-index: 2;
-    padding: 1.4rem;
+    padding: 1.05rem 1.25rem 1.15rem;
 }
 
 .map-preview-category {
-    margin-bottom: 0.65rem;
+    margin-bottom: 0.45rem;
     color: #c8a15a;
-    font-size: 0.74rem;
+    font-size: 0.68rem;
     font-weight: 700;
     letter-spacing: 0.2em;
     text-transform: uppercase;
 }
 
 .map-preview-content h3 {
-    min-height: 2.4rem;
+    min-height: 1.8rem;
     color: #fff;
-    font-size: clamp(1.45rem, 2.6vw, 2.1rem);
+    font-size: clamp(1.18rem, 2vw, 1.62rem);
     font-weight: 800;
     letter-spacing: 0;
     line-height: 1.2;
@@ -507,12 +561,12 @@ body::before {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.65rem;
-    margin-top: 1.2rem;
+    margin-top: 0.9rem;
 }
 
 .map-preview-meta div {
     min-width: 0;
-    padding: 0.85rem 0.75rem;
+    padding: 0.64rem 0.7rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.035);
@@ -595,6 +649,13 @@ body::before {
     transform: translateY(-0.18rem);
     border-color: rgba(255, 240, 191, 0.72);
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.46), 0 0 2.5rem rgba(200, 161, 90, 0.16);
+}
+
+.immersive-open-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.56;
+    transform: none;
+    filter: grayscale(0.2);
 }
 
 .immersive-open-icon {
@@ -1801,12 +1862,32 @@ body::before {
         letter-spacing: 0.1em;
     }
 
+    .map-edit-controls {
+        top: 3rem;
+        left: 0.9rem;
+        right: 0.9rem;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        font-size: 0.66rem;
+    }
+
+    .map-edit-btn {
+        min-height: 1.85rem;
+        padding: 0 0.68rem;
+    }
+
+    #map-edit-status {
+        width: 100%;
+        margin-left: 0;
+        text-align: left;
+    }
+
     .map-canvas-wrap {
-        inset: 3.2rem 0.8rem 3.45rem;
+        inset: 6.25rem 0.8rem 3.45rem;
     }
 
     .map-preview-image {
-        min-height: 16rem;
+        min-height: 18.5rem;
     }
 
     .map-preview-content {

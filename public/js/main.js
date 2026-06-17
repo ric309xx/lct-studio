@@ -172,6 +172,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const MAP_POSITION_OVERRIDES = {
         '澎湖湖西菓葉觀日樓.jpg': { x: 23.5, y: 52.5 }
     };
+    const MAP_POSITION_STORAGE_KEY = 'lct-map-pin-positions-v1';
+
+    const getStoredMapPositions = () => {
+        try {
+            const raw = window.localStorage?.getItem(MAP_POSITION_STORAGE_KEY);
+            const parsed = raw ? JSON.parse(raw) : {};
+            return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch (error) {
+            console.warn('Unable to read saved map pin positions.', error);
+            return {};
+        }
+    };
+
+    const saveStoredMapPositions = (positions) => {
+        try {
+            window.localStorage?.setItem(MAP_POSITION_STORAGE_KEY, JSON.stringify(positions));
+        } catch (error) {
+            console.warn('Unable to save map pin positions.', error);
+        }
+    };
 
     const flattenPhotos = (data = globalPhotoData) => {
         return Object.keys(data || {}).flatMap(category => {
@@ -271,6 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const setupMapJourney = () => {
         const mapWrap = document.getElementById('map-canvas-wrap');
+        const mapPanel = mapWrap?.closest('.map-route-panel');
         const pinsWrap = document.getElementById('map-pins');
         const routeSegments = document.getElementById('map-route-segments');
         const strip = document.getElementById('journey-strip');
@@ -282,8 +303,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const previewAlt = document.getElementById('map-preview-alt');
         const activeCoords = document.getElementById('map-active-coords');
         const stopCount = document.getElementById('map-stop-count');
+        const editToggle = document.getElementById('map-edit-toggle');
+        const editReset = document.getElementById('map-edit-reset');
+        const editCopy = document.getElementById('map-edit-copy');
+        const editStatus = document.getElementById('map-edit-status');
 
         if (!mapWrap || !pinsWrap || !routeSegments || !strip || !previewImg) return;
+        if (mapJourneyInitialized) return;
 
         const allPhotos = flattenPhotos(globalPhotoData);
         const journeyPhotos = MAP_JOURNEY_FILENAMES
@@ -307,7 +333,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const lngRange = maxLng - minLng;
         const latRange = maxLat - minLat;
 
-        const toPoint = (photo) => {
+        let manualPositions = getStoredMapPositions();
+        let editMode = false;
+        let activeIndex = 0;
+        let draggingPin = null;
+        let suppressNextClick = false;
+
+        const getBasePoint = (photo) => {
             const override = MAP_POSITION_OVERRIDES[photo.filename];
             if (override) return override;
 
@@ -318,29 +350,86 @@ document.addEventListener('DOMContentLoaded', () => {
             return { x, y };
         };
 
-        const points = journeyPhotos.map(toPoint);
+        const toPoint = (photo) => {
+            const saved = manualPositions[photo.filename];
+            if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
+                return { x: saved.x, y: saved.y };
+            }
+            return getBasePoint(photo);
+        };
+
+        let points = journeyPhotos.map(toPoint);
         pinsWrap.innerHTML = '';
         routeSegments.innerHTML = '';
         strip.innerHTML = '';
 
-        points.slice(0, -1).forEach((point, index) => {
-            const nextPoint = points[index + 1];
-            const dx = nextPoint.x - point.x;
-            const dy = nextPoint.y - point.y;
-            const length = Math.sqrt(dx * dx + dy * dy);
-            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-            const segment = document.createElement('span');
-            segment.className = 'map-route-segment';
-            segment.style.left = `${point.x}%`;
-            segment.style.top = `${point.y}%`;
-            segment.style.width = `${length}%`;
-            segment.style.transform = `rotate(${angle}deg)`;
-            routeSegments.appendChild(segment);
-        });
+        const setPinPosition = (pin, point) => {
+            pin.style.left = `${point.x}%`;
+            pin.style.top = `${point.y}%`;
+        };
+
+        const renderRouteSegments = () => {
+            routeSegments.innerHTML = '';
+            points.slice(0, -1).forEach((point, index) => {
+                const nextPoint = points[index + 1];
+                const dx = nextPoint.x - point.x;
+                const dy = nextPoint.y - point.y;
+                const length = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                const segment = document.createElement('span');
+                segment.className = 'map-route-segment';
+                segment.style.left = `${point.x}%`;
+                segment.style.top = `${point.y}%`;
+                segment.style.width = `${length}%`;
+                segment.style.transform = `rotate(${angle}deg)`;
+                segment.classList.toggle('is-active', index < activeIndex);
+                routeSegments.appendChild(segment);
+            });
+        };
+
+        const updateEditStatus = (text) => {
+            if (editStatus) editStatus.textContent = text;
+        };
+
+        const savePinPosition = (index) => {
+            const photo = journeyPhotos[index];
+            if (!photo) return;
+            manualPositions[photo.filename] = {
+                x: Number(points[index].x.toFixed(2)),
+                y: Number(points[index].y.toFixed(2))
+            };
+            saveStoredMapPositions(manualPositions);
+        };
+
+        const handlePinPointerMove = (event) => {
+            if (!draggingPin) return;
+            const rect = mapWrap.getBoundingClientRect();
+            const x = Math.max(2, Math.min(98, ((event.clientX - rect.left) / rect.width) * 100));
+            const y = Math.max(2, Math.min(98, ((event.clientY - rect.top) / rect.height) * 100));
+            const index = draggingPin.index;
+            points[index] = { x, y };
+            setPinPosition(draggingPin.pin, points[index]);
+            renderRouteSegments();
+            updateEditStatus(`${String(index + 1).padStart(2, '0')} / X ${x.toFixed(1)} Y ${y.toFixed(1)}`);
+            suppressNextClick = true;
+        };
+
+        const handlePinPointerUp = () => {
+            if (!draggingPin) return;
+            savePinPosition(draggingPin.index);
+            draggingPin.pin.releasePointerCapture?.(draggingPin.pointerId);
+            draggingPin = null;
+            updateEditStatus('定位已儲存於此瀏覽器');
+            window.removeEventListener('pointermove', handlePinPointerMove);
+            window.removeEventListener('pointerup', handlePinPointerUp);
+        };
+
+        renderRouteSegments();
 
         const setActiveStop = (index) => {
             const photo = journeyPhotos[index];
             if (!photo) return;
+            activeIndex = index;
 
             previewImg.style.opacity = '0.55';
             setTimeout(() => {
@@ -372,11 +461,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const pin = document.createElement('button');
             pin.type = 'button';
             pin.className = 'map-pin';
-            pin.style.left = `${point.x}%`;
-            pin.style.top = `${(point.y / 140) * 100}%`;
+            setPinPosition(pin, point);
             pin.style.setProperty('--pin-color', getColorCss(photo.color, 1));
             pin.setAttribute('aria-label', `查看 ${getBaseLocationName(photo.filename)}`);
-            pin.addEventListener('click', () => setActiveStop(index));
+            pin.addEventListener('pointerdown', (event) => {
+                if (!editMode) return;
+                event.preventDefault();
+                draggingPin = { pin, index, pointerId: event.pointerId };
+                pin.setPointerCapture?.(event.pointerId);
+                window.addEventListener('pointermove', handlePinPointerMove);
+                window.addEventListener('pointerup', handlePinPointerUp, { once: true });
+            });
+            pin.addEventListener('click', () => {
+                if (suppressNextClick) {
+                    suppressNextClick = false;
+                    return;
+                }
+                setActiveStop(index);
+            });
             pinsWrap.appendChild(pin);
 
             const thumb = document.createElement('button');
@@ -388,6 +490,44 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             thumb.addEventListener('click', () => setActiveStop(index));
             strip.appendChild(thumb);
+        });
+
+        editToggle?.addEventListener('click', () => {
+            editMode = !editMode;
+            mapPanel?.classList.toggle('is-editing', editMode);
+            editToggle.textContent = editMode ? '完成調整' : '調整定位';
+            updateEditStatus(editMode ? '拖曳地圖上的定位點即可微調' : '定位調整已關閉');
+        });
+
+        editReset?.addEventListener('click', () => {
+            manualPositions = {};
+            saveStoredMapPositions(manualPositions);
+            points = journeyPhotos.map(getBasePoint);
+            pinsWrap.querySelectorAll('.map-pin').forEach((pin, index) => {
+                setPinPosition(pin, points[index]);
+            });
+            renderRouteSegments();
+            setActiveStop(activeIndex);
+            updateEditStatus('已重設為預設定位');
+        });
+
+        editCopy?.addEventListener('click', async () => {
+            const text = JSON.stringify(manualPositions, null, 2);
+            try {
+                await navigator.clipboard.writeText(text);
+                updateEditStatus('已複製手動定位座標');
+            } catch (error) {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.setAttribute('readonly', '');
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                textarea.remove();
+                updateEditStatus('已複製手動定位座標');
+            }
         });
 
         setActiveStop(0);
