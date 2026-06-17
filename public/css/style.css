@@ -380,9 +380,24 @@ body::before {
 }
 
 .map-island-outline {
-    fill: rgba(229, 231, 235, 0.025);
-    stroke: rgba(229, 231, 235, 0.2);
-    stroke-width: 0.85;
+    fill: rgba(229, 231, 235, 0.018);
+    stroke: rgba(229, 231, 235, 0.24);
+    stroke-width: 0.72;
+    filter: drop-shadow(0 0 0.75rem rgba(70, 217, 255, 0.08));
+}
+
+.map-island-ridge {
+    fill: none;
+    stroke: rgba(229, 231, 235, 0.12);
+    stroke-width: 0.45;
+    stroke-linecap: round;
+    stroke-dasharray: 2.4 2.6;
+}
+
+.map-island-dot {
+    fill: rgba(229, 231, 235, 0.018);
+    stroke: rgba(229, 231, 235, 0.18);
+    stroke-width: 0.55;
 }
 
 .map-route-line,
@@ -702,9 +717,8 @@ body::before {
     bottom: 1.25rem;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
     max-width: calc(100vw - 2.5rem);
-    padding: 0.55rem;
+    padding: 0.8rem 1.25rem;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 999px;
     background: rgba(7, 10, 15, 0.72);
@@ -712,28 +726,11 @@ body::before {
     transform: translateX(-50%);
 }
 
-.immersive-3d-controls button {
-    min-height: 2.35rem;
-    padding: 0 1rem;
-    border: 1px solid transparent;
-    border-radius: 999px;
-    color: rgba(229, 231, 235, 0.62);
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-}
-
-.immersive-3d-controls button.is-active {
-    color: #fff0bf;
-    border-color: rgba(200, 161, 90, 0.42);
-    background: rgba(200, 161, 90, 0.14);
-}
-
 .immersive-3d-controls span {
-    padding: 0 0.8rem 0 0.4rem;
     color: rgba(229, 231, 235, 0.5);
     font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
     white-space: nowrap;
 }
 
@@ -1856,20 +1853,12 @@ body::before {
         left: 0.85rem;
         right: 0.85rem;
         bottom: 0.85rem;
-        flex-wrap: wrap;
         justify-content: center;
         border-radius: 8px;
         transform: none;
     }
 
-    .immersive-3d-controls button {
-        flex: 1 1 8rem;
-        padding: 0 0.7rem;
-    }
-
     .immersive-3d-controls span {
-        flex: 1 0 100%;
-        padding: 0.2rem 0 0.1rem;
         text-align: center;
         white-space: normal;
     }

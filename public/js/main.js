@@ -148,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '台北士林洲美橡皮壩.jpg',
         '桃園觀音工業區廠房.jpg',
         '新竹寶山小西湖.jpg',
+        '台中洲際棒球場.jpg',
         '宜蘭五結防潮閘門-2.jpg',
         '宜蘭冬山河旁景致.jpg',
         '花蓮清水斷崖.jpg',
@@ -158,6 +159,17 @@ document.addEventListener('DOMContentLoaded', () => {
         '澎湖湖西菓葉觀日樓.jpg'
     ];
     const MAP_JOURNEY_FILENAME_SET = new Set(MAP_JOURNEY_FILENAMES);
+    const MAP_GPS_OVERRIDES = {
+        // Taichung Intercontinental Baseball Stadium, Beitun District.
+        // Source checked from Wikipedia/GeoHack coordinates: 24.19972, 120.68500.
+        '台中洲際棒球場.jpg': { lat: 24.19972, lng: 120.685, alt: 110 }
+    };
+    const MAP_BOUNDS = {
+        minLat: 21.85,
+        maxLat: 25.35,
+        minLng: 119.25,
+        maxLng: 122.15
+    };
 
     const flattenPhotos = (data = globalPhotoData) => {
         return Object.keys(data || {}).flatMap(category => {
@@ -274,7 +286,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const allPhotos = flattenPhotos(globalPhotoData);
         const journeyPhotos = MAP_JOURNEY_FILENAMES
-            .map(filename => allPhotos.find(photo => photo.filename === filename && photo.gps))
+            .map(filename => {
+                const photo = allPhotos.find(item => item.filename === filename);
+                if (!photo) return null;
+                const gps = photo.gps || MAP_GPS_OVERRIDES[filename];
+                return gps ? { ...photo, gps } : null;
+            })
             .filter(Boolean);
 
         if (!journeyPhotos.length) return;
@@ -282,18 +299,18 @@ document.addEventListener('DOMContentLoaded', () => {
         mapJourneyInitialized = true;
         stopCount.textContent = `${journeyPhotos.length} STOPS`;
 
-        const lats = journeyPhotos.map(photo => photo.gps.lat);
-        const lngs = journeyPhotos.map(photo => photo.gps.lng);
-        const minLat = Math.min(...lats);
-        const maxLat = Math.max(...lats);
-        const minLng = Math.min(...lngs);
-        const maxLng = Math.max(...lngs);
-        const lngRange = maxLng - minLng || 1;
-        const latRange = maxLat - minLat || 1;
+        const minLat = MAP_BOUNDS.minLat;
+        const maxLat = MAP_BOUNDS.maxLat;
+        const minLng = MAP_BOUNDS.minLng;
+        const maxLng = MAP_BOUNDS.maxLng;
+        const lngRange = maxLng - minLng;
+        const latRange = maxLat - minLat;
 
         const toPoint = (photo) => {
-            const x = 13 + ((photo.gps.lng - minLng) / lngRange) * 74;
-            const y = 10 + ((maxLat - photo.gps.lat) / latRange) * 120;
+            const lngRatio = Math.max(0, Math.min(1, (photo.gps.lng - minLng) / lngRange));
+            const latRatio = Math.max(0, Math.min(1, (maxLat - photo.gps.lat) / latRange));
+            const x = 9 + lngRatio * 82;
+            const y = 7 + latRatio * 126;
             return { x, y };
         };
 
@@ -1074,7 +1091,7 @@ document.addEventListener('DOMContentLoaded', () => {
         frameGeometry: null,
         photoGeometry: null,
         animationId: null,
-        mode: 'wall',
+        mode: 'scatter',
         focused: null,
         isDragging: false,
         dragMoved: false,
@@ -1141,34 +1158,25 @@ document.addEventListener('DOMContentLoaded', () => {
         return selected.slice(0, count);
     };
 
-    const setImmersiveModeButtons = (mode) => {
-        document.querySelectorAll('[data-gallery-mode]').forEach(button => {
-            button.classList.toggle('is-active', button.dataset.galleryMode === mode);
-        });
-    };
-
     const setCardTarget = (card, target) => {
         card.userData.targetPosition.copy(target.position);
         card.userData.targetRotation.copy(target.rotation);
         card.userData.targetScale = target.scale;
     };
 
-    const layoutImmersiveCards = (mode) => {
-        immersiveState.mode = mode;
+    const layoutImmersiveCards = () => {
+        immersiveState.mode = 'scatter';
         immersiveState.focused = null;
-        immersiveState.caption.textContent = mode === 'scatter'
-            ? 'SCATTER MODE / 拖曳視角探索照片'
-            : 'CURATED WALL / 點選照片聚焦成果';
-        setImmersiveModeButtons(mode);
+        immersiveState.caption.textContent = 'SCATTER / 照片漂浮於空中，可拖曳視角探索';
 
         immersiveState.cards.forEach(card => {
-            setCardTarget(card, card.userData.layouts[mode]);
+            setCardTarget(card, card.userData.layout);
         });
     };
 
     const focusImmersiveCard = (card) => {
         if (immersiveState.focused === card) {
-            layoutImmersiveCards(immersiveState.mode);
+            layoutImmersiveCards();
             return;
         }
 
@@ -1183,7 +1191,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     scale: 1.55
                 });
             } else {
-                const base = item.userData.layouts[immersiveState.mode];
+                const base = item.userData.layout;
                 setCardTarget(item, {
                     position: new THREE.Vector3(base.position.x * 1.18, base.position.y * 0.92, base.position.z - 1.6),
                     rotation: base.rotation,
@@ -1242,7 +1250,7 @@ document.addEventListener('DOMContentLoaded', () => {
             frameGeometry: null,
             photoGeometry: null,
             focused: null,
-            mode: 'wall',
+            mode: 'scatter',
             targetRotX: 0,
             targetRotY: 0,
             currentRotX: 0,
@@ -1318,11 +1326,21 @@ document.addEventListener('DOMContentLoaded', () => {
             immersiveState.camera.position.z += (immersiveState.targetCameraZ - immersiveState.camera.position.z) * lerp;
         }
 
+        const elapsed = performance.now() * 0.001;
         immersiveState.cards.forEach(card => {
-            card.position.lerp(card.userData.targetPosition, lerp);
+            const drift = card.userData.drift || { phase: 0, ampX: 0, ampY: 0, ampZ: 0, rot: 0 };
+            const floatingTarget = card.userData.targetPosition.clone();
+            if (!prefersReducedMotion) {
+                floatingTarget.x += Math.sin(elapsed * 0.55 + drift.phase) * drift.ampX;
+                floatingTarget.y += Math.cos(elapsed * 0.7 + drift.phase * 0.8) * drift.ampY;
+                floatingTarget.z += Math.sin(elapsed * 0.48 + drift.phase * 1.2) * drift.ampZ;
+            }
+
+            card.position.lerp(floatingTarget, lerp);
+            const floatRotZ = prefersReducedMotion ? 0 : Math.sin(elapsed * 0.42 + drift.phase) * drift.rot;
             card.rotation.x += (card.userData.targetRotation.x - card.rotation.x) * lerp;
             card.rotation.y += (card.userData.targetRotation.y - card.rotation.y) * lerp;
-            card.rotation.z += (card.userData.targetRotation.z - card.rotation.z) * lerp;
+            card.rotation.z += (card.userData.targetRotation.z + floatRotZ - card.rotation.z) * lerp;
             card.scale.lerp(new THREE.Vector3(card.userData.targetScale, card.userData.targetScale, card.userData.targetScale), lerp);
         });
 
@@ -1356,42 +1374,41 @@ document.addEventListener('DOMContentLoaded', () => {
         immersiveState.photoGeometry = new THREERef.PlaneGeometry(1.58, 1.06);
 
         const textureLoader = new THREERef.TextureLoader();
-        const cols = 6;
-        const rows = Math.ceil(photos.length / cols);
 
         photos.forEach((photo, index) => {
-            const col = index % cols;
-            const row = Math.floor(index / cols);
-            const normalizedCol = col - (cols - 1) / 2;
-            const normalizedRow = (rows - 1) / 2 - row;
-            const angle = normalizedCol * 0.18;
-            const wall = {
-                position: new THREERef.Vector3(Math.sin(angle) * 6.8, normalizedRow * 1.45, -Math.cos(angle) * 1.2),
-                rotation: new THREERef.Euler(0, -angle * 0.72, 0),
-                scale: 1
-            };
+            const ring = index % 3;
+            const angle = (index / photos.length) * Math.PI * 2 + ring * 0.42;
+            const radius = 3.2 + ring * 1.55;
+            const yBand = ((index % 6) - 2.5) * 0.62 + Math.sin(index * 0.9) * 0.62;
             const scatter = {
                 position: new THREERef.Vector3(
-                    (Math.sin(index * 1.7) * 4.3) + normalizedCol * 0.25,
-                    (Math.cos(index * 1.13) * 2.25) + normalizedRow * 0.18,
-                    -1.6 - (index % 5) * 0.55
+                    Math.sin(angle) * radius,
+                    yBand,
+                    -1.35 - Math.cos(angle) * 1.25 - ring * 0.62
                 ),
                 rotation: new THREERef.Euler(
-                    (Math.sin(index) * 0.22),
-                    (Math.cos(index * 0.8) * 0.42),
-                    (Math.sin(index * 0.6) * 0.12)
+                    Math.sin(index * 0.7) * 0.18,
+                    -Math.sin(angle) * 0.36,
+                    Math.sin(index * 0.53) * 0.16
                 ),
-                scale: 0.92
+                scale: 0.96
             };
 
             const card = new THREERef.Group();
             card.userData.photo = photo;
-            card.userData.layouts = { wall, scatter };
-            card.userData.targetPosition = wall.position.clone();
-            card.userData.targetRotation = wall.rotation.clone();
-            card.userData.targetScale = wall.scale;
-            card.position.copy(wall.position);
-            card.rotation.copy(wall.rotation);
+            card.userData.layout = scatter;
+            card.userData.targetPosition = scatter.position.clone();
+            card.userData.targetRotation = scatter.rotation.clone();
+            card.userData.targetScale = scatter.scale;
+            card.userData.drift = {
+                phase: index * 0.83,
+                ampX: 0.08 + (index % 4) * 0.018,
+                ampY: 0.13 + (index % 5) * 0.018,
+                ampZ: 0.1 + (index % 3) * 0.028,
+                rot: 0.018 + (index % 4) * 0.006
+            };
+            card.position.copy(scatter.position);
+            card.rotation.copy(scatter.rotation);
 
             const frameMaterial = new THREERef.MeshBasicMaterial({
                 color: new THREERef.Color(getColorCss(photo.color, 1)),
@@ -1446,7 +1463,7 @@ document.addEventListener('DOMContentLoaded', () => {
         immersiveState.modal = modal;
         immersiveState.stage = stage;
         immersiveState.caption = caption;
-        caption.textContent = 'CURATED WALL / 點選照片聚焦成果';
+        caption.textContent = 'SCATTER / 照片漂浮於空中，可拖曳視角探索';
 
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');
@@ -1454,7 +1471,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const initialized = initImmersiveGallery(photos);
         immersiveState.initialized = initialized;
-        setImmersiveModeButtons('wall');
     };
 
     const closeImmersiveGallery = () => {
@@ -1557,12 +1573,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (close3DGalleryBtn) {
         close3DGalleryBtn.addEventListener('click', closeImmersiveGallery);
     }
-    document.querySelectorAll('[data-gallery-mode]').forEach(button => {
-        button.addEventListener('click', () => {
-            if (!immersiveState.cards.length) return;
-            layoutImmersiveCards(button.dataset.galleryMode);
-        });
-    });
     document.addEventListener('keydown', (event) => {
         const modal = document.getElementById('immersive-3d-modal');
         if (event.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
