@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '宜蘭冬山河旁景致.jpg',
         '花蓮清水斷崖.jpg',
         '花蓮和平火車站旁-2.jpg',
-        '雲林西螺蝴蝶公園.jpg',
+        '高雄舊高雄車站(高雄願景館).jpg',
         '雲林斗六石榴火車站.jpg',
         '雲林北港女兒橋.jpg',
         '澎湖湖西菓葉觀日樓.jpg'
@@ -161,7 +161,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const MAP_GPS_OVERRIDES = {
         // Taichung Intercontinental Baseball Stadium, Beitun District.
         // Source checked from Wikipedia/GeoHack coordinates: 24.19972, 120.68500.
-        '台中洲際棒球場.jpg': { lat: 24.19972, lng: 120.685, alt: 110 }
+        '台中洲際棒球場.jpg': { lat: 24.19972, lng: 120.685, alt: 110 },
+        // Historic Kaohsiung Station / former Kaohsiung Vision Museum.
+        // Source checked from Wikipedia coordinates: 22.638083, 120.302306.
+        '高雄舊高雄車站(高雄願景館).jpg': { lat: 22.638083, lng: 120.302306, alt: 12 }
     };
     const MAP_BOUNDS = {
         minLat: 21.9,
@@ -170,7 +173,19 @@ document.addEventListener('DOMContentLoaded', () => {
         maxLng: 122.05
     };
     const MAP_POSITION_OVERRIDES = {
-        '澎湖湖西菓葉觀日樓.jpg': { x: 23.5, y: 52.5 }
+        '雲林北港女兒橋.jpg': { x: 39.89, y: 53.04 },
+        '雲林斗六石榴火車站.jpg': { x: 46.74, y: 45.67 },
+        '高雄舊高雄車站(高雄願景館).jpg': { x: 43.35, y: 68.65 },
+        '台中洲際棒球場.jpg': { x: 46.22, y: 40.49 },
+        '花蓮清水斷崖.jpg': { x: 64.99, y: 45.15 },
+        '宜蘭冬山河旁景致.jpg': { x: 66.21, y: 30 },
+        '台北士林洲美橡皮壩.jpg': { x: 63.15, y: 21.89 },
+        '新北淡水海尾子海灘 (1).jpg': { x: 59.07, y: 24.74 },
+        '新竹寶山小西湖.jpg': { x: 52.95, y: 29.83 },
+        '基隆望幽谷.jpg': { x: 67.84, y: 22.41 },
+        '宜蘭五結防潮閘門-2.jpg': { x: 69.27, y: 27.2 },
+        '花蓮和平火車站旁-2.jpg': { x: 65.6, y: 39.2 },
+        '澎湖湖西菓葉觀日樓.jpg': { x: 26.22, y: 50.27 }
     };
     const MAP_POSITION_STORAGE_KEY = 'lct-map-pin-positions-v1';
 
@@ -1526,25 +1541,40 @@ document.addEventListener('DOMContentLoaded', () => {
         immersiveState.photoGeometry = new THREERef.PlaneGeometry(1.58, 1.06);
 
         const textureLoader = new THREERef.TextureLoader();
-        const glassGeometry = new THREERef.PlaneGeometry(1.92, 1.38);
-        const glowGeometry = new THREERef.PlaneGeometry(1.78, 1.22);
+        const glassGeometry = new THREERef.BoxGeometry(1.92, 1.38, 0.045);
+        const glassEdgeGeometry = new THREERef.EdgesGeometry(glassGeometry);
+        const glassFaceGeometry = new THREERef.PlaneGeometry(1.86, 1.32);
+        const glowGeometry = new THREERef.PlaneGeometry(1.96, 1.42);
+        const sheenGeometry = new THREERef.PlaneGeometry(1.68, 0.16);
         const hudTopGeometry = new THREERef.PlaneGeometry(0.42, 0.012);
         const hudSideGeometry = new THREERef.PlaneGeometry(0.012, 0.28);
-        immersiveState.extraGeometries.push(glassGeometry, glowGeometry, hudTopGeometry, hudSideGeometry);
+        const floorLineGeometry = new THREERef.PlaneGeometry(8.8, 0.012);
+        const lightBeamGeometry = new THREERef.PlaneGeometry(0.04, 6.8);
+        immersiveState.extraGeometries.push(
+            glassGeometry,
+            glassEdgeGeometry,
+            glassFaceGeometry,
+            glowGeometry,
+            sheenGeometry,
+            hudTopGeometry,
+            hudSideGeometry,
+            floorLineGeometry,
+            lightBeamGeometry
+        );
         const wallLayouts = [
-            { x: 0, y: 0.2, z: 1.25, scale: 1.55, rotY: 0, rotZ: 0 },
-            { x: -2.55, y: 1.45, z: -0.35, scale: 0.98, rotY: 0.16, rotZ: -0.025 },
-            { x: 2.75, y: 1.55, z: -0.55, scale: 1.02, rotY: -0.16, rotZ: 0.026 },
-            { x: -3.65, y: -0.2, z: -0.95, scale: 0.9, rotY: 0.24, rotZ: 0.018 },
-            { x: 3.75, y: -0.18, z: -1.05, scale: 0.92, rotY: -0.24, rotZ: -0.018 },
-            { x: -2.2, y: -1.7, z: -0.25, scale: 0.98, rotY: 0.14, rotZ: 0.035 },
-            { x: 2.2, y: -1.68, z: -0.32, scale: 1, rotY: -0.14, rotZ: -0.028 },
-            { x: 0.35, y: 2.2, z: -1.4, scale: 0.78, rotY: -0.04, rotZ: 0.015 },
-            { x: -4.35, y: 1.0, z: -1.7, scale: 0.72, rotY: 0.34, rotZ: -0.04 },
-            { x: 4.45, y: 1.0, z: -1.85, scale: 0.74, rotY: -0.34, rotZ: 0.04 },
-            { x: -4.45, y: -1.42, z: -1.55, scale: 0.74, rotY: 0.34, rotZ: 0.045 },
-            { x: 4.45, y: -1.38, z: -1.65, scale: 0.76, rotY: -0.34, rotZ: -0.04 },
-            { x: 0.1, y: -2.45, z: -1.15, scale: 0.72, rotY: 0, rotZ: 0 }
+            { x: 0, y: 0.12, z: 1.75, scale: 1.72, rotY: 0, rotZ: 0 },
+            { x: -2.75, y: 1.55, z: 0.15, scale: 1.02, rotY: 0.18, rotZ: -0.022 },
+            { x: 2.95, y: 1.48, z: -0.08, scale: 1.08, rotY: -0.18, rotZ: 0.025 },
+            { x: -3.8, y: -0.16, z: -0.52, scale: 0.9, rotY: 0.27, rotZ: 0.016 },
+            { x: 3.95, y: -0.14, z: -0.64, scale: 0.94, rotY: -0.27, rotZ: -0.016 },
+            { x: -2.2, y: -1.68, z: 0.12, scale: 1.03, rotY: 0.16, rotZ: 0.032 },
+            { x: 2.28, y: -1.72, z: -0.02, scale: 1.04, rotY: -0.16, rotZ: -0.026 },
+            { x: 0.36, y: 2.24, z: -1.02, scale: 0.78, rotY: -0.04, rotZ: 0.014 },
+            { x: -4.55, y: 0.98, z: -1.28, scale: 0.72, rotY: 0.38, rotZ: -0.04 },
+            { x: 4.6, y: 0.95, z: -1.42, scale: 0.74, rotY: -0.38, rotZ: 0.04 },
+            { x: -4.5, y: -1.38, z: -1.16, scale: 0.74, rotY: 0.36, rotZ: 0.044 },
+            { x: 4.5, y: -1.34, z: -1.28, scale: 0.76, rotY: -0.36, rotZ: -0.04 },
+            { x: 0.1, y: -2.45, z: -0.86, scale: 0.72, rotY: 0, rotZ: 0 }
         ];
 
         photos.forEach((photo, index) => {
@@ -1579,40 +1609,50 @@ document.addEventListener('DOMContentLoaded', () => {
             card.position.copy(glassWall.position);
             card.rotation.copy(glassWall.rotation);
 
+            const glassBackMaterial = new THREERef.MeshBasicMaterial({
+                color: 0x76e9ff,
+                transparent: true,
+                opacity: index === 0 ? 0.12 : 0.075,
+                blending: THREERef.AdditiveBlending,
+                depthWrite: false
+            });
+            const glassBack = new THREERef.Mesh(glassGeometry, glassBackMaterial);
+            glassBack.position.z = -0.055;
+            card.add(glassBack);
+
             const glowMaterial = new THREERef.MeshBasicMaterial({
                 color: 0x46d9ff,
                 transparent: true,
-                opacity: index === 0 ? 0.28 : 0.18,
+                opacity: index === 0 ? 0.34 : 0.22,
                 blending: THREERef.AdditiveBlending,
                 depthWrite: false,
                 side: THREERef.DoubleSide
             });
             const glow = new THREERef.Mesh(glowGeometry, glowMaterial);
-            glow.position.z = -0.028;
-            glow.scale.set(1.08, 1.12, 1);
+            glow.position.z = -0.085;
+            glow.scale.set(1.18, 1.22, 1);
             card.add(glow);
 
-            const frameMaterial = new THREERef.MeshBasicMaterial({
+            const frameMaterial = new THREERef.LineBasicMaterial({
                 color: 0x82eaff,
                 transparent: true,
-                opacity: index === 0 ? 0.38 : 0.26,
+                opacity: index === 0 ? 0.56 : 0.34,
                 blending: THREERef.AdditiveBlending,
-                depthWrite: false,
-                side: THREERef.DoubleSide
+                depthWrite: false
             });
-            const frame = new THREERef.Mesh(glassGeometry, frameMaterial);
-            frame.position.z = -0.018;
+            const frame = new THREERef.LineSegments(glassEdgeGeometry, frameMaterial);
+            frame.position.z = 0.004;
             card.add(frame);
 
             const glassMaterial = new THREERef.MeshBasicMaterial({
                 color: 0xcaf7ff,
                 transparent: true,
-                opacity: 0.08,
+                opacity: index === 0 ? 0.13 : 0.09,
                 depthWrite: false,
                 side: THREERef.DoubleSide
             });
-            const glass = new THREERef.Mesh(glassGeometry, glassMaterial);
-            glass.position.z = -0.01;
+            const glass = new THREERef.Mesh(glassFaceGeometry, glassMaterial);
+            glass.position.z = 0.022;
             glass.scale.set(1.02, 1.04, 1);
             card.add(glass);
 
@@ -1626,8 +1666,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 side: THREERef.DoubleSide
             });
             const plane = new THREERef.Mesh(immersiveState.photoGeometry, photoMaterial);
+            plane.position.z = 0.035;
             plane.userData.card = card;
             card.add(plane);
+
+            const sheenMaterial = new THREERef.MeshBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: index === 0 ? 0.22 : 0.14,
+                blending: THREERef.AdditiveBlending,
+                depthWrite: false,
+                side: THREERef.DoubleSide
+            });
+            const sheen = new THREERef.Mesh(sheenGeometry, sheenMaterial);
+            sheen.position.set(-0.18, 0.32, 0.052);
+            sheen.rotation.z = -0.22;
+            card.add(sheen);
 
             const hudMaterial = new THREERef.MeshBasicMaterial({
                 color: index === 0 ? 0xfff0bf : 0x46d9ff,
@@ -1645,6 +1699,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
             immersiveState.group.add(card);
             immersiveState.cards.push(card);
+        });
+
+        const floorMaterial = new THREERef.MeshBasicMaterial({
+            color: 0x46d9ff,
+            transparent: true,
+            opacity: 0.16,
+            blending: THREERef.AdditiveBlending,
+            depthWrite: false,
+            side: THREERef.DoubleSide
+        });
+        for (let i = 0; i < 8; i++) {
+            const floorLine = new THREERef.Mesh(floorLineGeometry, floorMaterial);
+            floorLine.position.set(0, -3.25, -2.4 + i * 0.48);
+            floorLine.rotation.x = -1.18;
+            floorLine.rotation.z = i % 2 ? 0.08 : -0.08;
+            immersiveState.group.add(floorLine);
+        }
+
+        const beamMaterial = new THREERef.MeshBasicMaterial({
+            color: 0x46d9ff,
+            transparent: true,
+            opacity: 0.07,
+            blending: THREERef.AdditiveBlending,
+            depthWrite: false,
+            side: THREERef.DoubleSide
+        });
+        [-4.2, -1.5, 2.15, 4.65].forEach((x, index) => {
+            const beam = new THREERef.Mesh(lightBeamGeometry, beamMaterial);
+            beam.position.set(x, 0.15, -1.8 - index * 0.22);
+            beam.rotation.z = index % 2 ? -0.24 : 0.2;
+            immersiveState.group.add(beam);
         });
 
         const ambient = new THREERef.AmbientLight(0xffffff, 1.2);

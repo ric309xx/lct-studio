@@ -674,10 +674,38 @@ body::before {
     display: flex;
     overflow: hidden;
     background:
-        radial-gradient(circle at 50% 22%, rgba(70, 217, 255, 0.12), transparent 26rem),
-        radial-gradient(circle at 70% 72%, rgba(200, 161, 90, 0.12), transparent 28rem),
+        linear-gradient(180deg, rgba(6, 14, 23, 0.2), rgba(2, 5, 9, 0.78)),
+        radial-gradient(circle at 56% 30%, rgba(70, 217, 255, 0.18), transparent 26rem),
+        radial-gradient(circle at 76% 70%, rgba(200, 161, 90, 0.13), transparent 30rem),
+        radial-gradient(circle at 18% 58%, rgba(70, 217, 255, 0.1), transparent 24rem),
         #03060a;
     color: white;
+}
+
+.immersive-3d-modal::before,
+.immersive-3d-modal::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.immersive-3d-modal::before {
+    background:
+        linear-gradient(rgba(70, 217, 255, 0.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(70, 217, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(118deg, transparent 0 43%, rgba(70, 217, 255, 0.12) 44%, transparent 47%),
+        linear-gradient(72deg, transparent 0 48%, rgba(200, 161, 90, 0.12) 49%, transparent 52%);
+    background-size: 42px 42px, 42px 42px, 100% 100%, 100% 100%;
+    opacity: 0.42;
+    mask-image: linear-gradient(180deg, transparent, black 16%, black 88%, transparent);
+}
+
+.immersive-3d-modal::after {
+    background:
+        linear-gradient(180deg, transparent 64%, rgba(70, 217, 255, 0.12) 65%, transparent 66%),
+        radial-gradient(ellipse at 50% 100%, rgba(70, 217, 255, 0.2), transparent 42%);
+    opacity: 0.62;
 }
 
 .immersive-3d-modal.hidden {
@@ -748,6 +776,7 @@ body::before {
     position: absolute;
     inset: 0;
     cursor: grab;
+    perspective: 1200px;
 }
 
 .immersive-3d-stage:active {
@@ -771,8 +800,9 @@ body::before {
     padding: 0.8rem 1.25rem;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 999px;
-    background: rgba(7, 10, 15, 0.72);
+    background: linear-gradient(135deg, rgba(7, 10, 15, 0.86), rgba(9, 24, 36, 0.72));
     backdrop-filter: blur(16px);
+    box-shadow: 0 0 2rem rgba(70, 217, 255, 0.12);
     transform: translateX(-50%);
 }
 
@@ -815,10 +845,14 @@ body::before {
     position: relative;
     min-height: 12rem;
     margin: 0;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(70, 217, 255, 0.36);
     border-radius: 8px;
     overflow: hidden;
-    background: #0b1018;
+    background: rgba(11, 16, 24, 0.56);
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+        0 0 1.8rem rgba(70, 217, 255, 0.22),
+        0 1.2rem 4rem rgba(0, 0, 0, 0.45);
 }
 
 .immersive-3d-fallback img {
