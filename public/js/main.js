@@ -309,21 +309,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const mapPanel = mapWrap?.closest('.map-route-panel');
         const pinsWrap = document.getElementById('map-pins');
         const routeSegments = document.getElementById('map-route-segments');
-        const strip = document.getElementById('journey-strip');
         const previewImg = document.getElementById('map-preview-img');
         const previewTitle = document.getElementById('map-preview-title');
-        const previewCategory = document.getElementById('map-preview-category');
-        const previewLat = document.getElementById('map-preview-lat');
-        const previewLng = document.getElementById('map-preview-lng');
-        const previewAlt = document.getElementById('map-preview-alt');
         const activeCoords = document.getElementById('map-active-coords');
-        const stopCount = document.getElementById('map-stop-count');
         const editToggle = document.getElementById('map-edit-toggle');
         const editReset = document.getElementById('map-edit-reset');
         const editCopy = document.getElementById('map-edit-copy');
         const editStatus = document.getElementById('map-edit-status');
 
-        if (!mapWrap || !pinsWrap || !routeSegments || !strip || !previewImg) return;
+        if (!mapWrap || !pinsWrap || !routeSegments || !previewImg) return;
         if (mapJourneyInitialized) return;
 
         const allPhotos = flattenPhotos(globalPhotoData);
@@ -339,7 +333,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!journeyPhotos.length) return;
 
         mapJourneyInitialized = true;
-        stopCount.textContent = `${journeyPhotos.length} STOPS`;
 
         const minLat = MAP_BOUNDS.minLat;
         const maxLat = MAP_BOUNDS.maxLat;
@@ -376,7 +369,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let points = journeyPhotos.map(toPoint);
         pinsWrap.innerHTML = '';
         routeSegments.innerHTML = '';
-        strip.innerHTML = '';
 
         const setPinPosition = (pin, point) => {
             pin.style.left = `${point.x}%`;
@@ -439,20 +431,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 80);
 
             previewTitle.textContent = getBaseLocationName(photo.filename);
-            previewCategory.textContent = `${photo.category} / STOP ${String(index + 1).padStart(2, '0')}`;
-            previewLat.textContent = formatCoord(photo.gps.lat);
-            previewLng.textContent = formatCoord(photo.gps.lng);
-            previewAlt.textContent = Number.isFinite(photo.gps.alt) ? `${Math.round(photo.gps.alt)} m` : '--';
             activeCoords.textContent = `${formatCoord(photo.gps.lat)}, ${formatCoord(photo.gps.lng)}`;
 
             pinsWrap.querySelectorAll('.map-pin').forEach((pin, pinIndex) => {
                 pin.classList.toggle('is-active', pinIndex === index);
-            });
-            routeSegments.querySelectorAll('.map-route-segment').forEach((segment, segmentIndex) => {
-                segment.classList.toggle('is-active', segmentIndex < index);
-            });
-            strip.querySelectorAll('.journey-thumb').forEach((thumb, thumbIndex) => {
-                thumb.classList.toggle('is-active', thumbIndex === index);
             });
         };
 
@@ -463,6 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
             pin.className = 'map-pin';
             setPinPosition(pin, point);
             pin.style.setProperty('--pin-color', getColorCss(photo.color, 1));
+            pin.dataset.title = getBaseLocationName(photo.filename);
             pin.setAttribute('aria-label', `查看 ${getBaseLocationName(photo.filename)}`);
             pin.addEventListener('pointerdown', (event) => {
                 if (!editMode) return;
@@ -480,16 +463,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 setActiveStop(index);
             });
             pinsWrap.appendChild(pin);
-
-            const thumb = document.createElement('button');
-            thumb.type = 'button';
-            thumb.className = 'journey-thumb';
-            thumb.innerHTML = `
-                <img src="${getPhotoSrc(photo)}" alt="${getBaseLocationName(photo.filename)}" loading="lazy">
-                <span>${String(index + 1).padStart(2, '0')}</span>
-            `;
-            thumb.addEventListener('click', () => setActiveStop(index));
-            strip.appendChild(thumb);
         });
 
         editToggle?.addEventListener('click', () => {
