@@ -385,21 +385,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const renderRouteSegments = () => {
             routeSegments.innerHTML = '';
-            points.slice(0, -1).forEach((point, index) => {
-                const nextPoint = points[index + 1];
-                const dx = nextPoint.x - point.x;
-                const dy = nextPoint.y - point.y;
-                const length = Math.sqrt(dx * dx + dy * dy);
-                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-                const segment = document.createElement('span');
-                segment.className = 'map-route-segment';
-                segment.style.left = `${point.x}%`;
-                segment.style.top = `${point.y}%`;
-                segment.style.width = `${length}%`;
-                segment.style.transform = `rotate(${angle}deg)`;
-                segment.classList.toggle('is-active', index < activeIndex);
-                routeSegments.appendChild(segment);
-            });
         };
 
         const updateEditStatus = (text) => {
@@ -1239,6 +1224,22 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- 8. Aerial Immersive 3D Gallery ---
+    const IMMERSIVE_GALLERY_FILENAMES = [
+        '高雄車站(高雄綠之丘).jpg',
+        '新北新店裕隆城.jpg',
+        '基隆外木山漁港-2.jpg',
+        '南投日月潭.jpg',
+        '桃園大園橫山書法藝術公園.jpg',
+        '宜蘭五結日落 (1)A.png',
+        '高雄中都橋.jpg',
+        '雲林西螺落日剪影 (2).jpg',
+        '花蓮和平火車站旁.jpg',
+        '台中漢神洲際百貨.jpg',
+        '高雄輕軌.jpg',
+        '台北士林雙溪濕地公園.jpg',
+        '新北淡水輕軌 (1).jpg'
+    ];
+
     const immersiveState = {
         initialized: false,
         modal: null,
@@ -1269,23 +1270,12 @@ document.addEventListener('DOMContentLoaded', () => {
         targetCameraZ: 8.8
     };
 
-    const selectImmersivePhotos = (count = 18) => {
-        const seeds = [
-            '台中漢神洲際百貨.jpg',
-            '新北林口藝樹家 (4).jpg',
-            '基隆外木山漁港.jpg',
-            '桃園玉山公園.jpg'
-        ];
+    const selectImmersivePhotos = (count = IMMERSIVE_GALLERY_FILENAMES.length) => {
         const pool = flattenPhotos(globalPhotoData)
             .filter(photo => !MAP_JOURNEY_FILENAME_SET.has(photo.filename));
-        const selected = [];
-
-        seeds.forEach(filename => {
-            const seed = pool.find(photo => photo.filename === filename);
-            if (seed && !selected.some(photo => photo.filename === seed.filename)) {
-                selected.push(seed);
-            }
-        });
+        const selected = IMMERSIVE_GALLERY_FILENAMES
+            .map(filename => pool.find(photo => photo.filename === filename))
+            .filter(Boolean);
 
         const scorePhoto = (photo) => {
             const prefix = photo.filename.substring(0, 4);
@@ -1756,7 +1746,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fallback?.classList.add('hidden');
         if (fallback) fallback.innerHTML = '';
 
-        const photos = selectImmersivePhotos(18);
+        const photos = selectImmersivePhotos();
         immersiveState.modal = modal;
         immersiveState.stage = stage;
         immersiveState.caption = caption;

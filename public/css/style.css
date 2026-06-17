@@ -294,15 +294,15 @@ body::before {
 
 .map-journey-shell {
     display: grid;
-    grid-template-columns: minmax(18rem, 0.78fr) minmax(24rem, 1.22fr);
-    gap: clamp(1.25rem, 3vw, 2.5rem);
+    grid-template-columns: minmax(18rem, 0.72fr) minmax(28rem, 1.28fr);
+    gap: clamp(1rem, 2.2vw, 2rem);
     align-items: stretch;
 }
 
 .map-route-panel,
 .map-preview-card {
     position: relative;
-    min-height: 34rem;
+    min-height: 28rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     background:
@@ -432,7 +432,7 @@ body::before {
 }
 
 .map-route-segments {
-    z-index: 2;
+    display: none;
 }
 
 .map-route-segment {
@@ -494,26 +494,28 @@ body::before {
 
 .map-preview-card {
     display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
 }
 
 .map-preview-image {
     position: relative;
-    min-height: 25rem;
+    min-height: 0;
+    aspect-ratio: 16 / 8.6;
     overflow: hidden;
+    background: rgba(3, 6, 10, 0.72);
 }
 
 .map-preview-image img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     filter: saturate(1.05) contrast(1.06);
-    transform: scale(1.02);
+    transform: scale(1);
     transition: opacity 0.24s ease, transform 0.7s ease;
 }
 
 .map-preview-card:hover .map-preview-image img {
-    transform: scale(1.065);
+    transform: scale(1.025);
 }
 
 .map-preview-image::after {
@@ -536,11 +538,11 @@ body::before {
 .map-preview-content {
     position: relative;
     z-index: 2;
-    padding: 1.05rem 1.25rem 1.15rem;
+    padding: 0.85rem 1.05rem 0.95rem;
 }
 
 .map-preview-category {
-    margin-bottom: 0.45rem;
+    margin-bottom: 0.3rem;
     color: #c8a15a;
     font-size: 0.68rem;
     font-weight: 700;
@@ -549,9 +551,9 @@ body::before {
 }
 
 .map-preview-content h3 {
-    min-height: 1.8rem;
+    min-height: 1.5rem;
     color: #fff;
-    font-size: clamp(1.18rem, 2vw, 1.62rem);
+    font-size: clamp(1.1rem, 1.6vw, 1.45rem);
     font-weight: 800;
     letter-spacing: 0;
     line-height: 1.2;
@@ -560,20 +562,20 @@ body::before {
 .map-preview-meta {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.65rem;
-    margin-top: 0.9rem;
+    gap: 0.55rem;
+    margin-top: 0.65rem;
 }
 
 .map-preview-meta div {
     min-width: 0;
-    padding: 0.64rem 0.7rem;
+    padding: 0.52rem 0.64rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.035);
 }
 
 .map-preview-meta dt {
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.22rem;
     color: rgba(229, 231, 235, 0.46);
     font-size: 0.65rem;
     font-weight: 700;
@@ -589,8 +591,8 @@ body::before {
 
 .journey-strip {
     display: grid;
-    grid-template-columns: repeat(13, minmax(4.4rem, 1fr));
-    gap: 0.55rem;
+    grid-template-columns: repeat(13, minmax(4rem, 1fr));
+    gap: 0.5rem;
     overflow-x: auto;
     padding-bottom: 0.35rem;
     scrollbar-color: rgba(200, 161, 90, 0.48) rgba(255, 255, 255, 0.08);
@@ -598,8 +600,8 @@ body::before {
 
 .journey-thumb {
     position: relative;
-    height: 5.6rem;
-    min-width: 4.4rem;
+    height: 4.85rem;
+    min-width: 4rem;
     border: 1px solid rgba(255, 255, 255, 0.09);
     border-radius: 8px;
     overflow: hidden;
