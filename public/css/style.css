@@ -261,6 +261,536 @@ body::before {
     text-shadow: 0 2px 18px rgba(0, 0, 0, 0.9);
 }
 
+/* Aerial Map Journey */
+.map-journey-section {
+    position: relative;
+    overflow: hidden;
+}
+
+.map-journey-section::before {
+    content: "";
+    position: absolute;
+    inset: 8% 0 auto;
+    height: 38rem;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 22% 40%, rgba(70, 217, 255, 0.1), transparent 18rem),
+        radial-gradient(circle at 76% 18%, rgba(200, 161, 90, 0.12), transparent 20rem),
+        linear-gradient(90deg, transparent, rgba(123, 199, 154, 0.05), transparent);
+    opacity: 0.86;
+}
+
+.map-journey-note {
+    display: inline-flex;
+    max-width: 100%;
+    padding: 0.65rem 1rem;
+    border: 1px solid rgba(200, 161, 90, 0.24);
+    border-radius: 999px;
+    color: rgba(255, 240, 191, 0.78);
+    background: rgba(7, 10, 15, 0.34);
+    font-size: 0.86rem;
+    line-height: 1.6;
+}
+
+.map-journey-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(20rem, 0.95fr);
+    gap: clamp(1.25rem, 3vw, 2.5rem);
+    align-items: stretch;
+}
+
+.map-route-panel,
+.map-preview-card {
+    position: relative;
+    min-height: 34rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background:
+        linear-gradient(180deg, rgba(17, 24, 39, 0.72), rgba(7, 10, 15, 0.88)),
+        linear-gradient(135deg, rgba(70, 217, 255, 0.08), transparent 42%, rgba(200, 161, 90, 0.08));
+    box-shadow: 0 28px 90px rgba(0, 0, 0, 0.38);
+    overflow: hidden;
+}
+
+.map-route-panel::after,
+.map-preview-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 26px 26px;
+    opacity: 0.22;
+}
+
+.map-panel-label,
+.map-route-hint {
+    position: absolute;
+    left: 1.25rem;
+    right: 1.25rem;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    color: rgba(229, 231, 235, 0.68);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+.map-panel-label {
+    top: 1.25rem;
+}
+
+.map-panel-label strong {
+    color: #fff0bf;
+}
+
+.map-route-hint {
+    bottom: 1.25rem;
+    letter-spacing: 0.08em;
+    text-transform: none;
+}
+
+.map-route-hint span:last-child {
+    color: rgba(70, 217, 255, 0.9);
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+
+.map-canvas-wrap {
+    position: absolute;
+    inset: 3.75rem 1.25rem 3.75rem;
+    overflow: hidden;
+    border-radius: 8px;
+    background:
+        radial-gradient(circle at 50% 42%, rgba(70, 217, 255, 0.08), transparent 17rem),
+        linear-gradient(180deg, rgba(7, 10, 15, 0.18), rgba(7, 10, 15, 0.58));
+}
+
+.map-route-svg,
+.map-pins {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.map-island-outline {
+    fill: rgba(229, 231, 235, 0.025);
+    stroke: rgba(229, 231, 235, 0.2);
+    stroke-width: 0.85;
+}
+
+.map-route-line,
+.map-route-progress {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.map-route-line {
+    stroke: rgba(255, 255, 255, 0.16);
+    stroke-width: 0.8;
+    stroke-dasharray: 2 2;
+}
+
+.map-route-progress {
+    stroke: url(#journey-route-gradient);
+    stroke-width: 1.35;
+    filter: drop-shadow(0 0 0.55rem rgba(70, 217, 255, 0.42));
+}
+
+.map-pin {
+    position: absolute;
+    z-index: 3;
+    width: 1.15rem;
+    height: 1.15rem;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 50%;
+    background: rgba(7, 10, 15, 0.72);
+    box-shadow: 0 0 0 0 rgba(200, 161, 90, 0.0), 0 0 1.3rem rgba(70, 217, 255, 0.2);
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    transition: transform 0.24s ease, border-color 0.24s ease, background 0.24s ease, box-shadow 0.24s ease;
+}
+
+.map-pin::before {
+    content: "";
+    position: absolute;
+    inset: 0.28rem;
+    border-radius: inherit;
+    background: var(--pin-color, #c8a15a);
+}
+
+.map-pin:hover,
+.map-pin.is-active {
+    transform: translate(-50%, -50%) scale(1.28);
+    border-color: #fff0bf;
+    background: rgba(200, 161, 90, 0.2);
+    box-shadow: 0 0 0 0.45rem rgba(200, 161, 90, 0.12), 0 0 2rem rgba(200, 161, 90, 0.34);
+}
+
+.map-preview-card {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.map-preview-image {
+    position: relative;
+    min-height: 21rem;
+    overflow: hidden;
+}
+
+.map-preview-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(1.05) contrast(1.06);
+    transform: scale(1.02);
+    transition: opacity 0.24s ease, transform 0.7s ease;
+}
+
+.map-preview-card:hover .map-preview-image img {
+    transform: scale(1.065);
+}
+
+.map-preview-image::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(180deg, transparent 24%, rgba(7, 10, 15, 0.28) 62%, rgba(7, 10, 15, 0.88)),
+        linear-gradient(90deg, rgba(7, 10, 15, 0.48), transparent 44%, rgba(7, 10, 15, 0.2));
+}
+
+.map-preview-sheen {
+    position: absolute;
+    inset: auto 0 0;
+    height: 0.2rem;
+    background: linear-gradient(90deg, #46d9ff, #c8a15a, #7bc79a);
+    opacity: 0.85;
+}
+
+.map-preview-content {
+    position: relative;
+    z-index: 2;
+    padding: 1.4rem;
+}
+
+.map-preview-category {
+    margin-bottom: 0.65rem;
+    color: #c8a15a;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+.map-preview-content h3 {
+    min-height: 2.4rem;
+    color: #fff;
+    font-size: clamp(1.45rem, 2.6vw, 2.1rem);
+    font-weight: 800;
+    letter-spacing: 0;
+    line-height: 1.2;
+}
+
+.map-preview-meta {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.65rem;
+    margin-top: 1.2rem;
+}
+
+.map-preview-meta div {
+    min-width: 0;
+    padding: 0.85rem 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.map-preview-meta dt {
+    margin-bottom: 0.35rem;
+    color: rgba(229, 231, 235, 0.46);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+}
+
+.map-preview-meta dd {
+    color: rgba(229, 231, 235, 0.9);
+    font-size: 0.78rem;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    overflow-wrap: anywhere;
+}
+
+.journey-strip {
+    display: grid;
+    grid-template-columns: repeat(13, minmax(4.4rem, 1fr));
+    gap: 0.55rem;
+    overflow-x: auto;
+    padding-bottom: 0.35rem;
+    scrollbar-color: rgba(200, 161, 90, 0.48) rgba(255, 255, 255, 0.08);
+}
+
+.journey-thumb {
+    position: relative;
+    height: 5.6rem;
+    min-width: 4.4rem;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    background: #0b1018;
+    opacity: 0.62;
+    transition: opacity 0.24s ease, transform 0.24s ease, border-color 0.24s ease;
+}
+
+.journey-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.journey-thumb span {
+    position: absolute;
+    left: 0.45rem;
+    bottom: 0.35rem;
+    color: white;
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+}
+
+.journey-thumb:hover,
+.journey-thumb.is-active {
+    opacity: 1;
+    transform: translateY(-0.18rem);
+    border-color: rgba(200, 161, 90, 0.72);
+}
+
+.immersive-open-btn {
+    position: relative;
+    min-height: 3.75rem;
+    border: 1px solid rgba(200, 161, 90, 0.38);
+    border-radius: 999px;
+    color: #fff;
+    background:
+        linear-gradient(135deg, rgba(200, 161, 90, 0.2), rgba(70, 217, 255, 0.08)),
+        rgba(17, 24, 39, 0.78);
+    box-shadow: 0 20px 54px rgba(0, 0, 0, 0.36), 0 0 2rem rgba(200, 161, 90, 0.08);
+    transition: transform 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
+}
+
+.immersive-open-btn:hover {
+    transform: translateY(-0.18rem);
+    border-color: rgba(255, 240, 191, 0.72);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.46), 0 0 2.5rem rgba(200, 161, 90, 0.16);
+}
+
+.immersive-open-icon {
+    width: 1.15rem;
+    aspect-ratio: 1;
+    border: 1px solid rgba(255, 240, 191, 0.8);
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 0.28rem rgba(200, 161, 90, 0.32), 0 0 1.2rem rgba(200, 161, 90, 0.44);
+}
+
+/* Immersive 3D Gallery */
+.immersive-3d-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 220;
+    display: flex;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 50% 22%, rgba(70, 217, 255, 0.12), transparent 26rem),
+        radial-gradient(circle at 70% 72%, rgba(200, 161, 90, 0.12), transparent 28rem),
+        #03060a;
+    color: white;
+}
+
+.immersive-3d-modal.hidden {
+    display: none;
+}
+
+.immersive-3d-topbar {
+    position: absolute;
+    z-index: 5;
+    top: 1.25rem;
+    left: 1.25rem;
+    right: 1.25rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    pointer-events: none;
+}
+
+.immersive-3d-topbar p {
+    margin-bottom: 0.3rem;
+    color: #c8a15a;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+}
+
+.immersive-3d-topbar h2 {
+    font-size: clamp(1.45rem, 3vw, 2.45rem);
+    font-weight: 900;
+    letter-spacing: 0;
+}
+
+.immersive-close-btn {
+    position: relative;
+    width: 3rem;
+    aspect-ratio: 1;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 50%;
+    background: rgba(7, 10, 15, 0.58);
+    pointer-events: auto;
+    transition: border-color 0.22s ease, background 0.22s ease;
+}
+
+.immersive-close-btn:hover {
+    border-color: rgba(255, 240, 191, 0.62);
+    background: rgba(200, 161, 90, 0.16);
+}
+
+.immersive-close-btn span {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 1.15rem;
+    height: 1px;
+    background: white;
+}
+
+.immersive-close-btn span:first-child {
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.immersive-close-btn span:last-child {
+    transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.immersive-3d-stage {
+    position: absolute;
+    inset: 0;
+    cursor: grab;
+}
+
+.immersive-3d-stage:active {
+    cursor: grabbing;
+}
+
+.immersive-3d-stage canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.immersive-3d-controls {
+    position: absolute;
+    z-index: 5;
+    left: 50%;
+    bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: calc(100vw - 2.5rem);
+    padding: 0.55rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    background: rgba(7, 10, 15, 0.72);
+    backdrop-filter: blur(16px);
+    transform: translateX(-50%);
+}
+
+.immersive-3d-controls button {
+    min-height: 2.35rem;
+    padding: 0 1rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    color: rgba(229, 231, 235, 0.62);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.immersive-3d-controls button.is-active {
+    color: #fff0bf;
+    border-color: rgba(200, 161, 90, 0.42);
+    background: rgba(200, 161, 90, 0.14);
+}
+
+.immersive-3d-controls span {
+    padding: 0 0.8rem 0 0.4rem;
+    color: rgba(229, 231, 235, 0.5);
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.immersive-3d-caption {
+    position: absolute;
+    z-index: 5;
+    left: 1.25rem;
+    bottom: 1.4rem;
+    max-width: min(34rem, calc(100vw - 2.5rem));
+    color: rgba(229, 231, 235, 0.78);
+    font-size: 0.86rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    pointer-events: none;
+}
+
+.immersive-3d-fallback {
+    position: absolute;
+    inset: 7rem 1.25rem 6rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: 0.75rem;
+    overflow: auto;
+}
+
+.immersive-3d-fallback.hidden {
+    display: none;
+}
+
+.immersive-3d-fallback figure {
+    position: relative;
+    min-height: 12rem;
+    margin: 0;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    overflow: hidden;
+    background: #0b1018;
+}
+
+.immersive-3d-fallback img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.immersive-3d-fallback figcaption {
+    position: absolute;
+    left: 0.7rem;
+    right: 0.7rem;
+    bottom: 0.65rem;
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+}
+
 /* Lightbox Navigation Buttons */
 .lightbox-nav-btn {
     position: absolute;
@@ -1243,6 +1773,113 @@ body::before {
 .swiper-button-prev::after {
     font-size: 20px !important;
     font-weight: bold;
+}
+
+@media (max-width: 1023px) {
+    .map-journey-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .map-route-panel,
+    .map-preview-card {
+        min-height: 30rem;
+    }
+
+    .journey-strip {
+        grid-template-columns: repeat(13, 5rem);
+    }
+}
+
+@media (max-width: 767px) {
+    .map-journey-section {
+        padding-top: 3.5rem;
+        padding-bottom: 3.5rem;
+    }
+
+    .map-journey-note {
+        align-items: center;
+        border-radius: 8px;
+        font-size: 0.8rem;
+    }
+
+    .map-route-panel,
+    .map-preview-card {
+        min-height: 27rem;
+    }
+
+    .map-panel-label,
+    .map-route-hint {
+        left: 0.9rem;
+        right: 0.9rem;
+        font-size: 0.62rem;
+        letter-spacing: 0.1em;
+    }
+
+    .map-canvas-wrap {
+        inset: 3.2rem 0.8rem 3.45rem;
+    }
+
+    .map-preview-image {
+        min-height: 16rem;
+    }
+
+    .map-preview-content {
+        padding: 1rem;
+    }
+
+    .map-preview-meta {
+        grid-template-columns: 1fr;
+    }
+
+    .journey-thumb {
+        height: 4.8rem;
+    }
+
+    .immersive-open-btn {
+        width: 100%;
+        justify-content: center;
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+    }
+
+    .immersive-3d-topbar {
+        top: 0.85rem;
+        left: 0.85rem;
+        right: 0.85rem;
+    }
+
+    .immersive-close-btn {
+        width: 2.65rem;
+    }
+
+    .immersive-3d-controls {
+        left: 0.85rem;
+        right: 0.85rem;
+        bottom: 0.85rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        border-radius: 8px;
+        transform: none;
+    }
+
+    .immersive-3d-controls button {
+        flex: 1 1 8rem;
+        padding: 0 0.7rem;
+    }
+
+    .immersive-3d-controls span {
+        flex: 1 0 100%;
+        padding: 0.2rem 0 0.1rem;
+        text-align: center;
+        white-space: normal;
+    }
+
+    .immersive-3d-caption {
+        left: 0.85rem;
+        right: 0.85rem;
+        bottom: 6.5rem;
+        font-size: 0.72rem;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {

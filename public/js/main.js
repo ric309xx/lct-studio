@@ -142,6 +142,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     let globalPhotoData = {}; // Store fetched data
+    const MAP_JOURNEY_FILENAMES = [
+        '新北淡水海尾子海灘 (1).jpg',
+        '基隆望幽谷.jpg',
+        '台北士林洲美橡皮壩.jpg',
+        '桃園觀音工業區廠房.jpg',
+        '新竹寶山小西湖.jpg',
+        '宜蘭五結防潮閘門-2.jpg',
+        '宜蘭冬山河旁景致.jpg',
+        '花蓮清水斷崖.jpg',
+        '花蓮和平火車站旁-2.jpg',
+        '雲林西螺蝴蝶公園.jpg',
+        '雲林斗六石榴火車站.jpg',
+        '雲林北港女兒橋.jpg',
+        '澎湖湖西菓葉觀日樓.jpg'
+    ];
+    const MAP_JOURNEY_FILENAME_SET = new Set(MAP_JOURNEY_FILENAMES);
+
+    const flattenPhotos = (data = globalPhotoData) => {
+        return Object.keys(data || {}).flatMap(category => {
+            const photos = data[category] || [];
+            return photos.map(photo => ({ ...photo, category }));
+        });
+    };
+
+    const getPhotoSrc = (photo) => {
+        return `./public/photos/${encodeURIComponent(photo.category)}/${encodeURIComponent(photo.filename)}`;
+    };
+
+    const getColorCss = (color, alpha = 1) => {
+        const safeColor = Array.isArray(color) ? color : [200, 161, 90];
+        return `rgba(${safeColor[0]}, ${safeColor[1]}, ${safeColor[2]}, ${alpha})`;
+    };
+
+    const formatCoord = (value) => {
+        return Number.isFinite(value) ? value.toFixed(5) : '--';
+    };
 
     // Color Distance Calculation (Euclidean)
     const getColorDistance = (color1, color2) => {
@@ -217,6 +253,120 @@ document.addEventListener('DOMContentLoaded', () => {
         return selected;
     };
 
+    let mapJourneyInitialized = false;
+
+    const setupMapJourney = () => {
+        const mapWrap = document.getElementById('map-canvas-wrap');
+        const pinsWrap = document.getElementById('map-pins');
+        const strip = document.getElementById('journey-strip');
+        const routeLine = document.getElementById('map-route-line');
+        const routeProgress = document.getElementById('map-route-progress');
+        const previewImg = document.getElementById('map-preview-img');
+        const previewTitle = document.getElementById('map-preview-title');
+        const previewCategory = document.getElementById('map-preview-category');
+        const previewLat = document.getElementById('map-preview-lat');
+        const previewLng = document.getElementById('map-preview-lng');
+        const previewAlt = document.getElementById('map-preview-alt');
+        const activeCoords = document.getElementById('map-active-coords');
+        const stopCount = document.getElementById('map-stop-count');
+
+        if (!mapWrap || !pinsWrap || !strip || !routeLine || !routeProgress || !previewImg) return;
+
+        const allPhotos = flattenPhotos(globalPhotoData);
+        const journeyPhotos = MAP_JOURNEY_FILENAMES
+            .map(filename => allPhotos.find(photo => photo.filename === filename && photo.gps))
+            .filter(Boolean);
+
+        if (!journeyPhotos.length) return;
+
+        mapJourneyInitialized = true;
+        stopCount.textContent = `${journeyPhotos.length} STOPS`;
+
+        const lats = journeyPhotos.map(photo => photo.gps.lat);
+        const lngs = journeyPhotos.map(photo => photo.gps.lng);
+        const minLat = Math.min(...lats);
+        const maxLat = Math.max(...lats);
+        const minLng = Math.min(...lngs);
+        const maxLng = Math.max(...lngs);
+        const lngRange = maxLng - minLng || 1;
+        const latRange = maxLat - minLat || 1;
+
+        const toPoint = (photo) => {
+            const x = 13 + ((photo.gps.lng - minLng) / lngRange) * 74;
+            const y = 10 + ((maxLat - photo.gps.lat) / latRange) * 120;
+            return { x, y };
+        };
+
+        const points = journeyPhotos.map(toPoint);
+        const routeD = points.map((point, index) => {
+            const command = index === 0 ? 'M' : 'L';
+            return `${command} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
+        }).join(' ');
+
+        routeLine.setAttribute('d', routeD);
+        routeProgress.setAttribute('d', routeD);
+        pinsWrap.innerHTML = '';
+        strip.innerHTML = '';
+
+        const setActiveStop = (index) => {
+            const photo = journeyPhotos[index];
+            if (!photo) return;
+
+            previewImg.style.opacity = '0.55';
+            setTimeout(() => {
+                previewImg.src = getPhotoSrc(photo);
+                previewImg.alt = getBaseLocationName(photo.filename);
+                previewImg.style.opacity = '1';
+            }, 80);
+
+            previewTitle.textContent = getBaseLocationName(photo.filename);
+            previewCategory.textContent = `${photo.category} / STOP ${String(index + 1).padStart(2, '0')}`;
+            previewLat.textContent = formatCoord(photo.gps.lat);
+            previewLng.textContent = formatCoord(photo.gps.lng);
+            previewAlt.textContent = Number.isFinite(photo.gps.alt) ? `${Math.round(photo.gps.alt)} m` : '--';
+            activeCoords.textContent = `${formatCoord(photo.gps.lat)}, ${formatCoord(photo.gps.lng)}`;
+
+            const progressLength = routeProgress.getTotalLength ? routeProgress.getTotalLength() : 0;
+            if (progressLength) {
+                const ratio = journeyPhotos.length > 1 ? index / (journeyPhotos.length - 1) : 1;
+                routeProgress.style.strokeDasharray = progressLength;
+                routeProgress.style.strokeDashoffset = progressLength * (1 - ratio);
+            }
+
+            pinsWrap.querySelectorAll('.map-pin').forEach((pin, pinIndex) => {
+                pin.classList.toggle('is-active', pinIndex === index);
+            });
+            strip.querySelectorAll('.journey-thumb').forEach((thumb, thumbIndex) => {
+                thumb.classList.toggle('is-active', thumbIndex === index);
+            });
+        };
+
+        journeyPhotos.forEach((photo, index) => {
+            const point = points[index];
+            const pin = document.createElement('button');
+            pin.type = 'button';
+            pin.className = 'map-pin';
+            pin.style.left = `${point.x}%`;
+            pin.style.top = `${(point.y / 140) * 100}%`;
+            pin.style.setProperty('--pin-color', getColorCss(photo.color, 1));
+            pin.setAttribute('aria-label', `查看 ${getBaseLocationName(photo.filename)}`);
+            pin.addEventListener('click', () => setActiveStop(index));
+            pinsWrap.appendChild(pin);
+
+            const thumb = document.createElement('button');
+            thumb.type = 'button';
+            thumb.className = 'journey-thumb';
+            thumb.innerHTML = `
+                <img src="${getPhotoSrc(photo)}" alt="${getBaseLocationName(photo.filename)}" loading="lazy">
+                <span>${String(index + 1).padStart(2, '0')}</span>
+            `;
+            thumb.addEventListener('click', () => setActiveStop(index));
+            strip.appendChild(thumb);
+        });
+
+        setActiveStop(0);
+    };
+
     const renderGallery = (categoryName) => {
         const galleryContainer = document.getElementById(`gallery-${categoryName}`);
         if (!galleryContainer) return;
@@ -266,6 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
         categories.forEach(category => {
             renderGallery(category);
         });
+        setupMapJourney();
 
     };
 
@@ -906,6 +1057,416 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    // --- 8. Aerial Immersive 3D Gallery ---
+    const immersiveState = {
+        initialized: false,
+        modal: null,
+        stage: null,
+        caption: null,
+        scene: null,
+        camera: null,
+        renderer: null,
+        group: null,
+        raycaster: null,
+        pointer: null,
+        cards: [],
+        textures: [],
+        frameGeometry: null,
+        photoGeometry: null,
+        animationId: null,
+        mode: 'wall',
+        focused: null,
+        isDragging: false,
+        dragMoved: false,
+        lastX: 0,
+        lastY: 0,
+        targetRotX: 0,
+        targetRotY: 0,
+        currentRotX: 0,
+        currentRotY: 0,
+        targetCameraZ: 8.8
+    };
+
+    const selectImmersivePhotos = (count = 18) => {
+        const seeds = [
+            '台中漢神洲際百貨.jpg',
+            '新北林口藝樹家 (4).jpg',
+            '基隆外木山漁港.jpg',
+            '桃園玉山公園.jpg'
+        ];
+        const pool = flattenPhotos(globalPhotoData)
+            .filter(photo => !MAP_JOURNEY_FILENAME_SET.has(photo.filename));
+        const selected = [];
+
+        seeds.forEach(filename => {
+            const seed = pool.find(photo => photo.filename === filename);
+            if (seed && !selected.some(photo => photo.filename === seed.filename)) {
+                selected.push(seed);
+            }
+        });
+
+        const scorePhoto = (photo) => {
+            const prefix = photo.filename.substring(0, 4);
+            if (selected.some(item => item.filename === photo.filename)) return -Infinity;
+            if (selected.some(item => item.filename.substring(0, 4) === prefix)) return -900;
+
+            const lightness = photo.color ? (Math.max(...photo.color) + Math.min(...photo.color)) / 2 : 80;
+            const colorDistance = selected.length
+                ? Math.min(...selected.map(item => getColorDistance(item.color, photo.color)))
+                : 160;
+            const categoryCount = selected.filter(item => item.category === photo.category).length;
+            const categoryBalance = categoryCount > selected.length / 2 ? -30 : 12;
+            const darkPenalty = lightness < 8 ? -70 : 0;
+            const gpsBonus = photo.gps ? 8 : 0;
+
+            return colorDistance + categoryBalance + darkPenalty + gpsBonus;
+        };
+
+        while (selected.length < count && selected.length < pool.length) {
+            let bestPhoto = null;
+            let bestScore = -Infinity;
+
+            pool.forEach(photo => {
+                const score = scorePhoto(photo);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestPhoto = photo;
+                }
+            });
+
+            if (!bestPhoto) break;
+            selected.push(bestPhoto);
+        }
+
+        return selected.slice(0, count);
+    };
+
+    const setImmersiveModeButtons = (mode) => {
+        document.querySelectorAll('[data-gallery-mode]').forEach(button => {
+            button.classList.toggle('is-active', button.dataset.galleryMode === mode);
+        });
+    };
+
+    const setCardTarget = (card, target) => {
+        card.userData.targetPosition.copy(target.position);
+        card.userData.targetRotation.copy(target.rotation);
+        card.userData.targetScale = target.scale;
+    };
+
+    const layoutImmersiveCards = (mode) => {
+        immersiveState.mode = mode;
+        immersiveState.focused = null;
+        immersiveState.caption.textContent = mode === 'scatter'
+            ? 'SCATTER MODE / 拖曳視角探索照片'
+            : 'CURATED WALL / 點選照片聚焦成果';
+        setImmersiveModeButtons(mode);
+
+        immersiveState.cards.forEach(card => {
+            setCardTarget(card, card.userData.layouts[mode]);
+        });
+    };
+
+    const focusImmersiveCard = (card) => {
+        if (immersiveState.focused === card) {
+            layoutImmersiveCards(immersiveState.mode);
+            return;
+        }
+
+        immersiveState.focused = card;
+        immersiveState.caption.textContent = `${getBaseLocationName(card.userData.photo.filename)} / ${card.userData.photo.category}`;
+
+        immersiveState.cards.forEach(item => {
+            if (item === card) {
+                setCardTarget(item, {
+                    position: new THREE.Vector3(0, 0, 2.1),
+                    rotation: new THREE.Euler(0, 0, 0),
+                    scale: 1.55
+                });
+            } else {
+                const base = item.userData.layouts[immersiveState.mode];
+                setCardTarget(item, {
+                    position: new THREE.Vector3(base.position.x * 1.18, base.position.y * 0.92, base.position.z - 1.6),
+                    rotation: base.rotation,
+                    scale: 0.72
+                });
+            }
+        });
+    };
+
+    const buildImmersiveFallback = (photos) => {
+        const fallback = document.getElementById('immersive-3d-fallback');
+        if (!fallback) return;
+
+        fallback.innerHTML = photos.map(photo => `
+            <figure>
+                <img src="${getPhotoSrc(photo)}" alt="${getBaseLocationName(photo.filename)}" loading="lazy">
+                <figcaption>${getBaseLocationName(photo.filename)}</figcaption>
+            </figure>
+        `).join('');
+        fallback.classList.remove('hidden');
+    };
+
+    const disposeImmersiveGallery = () => {
+        if (immersiveState.animationId) {
+            cancelAnimationFrame(immersiveState.animationId);
+            immersiveState.animationId = null;
+        }
+
+        window.removeEventListener('resize', resizeImmersiveGallery);
+        immersiveState.stage?.removeEventListener('pointerdown', handleImmersivePointerDown);
+        window.removeEventListener('pointermove', handleImmersivePointerMove);
+        window.removeEventListener('pointerup', handleImmersivePointerUp);
+        immersiveState.stage?.removeEventListener('wheel', handleImmersiveWheel);
+
+        immersiveState.textures.forEach(texture => texture.dispose());
+        immersiveState.cards.forEach(card => {
+            card.traverse(child => {
+                if (child.material) child.material.dispose();
+            });
+        });
+        immersiveState.frameGeometry?.dispose();
+        immersiveState.photoGeometry?.dispose();
+        immersiveState.renderer?.dispose();
+        immersiveState.renderer?.domElement?.remove();
+
+        Object.assign(immersiveState, {
+            initialized: false,
+            scene: null,
+            camera: null,
+            renderer: null,
+            group: null,
+            raycaster: null,
+            pointer: null,
+            cards: [],
+            textures: [],
+            frameGeometry: null,
+            photoGeometry: null,
+            focused: null,
+            mode: 'wall',
+            targetRotX: 0,
+            targetRotY: 0,
+            currentRotX: 0,
+            currentRotY: 0,
+            targetCameraZ: 8.8
+        });
+    };
+
+    const resizeImmersiveGallery = () => {
+        if (!immersiveState.camera || !immersiveState.renderer || !immersiveState.stage) return;
+        const width = immersiveState.stage.clientWidth || window.innerWidth;
+        const height = immersiveState.stage.clientHeight || window.innerHeight;
+        immersiveState.camera.aspect = width / height;
+        immersiveState.camera.updateProjectionMatrix();
+        immersiveState.renderer.setSize(width, height);
+    };
+
+    const handleImmersivePointerDown = (event) => {
+        immersiveState.isDragging = true;
+        immersiveState.dragMoved = false;
+        immersiveState.lastX = event.clientX;
+        immersiveState.lastY = event.clientY;
+        immersiveState.stage?.setPointerCapture?.(event.pointerId);
+    };
+
+    const handleImmersivePointerMove = (event) => {
+        if (!immersiveState.isDragging) return;
+        const dx = event.clientX - immersiveState.lastX;
+        const dy = event.clientY - immersiveState.lastY;
+        if (Math.abs(dx) + Math.abs(dy) > 4) immersiveState.dragMoved = true;
+
+        immersiveState.targetRotY += dx * 0.004;
+        immersiveState.targetRotX += dy * 0.0025;
+        immersiveState.targetRotX = Math.max(-0.24, Math.min(0.24, immersiveState.targetRotX));
+        immersiveState.lastX = event.clientX;
+        immersiveState.lastY = event.clientY;
+    };
+
+    const handleImmersivePointerUp = (event) => {
+        if (!immersiveState.isDragging) return;
+        immersiveState.isDragging = false;
+        immersiveState.stage?.releasePointerCapture?.(event.pointerId);
+
+        if (immersiveState.dragMoved || !immersiveState.raycaster || !immersiveState.pointer) return;
+
+        const rect = immersiveState.renderer.domElement.getBoundingClientRect();
+        immersiveState.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        immersiveState.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        immersiveState.raycaster.setFromCamera(immersiveState.pointer, immersiveState.camera);
+        const intersections = immersiveState.raycaster.intersectObjects(immersiveState.cards, true);
+        const hit = intersections.find(item => item.object.userData.card)?.object.userData.card;
+        if (hit) focusImmersiveCard(hit);
+    };
+
+    const handleImmersiveWheel = (event) => {
+        event.preventDefault();
+        immersiveState.targetCameraZ += event.deltaY * 0.003;
+        immersiveState.targetCameraZ = Math.max(5.5, Math.min(12, immersiveState.targetCameraZ));
+    };
+
+    const animateImmersiveGallery = () => {
+        immersiveState.animationId = requestAnimationFrame(animateImmersiveGallery);
+        const lerp = prefersReducedMotion ? 0.42 : 0.08;
+
+        immersiveState.currentRotX += (immersiveState.targetRotX - immersiveState.currentRotX) * lerp;
+        immersiveState.currentRotY += (immersiveState.targetRotY - immersiveState.currentRotY) * lerp;
+        if (immersiveState.group) {
+            immersiveState.group.rotation.x = immersiveState.currentRotX;
+            immersiveState.group.rotation.y = immersiveState.currentRotY;
+        }
+
+        if (immersiveState.camera) {
+            immersiveState.camera.position.z += (immersiveState.targetCameraZ - immersiveState.camera.position.z) * lerp;
+        }
+
+        immersiveState.cards.forEach(card => {
+            card.position.lerp(card.userData.targetPosition, lerp);
+            card.rotation.x += (card.userData.targetRotation.x - card.rotation.x) * lerp;
+            card.rotation.y += (card.userData.targetRotation.y - card.rotation.y) * lerp;
+            card.rotation.z += (card.userData.targetRotation.z - card.rotation.z) * lerp;
+            card.scale.lerp(new THREE.Vector3(card.userData.targetScale, card.userData.targetScale, card.userData.targetScale), lerp);
+        });
+
+        immersiveState.renderer.render(immersiveState.scene, immersiveState.camera);
+    };
+
+    const initImmersiveGallery = (photos) => {
+        if (!window.THREE) {
+            buildImmersiveFallback(photos);
+            return false;
+        }
+
+        const THREERef = window.THREE;
+        immersiveState.scene = new THREERef.Scene();
+        immersiveState.camera = new THREERef.PerspectiveCamera(45, 1, 0.1, 100);
+        immersiveState.camera.position.set(0, 0.25, immersiveState.targetCameraZ);
+        try {
+            immersiveState.renderer = new THREERef.WebGLRenderer({ antialias: true, alpha: true });
+        } catch (error) {
+            console.warn('WebGL renderer unavailable, using static immersive fallback.', error);
+            buildImmersiveFallback(photos);
+            return false;
+        }
+        immersiveState.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+        immersiveState.stage.appendChild(immersiveState.renderer.domElement);
+        immersiveState.group = new THREERef.Group();
+        immersiveState.scene.add(immersiveState.group);
+        immersiveState.raycaster = new THREERef.Raycaster();
+        immersiveState.pointer = new THREERef.Vector2();
+        immersiveState.frameGeometry = new THREERef.PlaneGeometry(1.72, 1.2);
+        immersiveState.photoGeometry = new THREERef.PlaneGeometry(1.58, 1.06);
+
+        const textureLoader = new THREERef.TextureLoader();
+        const cols = 6;
+        const rows = Math.ceil(photos.length / cols);
+
+        photos.forEach((photo, index) => {
+            const col = index % cols;
+            const row = Math.floor(index / cols);
+            const normalizedCol = col - (cols - 1) / 2;
+            const normalizedRow = (rows - 1) / 2 - row;
+            const angle = normalizedCol * 0.18;
+            const wall = {
+                position: new THREERef.Vector3(Math.sin(angle) * 6.8, normalizedRow * 1.45, -Math.cos(angle) * 1.2),
+                rotation: new THREERef.Euler(0, -angle * 0.72, 0),
+                scale: 1
+            };
+            const scatter = {
+                position: new THREERef.Vector3(
+                    (Math.sin(index * 1.7) * 4.3) + normalizedCol * 0.25,
+                    (Math.cos(index * 1.13) * 2.25) + normalizedRow * 0.18,
+                    -1.6 - (index % 5) * 0.55
+                ),
+                rotation: new THREERef.Euler(
+                    (Math.sin(index) * 0.22),
+                    (Math.cos(index * 0.8) * 0.42),
+                    (Math.sin(index * 0.6) * 0.12)
+                ),
+                scale: 0.92
+            };
+
+            const card = new THREERef.Group();
+            card.userData.photo = photo;
+            card.userData.layouts = { wall, scatter };
+            card.userData.targetPosition = wall.position.clone();
+            card.userData.targetRotation = wall.rotation.clone();
+            card.userData.targetScale = wall.scale;
+            card.position.copy(wall.position);
+            card.rotation.copy(wall.rotation);
+
+            const frameMaterial = new THREERef.MeshBasicMaterial({
+                color: new THREERef.Color(getColorCss(photo.color, 1)),
+                transparent: true,
+                opacity: 0.32,
+                side: THREERef.DoubleSide
+            });
+            const frame = new THREERef.Mesh(immersiveState.frameGeometry, frameMaterial);
+            frame.position.z = -0.012;
+            card.add(frame);
+
+            const texture = textureLoader.load(getPhotoSrc(photo));
+            texture.colorSpace = THREERef.SRGBColorSpace;
+            immersiveState.textures.push(texture);
+            const photoMaterial = new THREERef.MeshBasicMaterial({
+                map: texture,
+                side: THREERef.DoubleSide
+            });
+            const plane = new THREERef.Mesh(immersiveState.photoGeometry, photoMaterial);
+            plane.userData.card = card;
+            card.add(plane);
+
+            immersiveState.group.add(card);
+            immersiveState.cards.push(card);
+        });
+
+        const ambient = new THREERef.AmbientLight(0xffffff, 1.2);
+        immersiveState.scene.add(ambient);
+
+        resizeImmersiveGallery();
+        window.addEventListener('resize', resizeImmersiveGallery);
+        immersiveState.stage.addEventListener('pointerdown', handleImmersivePointerDown);
+        window.addEventListener('pointermove', handleImmersivePointerMove);
+        window.addEventListener('pointerup', handleImmersivePointerUp);
+        immersiveState.stage.addEventListener('wheel', handleImmersiveWheel, { passive: false });
+        animateImmersiveGallery();
+        return true;
+    };
+
+    const openImmersiveGallery = () => {
+        const modal = document.getElementById('immersive-3d-modal');
+        const stage = document.getElementById('immersive-3d-stage');
+        const caption = document.getElementById('immersive-3d-caption');
+        const fallback = document.getElementById('immersive-3d-fallback');
+        if (!modal || !stage || !caption) return;
+
+        disposeImmersiveGallery();
+        fallback?.classList.add('hidden');
+        if (fallback) fallback.innerHTML = '';
+
+        const photos = selectImmersivePhotos(18);
+        immersiveState.modal = modal;
+        immersiveState.stage = stage;
+        immersiveState.caption = caption;
+        caption.textContent = 'CURATED WALL / 點選照片聚焦成果';
+
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+
+        const initialized = initImmersiveGallery(photos);
+        immersiveState.initialized = initialized;
+        setImmersiveModeButtons('wall');
+    };
+
+    const closeImmersiveGallery = () => {
+        const modal = document.getElementById('immersive-3d-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+        document.body.style.overflow = '';
+        disposeImmersiveGallery();
+    };
+
 
     const setupRailTuningPanel = () => {
         const params = new URLSearchParams(window.location.search);
@@ -988,7 +1549,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 8. Event Listeners ---
+    const open3DGalleryBtn = document.getElementById('open-3d-gallery-btn');
+    const close3DGalleryBtn = document.getElementById('close-3d-gallery-btn');
+    if (open3DGalleryBtn) {
+        open3DGalleryBtn.addEventListener('click', openImmersiveGallery);
+    }
+    if (close3DGalleryBtn) {
+        close3DGalleryBtn.addEventListener('click', closeImmersiveGallery);
+    }
+    document.querySelectorAll('[data-gallery-mode]').forEach(button => {
+        button.addEventListener('click', () => {
+            if (!immersiveState.cards.length) return;
+            layoutImmersiveCards(button.dataset.galleryMode);
+        });
+    });
+    document.addEventListener('keydown', (event) => {
+        const modal = document.getElementById('immersive-3d-modal');
+        if (event.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+            closeImmersiveGallery();
+        }
+    });
+
+    // --- 9. Event Listeners ---
     mobileMenuButton.addEventListener('click', () => { mobileMenu.classList.toggle('hidden'); });
     mobileMenuLinks.forEach(link => { link.addEventListener('click', () => { mobileMenu.classList.add('hidden'); }); });
     window.addEventListener('scroll', () => { header.classList.toggle('header-scrolled', window.scrollY > 50); });
@@ -1009,7 +1591,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial Observe for static elements
     setTimeout(observeElements, 500); // Wait for initial render
 
-    // --- 9. Lightweight domain hint ---
+    // --- 10. Lightweight domain hint ---
     // Keep development and SEO friendly: no right-click blocking or anti-debug loops.
     const checkDomain = () => {
         const allowedDomains = ['localhost', '127.0.0.1', '', 'lctstudio.tw', 'www.lctstudio.tw'];

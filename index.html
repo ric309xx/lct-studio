@@ -26,7 +26,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+TC:wght@400;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="public/css/style.css?v=53">
+    <link rel="stylesheet" href="public/css/style.css?v=54">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
 </head>
@@ -249,6 +249,92 @@
                 </button>
             </div>
 
+    </section>
+
+    <section id="map-journey" class="map-journey-section py-16 md:py-24">
+        <div class="container mx-auto px-6 md:px-20">
+            <div class="section-intro text-center reveal">
+                <p class="section-kicker">GPS Route</p>
+                <h2 class="text-4xl font-bold text-white mb-5">空拍地圖旅程</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto mb-4">
+                    以定位資訊串連台灣周邊場域，從城市、海岸、山線到離島，看見空拍作品的拍攝足跡。
+                </p>
+                <p class="map-journey-note">
+                    僅展示部分具定位資訊的精選作品，完整作品可於上方相簿與線上畫冊瀏覽。
+                </p>
+            </div>
+
+            <div class="map-journey-shell max-w-6xl mx-auto mt-12 reveal">
+                <div class="map-route-panel">
+                    <div class="map-panel-label">
+                        <span>TAIWAN AERIAL ROUTE</span>
+                        <strong id="map-stop-count">13 STOPS</strong>
+                    </div>
+                    <div class="map-canvas-wrap" id="map-canvas-wrap" aria-label="空拍 GPS 旅程路線">
+                        <svg class="map-route-svg" viewBox="0 0 100 140" preserveAspectRatio="xMidYMid meet"
+                            aria-hidden="true">
+                            <defs>
+                                <linearGradient id="journey-route-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#46d9ff" />
+                                    <stop offset="48%" stop-color="#c8a15a" />
+                                    <stop offset="100%" stop-color="#7bc79a" />
+                                </linearGradient>
+                            </defs>
+                            <path class="map-island-outline"
+                                d="M55 7 C68 16 74 31 71 45 C83 58 78 77 68 92 C59 107 58 124 48 134 C37 123 34 104 26 91 C18 78 22 59 31 49 C29 34 37 15 55 7 Z" />
+                            <path id="map-route-line" class="map-route-line" d="" />
+                            <path id="map-route-progress" class="map-route-progress" d="" />
+                        </svg>
+                        <div id="map-pins" class="map-pins"></div>
+                    </div>
+                    <div class="map-route-hint">
+                        <span>點選定位點切換作品</span>
+                        <span id="map-active-coords">--</span>
+                    </div>
+                </div>
+
+                <article class="map-preview-card" id="map-preview-card">
+                    <div class="map-preview-image">
+                        <img id="map-preview-img" src="" alt="">
+                        <div class="map-preview-sheen"></div>
+                    </div>
+                    <div class="map-preview-content">
+                        <p id="map-preview-category" class="map-preview-category">GPS ROUTE</p>
+                        <h3 id="map-preview-title">選擇一個航點</h3>
+                        <dl class="map-preview-meta">
+                            <div>
+                                <dt>LAT</dt>
+                                <dd id="map-preview-lat">--</dd>
+                            </div>
+                            <div>
+                                <dt>LNG</dt>
+                                <dd id="map-preview-lng">--</dd>
+                            </div>
+                            <div>
+                                <dt>ALT</dt>
+                                <dd id="map-preview-alt">--</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </article>
+            </div>
+
+            <div class="journey-strip max-w-6xl mx-auto mt-6" id="journey-strip" aria-label="空拍旅程縮圖">
+                <!-- Journey thumbnails injected by JS -->
+            </div>
+
+            <div class="text-center mt-12 reveal">
+                <p class="text-gray-500 mb-6 text-sm tracking-[0.2em] font-light uppercase border-b border-gray-800 inline-block pb-1">
+                    Immersive 3D Gallery
+                </p>
+                <br>
+                <button type="button" id="open-3d-gallery-btn"
+                    class="immersive-open-btn inline-flex items-center gap-3 px-8 py-4 text-lg">
+                    <span class="immersive-open-icon" aria-hidden="true"></span>
+                    開啟 3D 沉浸展廳
+                </button>
+            </div>
+        </div>
     </section>
 
     <section id="videos" class="video-section pt-8 pb-16 md:pb-24 bg-gray-900">
@@ -509,6 +595,28 @@
         <p class="text-gray-500 mt-4 text-xs font-medium tracking-[0.2em] uppercase">左右滑動以閱覽作品</p>
     </div>
 
+    <div id="immersive-3d-modal" class="immersive-3d-modal hidden" aria-hidden="true">
+        <div class="immersive-3d-topbar">
+            <div>
+                <p>IMMERSIVE VIEW</p>
+                <h2>3D 沉浸展廳</h2>
+            </div>
+            <button type="button" id="close-3d-gallery-btn" class="immersive-close-btn" aria-label="關閉 3D 沉浸展廳">
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+        <div id="immersive-3d-stage" class="immersive-3d-stage">
+            <div id="immersive-3d-fallback" class="immersive-3d-fallback hidden"></div>
+        </div>
+        <div class="immersive-3d-controls">
+            <button type="button" class="is-active" data-gallery-mode="wall">CURATED WALL</button>
+            <button type="button" data-gallery-mode="scatter">SCATTER</button>
+            <span>拖曳旋轉視角 / 點選照片聚焦 / Esc 關閉</span>
+        </div>
+        <div id="immersive-3d-caption" class="immersive-3d-caption">LCT STUDIO</div>
+    </div>
+
 
 
 
@@ -516,9 +624,10 @@
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/MotionPathPlugin.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
     <script src="public/js/data_videos.js"></script>
     <script src="public/js/data_photos.js"></script>
-    <script src="public/js/main.js?v=53"></script>
+    <script src="public/js/main.js?v=54"></script>
 
 </body>
 
