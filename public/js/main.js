@@ -146,7 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
         '新北淡水海尾子海灘 (1).jpg',
         '基隆望幽谷.jpg',
         '台北士林洲美橡皮壩.jpg',
-        '桃園觀音工業區廠房.jpg',
         '新竹寶山小西湖.jpg',
         '台中洲際棒球場.jpg',
         '宜蘭五結防潮閘門-2.jpg',
@@ -165,10 +164,13 @@ document.addEventListener('DOMContentLoaded', () => {
         '台中洲際棒球場.jpg': { lat: 24.19972, lng: 120.685, alt: 110 }
     };
     const MAP_BOUNDS = {
-        minLat: 21.85,
+        minLat: 21.9,
         maxLat: 25.35,
-        minLng: 119.25,
-        maxLng: 122.15
+        minLng: 120.0,
+        maxLng: 122.05
+    };
+    const MAP_POSITION_OVERRIDES = {
+        '澎湖湖西菓葉觀日樓.jpg': { x: 23.5, y: 52.5 }
     };
 
     const flattenPhotos = (data = globalPhotoData) => {
@@ -270,9 +272,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const setupMapJourney = () => {
         const mapWrap = document.getElementById('map-canvas-wrap');
         const pinsWrap = document.getElementById('map-pins');
+        const routeSegments = document.getElementById('map-route-segments');
         const strip = document.getElementById('journey-strip');
-        const routeLine = document.getElementById('map-route-line');
-        const routeProgress = document.getElementById('map-route-progress');
         const previewImg = document.getElementById('map-preview-img');
         const previewTitle = document.getElementById('map-preview-title');
         const previewCategory = document.getElementById('map-preview-category');
@@ -282,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeCoords = document.getElementById('map-active-coords');
         const stopCount = document.getElementById('map-stop-count');
 
-        if (!mapWrap || !pinsWrap || !strip || !routeLine || !routeProgress || !previewImg) return;
+        if (!mapWrap || !pinsWrap || !routeSegments || !strip || !previewImg) return;
 
         const allPhotos = flattenPhotos(globalPhotoData);
         const journeyPhotos = MAP_JOURNEY_FILENAMES
@@ -307,23 +308,35 @@ document.addEventListener('DOMContentLoaded', () => {
         const latRange = maxLat - minLat;
 
         const toPoint = (photo) => {
+            const override = MAP_POSITION_OVERRIDES[photo.filename];
+            if (override) return override;
+
             const lngRatio = Math.max(0, Math.min(1, (photo.gps.lng - minLng) / lngRange));
             const latRatio = Math.max(0, Math.min(1, (maxLat - photo.gps.lat) / latRange));
-            const x = 9 + lngRatio * 82;
-            const y = 7 + latRatio * 126;
+            const x = 34.5 + lngRatio * 43.5;
+            const y = 10 + latRatio * 76;
             return { x, y };
         };
 
         const points = journeyPhotos.map(toPoint);
-        const routeD = points.map((point, index) => {
-            const command = index === 0 ? 'M' : 'L';
-            return `${command} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
-        }).join(' ');
-
-        routeLine.setAttribute('d', routeD);
-        routeProgress.setAttribute('d', routeD);
         pinsWrap.innerHTML = '';
+        routeSegments.innerHTML = '';
         strip.innerHTML = '';
+
+        points.slice(0, -1).forEach((point, index) => {
+            const nextPoint = points[index + 1];
+            const dx = nextPoint.x - point.x;
+            const dy = nextPoint.y - point.y;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            const segment = document.createElement('span');
+            segment.className = 'map-route-segment';
+            segment.style.left = `${point.x}%`;
+            segment.style.top = `${point.y}%`;
+            segment.style.width = `${length}%`;
+            segment.style.transform = `rotate(${angle}deg)`;
+            routeSegments.appendChild(segment);
+        });
 
         const setActiveStop = (index) => {
             const photo = journeyPhotos[index];
@@ -343,15 +356,11 @@ document.addEventListener('DOMContentLoaded', () => {
             previewAlt.textContent = Number.isFinite(photo.gps.alt) ? `${Math.round(photo.gps.alt)} m` : '--';
             activeCoords.textContent = `${formatCoord(photo.gps.lat)}, ${formatCoord(photo.gps.lng)}`;
 
-            const progressLength = routeProgress.getTotalLength ? routeProgress.getTotalLength() : 0;
-            if (progressLength) {
-                const ratio = journeyPhotos.length > 1 ? index / (journeyPhotos.length - 1) : 1;
-                routeProgress.style.strokeDasharray = progressLength;
-                routeProgress.style.strokeDashoffset = progressLength * (1 - ratio);
-            }
-
             pinsWrap.querySelectorAll('.map-pin').forEach((pin, pinIndex) => {
                 pin.classList.toggle('is-active', pinIndex === index);
+            });
+            routeSegments.querySelectorAll('.map-route-segment').forEach((segment, segmentIndex) => {
+                segment.classList.toggle('is-active', segmentIndex < index);
             });
             strip.querySelectorAll('.journey-thumb').forEach((thumb, thumbIndex) => {
                 thumb.classList.toggle('is-active', thumbIndex === index);
@@ -1090,6 +1099,7 @@ document.addEventListener('DOMContentLoaded', () => {
         textures: [],
         frameGeometry: null,
         photoGeometry: null,
+        extraGeometries: [],
         animationId: null,
         mode: 'scatter',
         focused: null,
@@ -1167,7 +1177,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const layoutImmersiveCards = () => {
         immersiveState.mode = 'scatter';
         immersiveState.focused = null;
-        immersiveState.caption.textContent = 'SCATTER / 照片漂浮於空中，可拖曳視角探索';
+        immersiveState.caption.textContent = 'GLASS WALL / 玻璃照片牆漂浮展示';
 
         immersiveState.cards.forEach(card => {
             setCardTarget(card, card.userData.layout);
@@ -1234,6 +1244,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         immersiveState.frameGeometry?.dispose();
         immersiveState.photoGeometry?.dispose();
+        immersiveState.extraGeometries.forEach(geometry => geometry.dispose());
         immersiveState.renderer?.dispose();
         immersiveState.renderer?.domElement?.remove();
 
@@ -1249,6 +1260,7 @@ document.addEventListener('DOMContentLoaded', () => {
             textures: [],
             frameGeometry: null,
             photoGeometry: null,
+            extraGeometries: [],
             focused: null,
             mode: 'scatter',
             targetRotX: 0,
@@ -1374,62 +1386,122 @@ document.addEventListener('DOMContentLoaded', () => {
         immersiveState.photoGeometry = new THREERef.PlaneGeometry(1.58, 1.06);
 
         const textureLoader = new THREERef.TextureLoader();
+        const glassGeometry = new THREERef.PlaneGeometry(1.92, 1.38);
+        const glowGeometry = new THREERef.PlaneGeometry(1.78, 1.22);
+        const hudTopGeometry = new THREERef.PlaneGeometry(0.42, 0.012);
+        const hudSideGeometry = new THREERef.PlaneGeometry(0.012, 0.28);
+        immersiveState.extraGeometries.push(glassGeometry, glowGeometry, hudTopGeometry, hudSideGeometry);
+        const wallLayouts = [
+            { x: 0, y: 0.2, z: 1.25, scale: 1.55, rotY: 0, rotZ: 0 },
+            { x: -2.55, y: 1.45, z: -0.35, scale: 0.98, rotY: 0.16, rotZ: -0.025 },
+            { x: 2.75, y: 1.55, z: -0.55, scale: 1.02, rotY: -0.16, rotZ: 0.026 },
+            { x: -3.65, y: -0.2, z: -0.95, scale: 0.9, rotY: 0.24, rotZ: 0.018 },
+            { x: 3.75, y: -0.18, z: -1.05, scale: 0.92, rotY: -0.24, rotZ: -0.018 },
+            { x: -2.2, y: -1.7, z: -0.25, scale: 0.98, rotY: 0.14, rotZ: 0.035 },
+            { x: 2.2, y: -1.68, z: -0.32, scale: 1, rotY: -0.14, rotZ: -0.028 },
+            { x: 0.35, y: 2.2, z: -1.4, scale: 0.78, rotY: -0.04, rotZ: 0.015 },
+            { x: -4.35, y: 1.0, z: -1.7, scale: 0.72, rotY: 0.34, rotZ: -0.04 },
+            { x: 4.45, y: 1.0, z: -1.85, scale: 0.74, rotY: -0.34, rotZ: 0.04 },
+            { x: -4.45, y: -1.42, z: -1.55, scale: 0.74, rotY: 0.34, rotZ: 0.045 },
+            { x: 4.45, y: -1.38, z: -1.65, scale: 0.76, rotY: -0.34, rotZ: -0.04 },
+            { x: 0.1, y: -2.45, z: -1.15, scale: 0.72, rotY: 0, rotZ: 0 }
+        ];
 
         photos.forEach((photo, index) => {
-            const ring = index % 3;
-            const angle = (index / photos.length) * Math.PI * 2 + ring * 0.42;
-            const radius = 3.2 + ring * 1.55;
-            const yBand = ((index % 6) - 2.5) * 0.62 + Math.sin(index * 0.9) * 0.62;
-            const scatter = {
+            const layout = wallLayouts[index % wallLayouts.length];
+            const glassWall = {
                 position: new THREERef.Vector3(
-                    Math.sin(angle) * radius,
-                    yBand,
-                    -1.35 - Math.cos(angle) * 1.25 - ring * 0.62
+                    layout.x + (index >= wallLayouts.length ? Math.sin(index) * 0.28 : 0),
+                    layout.y + (index >= wallLayouts.length ? Math.cos(index) * 0.18 : 0),
+                    layout.z - Math.floor(index / wallLayouts.length) * 0.65
                 ),
                 rotation: new THREERef.Euler(
-                    Math.sin(index * 0.7) * 0.18,
-                    -Math.sin(angle) * 0.36,
-                    Math.sin(index * 0.53) * 0.16
+                    Math.sin(index * 0.6) * 0.045,
+                    layout.rotY,
+                    layout.rotZ
                 ),
-                scale: 0.96
+                scale: layout.scale
             };
 
             const card = new THREERef.Group();
             card.userData.photo = photo;
-            card.userData.layout = scatter;
-            card.userData.targetPosition = scatter.position.clone();
-            card.userData.targetRotation = scatter.rotation.clone();
-            card.userData.targetScale = scatter.scale;
+            card.userData.layout = glassWall;
+            card.userData.targetPosition = glassWall.position.clone();
+            card.userData.targetRotation = glassWall.rotation.clone();
+            card.userData.targetScale = glassWall.scale;
             card.userData.drift = {
                 phase: index * 0.83,
-                ampX: 0.08 + (index % 4) * 0.018,
-                ampY: 0.13 + (index % 5) * 0.018,
-                ampZ: 0.1 + (index % 3) * 0.028,
-                rot: 0.018 + (index % 4) * 0.006
+                ampX: 0.035 + (index % 4) * 0.01,
+                ampY: 0.07 + (index % 5) * 0.012,
+                ampZ: 0.045 + (index % 3) * 0.012,
+                rot: 0.009 + (index % 4) * 0.004
             };
-            card.position.copy(scatter.position);
-            card.rotation.copy(scatter.rotation);
+            card.position.copy(glassWall.position);
+            card.rotation.copy(glassWall.rotation);
 
-            const frameMaterial = new THREERef.MeshBasicMaterial({
-                color: new THREERef.Color(getColorCss(photo.color, 1)),
+            const glowMaterial = new THREERef.MeshBasicMaterial({
+                color: 0x46d9ff,
                 transparent: true,
-                opacity: 0.32,
+                opacity: index === 0 ? 0.28 : 0.18,
+                blending: THREERef.AdditiveBlending,
+                depthWrite: false,
                 side: THREERef.DoubleSide
             });
-            const frame = new THREERef.Mesh(immersiveState.frameGeometry, frameMaterial);
-            frame.position.z = -0.012;
+            const glow = new THREERef.Mesh(glowGeometry, glowMaterial);
+            glow.position.z = -0.028;
+            glow.scale.set(1.08, 1.12, 1);
+            card.add(glow);
+
+            const frameMaterial = new THREERef.MeshBasicMaterial({
+                color: 0x82eaff,
+                transparent: true,
+                opacity: index === 0 ? 0.38 : 0.26,
+                blending: THREERef.AdditiveBlending,
+                depthWrite: false,
+                side: THREERef.DoubleSide
+            });
+            const frame = new THREERef.Mesh(glassGeometry, frameMaterial);
+            frame.position.z = -0.018;
             card.add(frame);
+
+            const glassMaterial = new THREERef.MeshBasicMaterial({
+                color: 0xcaf7ff,
+                transparent: true,
+                opacity: 0.08,
+                depthWrite: false,
+                side: THREERef.DoubleSide
+            });
+            const glass = new THREERef.Mesh(glassGeometry, glassMaterial);
+            glass.position.z = -0.01;
+            glass.scale.set(1.02, 1.04, 1);
+            card.add(glass);
 
             const texture = textureLoader.load(getPhotoSrc(photo));
             texture.colorSpace = THREERef.SRGBColorSpace;
             immersiveState.textures.push(texture);
             const photoMaterial = new THREERef.MeshBasicMaterial({
                 map: texture,
+                transparent: true,
+                opacity: index === 0 ? 0.98 : 0.9,
                 side: THREERef.DoubleSide
             });
             const plane = new THREERef.Mesh(immersiveState.photoGeometry, photoMaterial);
             plane.userData.card = card;
             card.add(plane);
+
+            const hudMaterial = new THREERef.MeshBasicMaterial({
+                color: index === 0 ? 0xfff0bf : 0x46d9ff,
+                transparent: true,
+                opacity: index === 0 ? 0.68 : 0.42,
+                blending: THREERef.AdditiveBlending,
+                depthWrite: false
+            });
+            const hudTop = new THREERef.Mesh(hudTopGeometry, hudMaterial);
+            hudTop.position.set(-0.56, 0.57, 0.018);
+            const hudSide = new THREERef.Mesh(hudSideGeometry, hudMaterial);
+            hudSide.position.set(0.8, -0.46, 0.018);
+            card.add(hudTop);
+            card.add(hudSide);
 
             immersiveState.group.add(card);
             immersiveState.cards.push(card);
@@ -1463,7 +1535,7 @@ document.addEventListener('DOMContentLoaded', () => {
         immersiveState.modal = modal;
         immersiveState.stage = stage;
         immersiveState.caption = caption;
-        caption.textContent = 'SCATTER / 照片漂浮於空中，可拖曳視角探索';
+        caption.textContent = 'GLASS WALL / 玻璃照片牆漂浮展示';
 
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');

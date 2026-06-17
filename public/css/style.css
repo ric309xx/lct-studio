@@ -371,7 +371,8 @@ body::before {
         linear-gradient(180deg, rgba(7, 10, 15, 0.18), rgba(7, 10, 15, 0.58));
 }
 
-.map-route-svg,
+.map-reference-image,
+.map-route-segments,
 .map-pins {
     position: absolute;
     inset: 0;
@@ -379,44 +380,32 @@ body::before {
     height: 100%;
 }
 
-.map-island-outline {
-    fill: rgba(229, 231, 235, 0.018);
-    stroke: rgba(229, 231, 235, 0.24);
-    stroke-width: 0.72;
-    filter: drop-shadow(0 0 0.75rem rgba(70, 217, 255, 0.08));
+.map-reference-image {
+    object-fit: contain;
+    padding: clamp(0.4rem, 1.6vw, 1rem);
+    opacity: 0.74;
+    filter: saturate(1.1) contrast(1.08) drop-shadow(0 0 1.4rem rgba(70, 217, 255, 0.14));
 }
 
-.map-island-ridge {
-    fill: none;
-    stroke: rgba(229, 231, 235, 0.12);
-    stroke-width: 0.45;
-    stroke-linecap: round;
-    stroke-dasharray: 2.4 2.6;
+.map-route-segments {
+    z-index: 2;
 }
 
-.map-island-dot {
-    fill: rgba(229, 231, 235, 0.018);
-    stroke: rgba(229, 231, 235, 0.18);
-    stroke-width: 0.55;
+.map-route-segment {
+    position: absolute;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(70, 217, 255, 0.08), rgba(200, 161, 90, 0.56), rgba(70, 217, 255, 0.1));
+    box-shadow: 0 0 1.1rem rgba(200, 161, 90, 0.22);
+    opacity: 0.38;
+    transform-origin: 0 50%;
 }
 
-.map-route-line,
-.map-route-progress {
-    fill: none;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.map-route-line {
-    stroke: rgba(255, 255, 255, 0.16);
-    stroke-width: 0.8;
-    stroke-dasharray: 2 2;
-}
-
-.map-route-progress {
-    stroke: url(#journey-route-gradient);
-    stroke-width: 1.35;
-    filter: drop-shadow(0 0 0.55rem rgba(70, 217, 255, 0.42));
+.map-route-segment.is-active {
+    height: 3px;
+    opacity: 0.95;
+    background: linear-gradient(90deg, rgba(70, 217, 255, 0.24), rgba(255, 240, 191, 0.9), rgba(70, 217, 255, 0.18));
+    box-shadow: 0 0 1.4rem rgba(200, 161, 90, 0.45);
 }
 
 .map-pin {
