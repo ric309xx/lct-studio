@@ -145,16 +145,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const MAP_JOURNEY_FILENAMES = [
         '新北淡水海尾子海灘 (1).jpg',
         '基隆望幽谷.jpg',
-        '台北士林洲美橡皮壩.jpg',
+        '台北社子島腳踏車道.jpg',
         '新竹寶山小西湖.jpg',
         '台中洲際棒球場.jpg',
         '宜蘭五結防潮閘門-2.jpg',
-        '宜蘭冬山河旁景致.jpg',
+        '南投日月潭.jpg',
         '花蓮清水斷崖.jpg',
         '花蓮和平火車站旁-2.jpg',
         '高雄舊高雄車站(高雄願景館).jpg',
         '雲林斗六石榴火車站.jpg',
-        '雲林北港女兒橋.jpg',
+        '雲林西螺落日剪影 (2).jpg',
         '澎湖湖西菓葉觀日樓.jpg'
     ];
     const MAP_JOURNEY_FILENAME_SET = new Set(MAP_JOURNEY_FILENAMES);
@@ -164,7 +164,11 @@ document.addEventListener('DOMContentLoaded', () => {
         '台中洲際棒球場.jpg': { lat: 24.19972, lng: 120.685, alt: 110 },
         // Historic Kaohsiung Station / former Kaohsiung Vision Museum.
         // Source checked from Wikipedia coordinates: 22.638083, 120.302306.
-        '高雄舊高雄車站(高雄願景館).jpg': { lat: 22.638083, lng: 120.302306, alt: 12 }
+        '高雄舊高雄車站(高雄願景館).jpg': { lat: 22.638083, lng: 120.302306, alt: 12 },
+        // Public landmark coordinates used because these selected files have no embedded GPS.
+        '雲林西螺落日剪影 (2).jpg': { lat: 23.81194, lng: 120.46278, alt: 35 },
+        '南投日月潭.jpg': { lat: 23.86542, lng: 120.91594, alt: 748 },
+        '台北社子島腳踏車道.jpg': { lat: 25.109, lng: 121.469, alt: 7 }
     };
     const MAP_BOUNDS = {
         minLat: 21.9,
@@ -173,13 +177,13 @@ document.addEventListener('DOMContentLoaded', () => {
         maxLng: 122.05
     };
     const MAP_POSITION_OVERRIDES = {
-        '雲林北港女兒橋.jpg': { x: 39.89, y: 53.04 },
+        '雲林西螺落日剪影 (2).jpg': { x: 40.91, y: 47.5 },
         '雲林斗六石榴火車站.jpg': { x: 46.74, y: 45.67 },
         '高雄舊高雄車站(高雄願景館).jpg': { x: 43.35, y: 68.65 },
         '台中洲際棒球場.jpg': { x: 46.22, y: 40.49 },
         '花蓮清水斷崖.jpg': { x: 64.99, y: 45.15 },
-        '宜蘭冬山河旁景致.jpg': { x: 66.21, y: 30 },
-        '台北士林洲美橡皮壩.jpg': { x: 63.15, y: 21.89 },
+        '南投日月潭.jpg': { x: 50.1, y: 54.2 },
+        '台北社子島腳踏車道.jpg': { x: 61.6, y: 21.8 },
         '新北淡水海尾子海灘 (1).jpg': { x: 59.07, y: 24.74 },
         '新竹寶山小西湖.jpg': { x: 52.95, y: 29.83 },
         '基隆望幽谷.jpg': { x: 67.84, y: 22.41 },

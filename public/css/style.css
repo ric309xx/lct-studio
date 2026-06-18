@@ -581,7 +581,7 @@ body::before {
 
 .map-preview-content h3 {
     color: #fff;
-    font-size: clamp(1.45rem, 2.45vw, 2.28rem);
+    font-size: clamp(1.12rem, 1.75vw, 1.62rem);
     font-weight: 800;
     letter-spacing: 0;
     line-height: 1.2;
