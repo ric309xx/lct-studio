@@ -292,24 +292,6 @@ body::before {
     line-height: 1.6;
 }
 
-.map-section-heading {
-    position: relative;
-    z-index: 1;
-    text-align: center;
-}
-
-.map-section-heading .section-kicker {
-    margin-bottom: 0.55rem;
-}
-
-.map-section-heading h2 {
-    color: #fff;
-    font-size: 1.5rem;
-    font-weight: 600;
-    line-height: 1.25;
-    letter-spacing: 0.18em;
-}
-
 .map-journey-shell {
     display: grid;
     grid-template-columns: minmax(18rem, 0.72fr) minmax(28rem, 1.28fr);
@@ -362,10 +344,30 @@ body::before {
 
 .map-panel-label {
     top: 1.25rem;
+    display: block;
+    text-align: left;
 }
 
+.map-panel-kicker,
 .map-panel-label strong {
     color: #fff0bf;
+}
+
+.map-panel-kicker {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+}
+
+.map-panel-label h2 {
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.18em;
 }
 
 .map-edit-controls {
@@ -425,7 +427,7 @@ body::before {
 
 .map-canvas-wrap {
     position: absolute;
-    inset: 4.1rem 1.25rem 3.75rem;
+    inset: 5.85rem 1.25rem 3.75rem;
     overflow: hidden;
     border-radius: 8px;
     background:
@@ -533,11 +535,12 @@ body::before {
 }
 
 .map-pin.is-active {
-    z-index: 4;
+    z-index: 35;
 }
 
 .map-pin:hover::after,
-.map-pin:focus-visible::after {
+.map-pin:focus-visible::after,
+.map-pin.is-active::after {
     opacity: 1;
     transform: translate(-50%, 0);
 }
@@ -1878,6 +1881,17 @@ body::before {
         letter-spacing: 0.1em;
     }
 
+    .map-panel-kicker {
+        margin-bottom: 0.28rem;
+        font-size: 0.62rem;
+        letter-spacing: 0.2em;
+    }
+
+    .map-panel-label h2 {
+        font-size: 1.25rem;
+        letter-spacing: 0.12em;
+    }
+
     .map-edit-controls {
         top: 3rem;
         left: 0.9rem;
@@ -1899,7 +1913,7 @@ body::before {
     }
 
     .map-canvas-wrap {
-        inset: 4rem 0.8rem 3.45rem;
+        inset: 5.35rem 0.8rem 3.45rem;
     }
 
     .map-preview-content {
