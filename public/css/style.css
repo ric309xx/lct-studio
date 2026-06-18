@@ -304,10 +304,10 @@ body::before {
 
 .map-section-heading h2 {
     color: #fff;
-    font-size: clamp(1.9rem, 3vw, 2.85rem);
-    font-weight: 800;
-    line-height: 1.15;
-    letter-spacing: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: 0.18em;
 }
 
 .map-journey-shell {
@@ -413,7 +413,9 @@ body::before {
 }
 
 .map-route-hint {
-    display: none;
+    bottom: 1.25rem;
+    letter-spacing: 0.08em;
+    text-transform: none;
 }
 
 .map-route-hint span:last-child {
@@ -423,7 +425,7 @@ body::before {
 
 .map-canvas-wrap {
     position: absolute;
-    inset: 5.85rem 1.25rem 1.25rem;
+    inset: 4.1rem 1.25rem 3.75rem;
     overflow: hidden;
     border-radius: 8px;
     background:
@@ -1886,7 +1888,7 @@ body::before {
     }
 
     .map-canvas-wrap {
-        inset: 6.25rem 0.8rem 0.8rem;
+        inset: 4rem 0.8rem 3.45rem;
     }
 
     .map-preview-content {
