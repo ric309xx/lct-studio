@@ -442,7 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 previewImg.style.opacity = '1';
             }, 80);
 
-            previewTitle.textContent = getBaseLocationName(photo.filename);
+            if (previewTitle) previewTitle.textContent = getBaseLocationName(photo.filename);
             activeCoords.textContent = `${formatCoord(photo.gps.lat)}, ${formatCoord(photo.gps.lng)}`;
 
             pinsWrap.querySelectorAll('.map-pin').forEach((pin, pinIndex) => {

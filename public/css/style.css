@@ -488,6 +488,7 @@ body::before {
     content: "";
     position: absolute;
     inset: 0.28rem;
+    z-index: 1;
     border-radius: inherit;
     background: var(--pin-color, #c8a15a);
 }
@@ -497,6 +498,7 @@ body::before {
     position: absolute;
     left: 50%;
     bottom: calc(100% + 0.55rem);
+    z-index: 30;
     width: max-content;
     max-width: 14rem;
     padding: 0.38rem 0.58rem;
@@ -523,6 +525,15 @@ body::before {
     border-color: #fff0bf;
     background: rgba(200, 161, 90, 0.2);
     box-shadow: 0 0 0 0.45rem rgba(200, 161, 90, 0.12), 0 0 2rem rgba(200, 161, 90, 0.34);
+}
+
+.map-pin:hover,
+.map-pin:focus-visible {
+    z-index: 40;
+}
+
+.map-pin.is-active {
+    z-index: 4;
 }
 
 .map-pin:hover::after,
