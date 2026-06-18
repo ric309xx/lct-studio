@@ -31,7 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 2. Helper Functions ---
 
     const getBaseLocationName = (filename) => {
-        return filename.replace(/[-_(\（].*|\.\w+$/g, '').trim();
+        const baseName = filename.replace(/[-_(\（].*|\.\w+$/g, '').trim();
+        if (baseName === '南投清境農場雲海A') return '南投清境農場雲海';
+        return baseName;
     };
 
     const cssLengthToPx = (value, fallback = 0) => {
@@ -179,11 +181,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const MAP_POSITION_OVERRIDES = {
         '雲林北港女兒橋.jpg': { x: 39.89, y: 53.04 },
+        '雲林斗六石榴火車站.jpg': { x: 45.62, y: 47.72 },
         '雲林西螺蝴蝶公園.jpg': { x: 40.91, y: 47.5 },
         '雲林西螺落日剪影 (2).jpg': { x: 41.5, y: 50.64 },
         '高雄舊高雄車站(高雄願景館).jpg': { x: 43.35, y: 68.65 },
         '台中洲際棒球場.jpg': { x: 46.02, y: 41.89 },
-        '南投清境農場雲海A.png': { x: 55.2, y: 41.7 },
+        '南投清境農場雲海A.png': { x: 54.46, y: 47.27 },
         '花蓮清水斷崖.jpg': { x: 62.11, y: 41.22 },
         '宜蘭冬山河旁景致.jpg': { x: 66.21, y: 30 },
         '南投日月潭.jpg': { x: 50.1, y: 54.2 },
@@ -196,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '花蓮和平火車站旁-2.jpg': { x: 65.25, y: 35.39 },
         '澎湖湖西菓葉觀日樓.jpg': { x: 26.22, y: 50.27 }
     };
-    const MAP_POSITION_STORAGE_KEY = 'lct-map-pin-positions-v1';
+    const MAP_POSITION_STORAGE_KEY = 'lct-map-pin-positions-v2';
 
     const getStoredMapPositions = () => {
         try {

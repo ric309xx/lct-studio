@@ -292,6 +292,24 @@ body::before {
     line-height: 1.6;
 }
 
+.map-section-heading {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+}
+
+.map-section-heading .section-kicker {
+    margin-bottom: 0.55rem;
+}
+
+.map-section-heading h2 {
+    color: #fff;
+    font-size: clamp(1.9rem, 3vw, 2.85rem);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: 0;
+}
+
 .map-journey-shell {
     display: grid;
     grid-template-columns: minmax(18rem, 0.72fr) minmax(28rem, 1.28fr);
@@ -395,9 +413,7 @@ body::before {
 }
 
 .map-route-hint {
-    bottom: 1.25rem;
-    letter-spacing: 0.08em;
-    text-transform: none;
+    display: none;
 }
 
 .map-route-hint span:last-child {
@@ -407,7 +423,7 @@ body::before {
 
 .map-canvas-wrap {
     position: absolute;
-    inset: 5.85rem 1.25rem 3.75rem;
+    inset: 5.85rem 1.25rem 1.25rem;
     overflow: hidden;
     border-radius: 8px;
     background:
@@ -1870,7 +1886,7 @@ body::before {
     }
 
     .map-canvas-wrap {
-        inset: 6.25rem 0.8rem 3.45rem;
+        inset: 6.25rem 0.8rem 0.8rem;
     }
 
     .map-preview-content {
