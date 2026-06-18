@@ -321,6 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const mapPanel = mapWrap?.closest('.map-route-panel');
         const pinsWrap = document.getElementById('map-pins');
         const routeSegments = document.getElementById('map-route-segments');
+        const previewCard = document.getElementById('map-preview-card');
         const previewImg = document.getElementById('map-preview-img');
         const previewTitle = document.getElementById('map-preview-title');
         const activeCoords = document.getElementById('map-active-coords');
@@ -442,6 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 previewImg.style.opacity = '1';
             }, 80);
 
+            if (previewCard) previewCard.dataset.title = getBaseLocationName(photo.filename);
             if (previewTitle) previewTitle.textContent = getBaseLocationName(photo.filename);
             activeCoords.textContent = `${formatCoord(photo.gps.lat)}, ${formatCoord(photo.gps.lng)}`;
 

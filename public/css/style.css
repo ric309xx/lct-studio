@@ -535,12 +535,11 @@ body::before {
 }
 
 .map-pin.is-active {
-    z-index: 35;
+    z-index: 4;
 }
 
 .map-pin:hover::after,
-.map-pin:focus-visible::after,
-.map-pin.is-active::after {
+.map-pin:focus-visible::after {
     opacity: 1;
     transform: translate(-50%, 0);
 }
@@ -557,6 +556,30 @@ body::before {
 
 .map-preview-card {
     display: block;
+}
+
+.map-preview-card::before {
+    content: attr(data-title);
+    position: absolute;
+    left: clamp(1.2rem, 3vw, 2.4rem);
+    bottom: clamp(1.1rem, 2.8vw, 2.2rem);
+    z-index: 3;
+    max-width: min(42rem, calc(100% - 3rem));
+    color: rgba(255, 255, 255, 0.72);
+    font-size: clamp(2rem, 5vw, 5.25rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    text-shadow: 0 0.8rem 2.2rem rgba(0, 0, 0, 0.42);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(0.8rem);
+    transition: opacity 0.65s ease, transform 0.65s ease;
+}
+
+.map-preview-card:hover::before {
+    opacity: 0.32;
+    transform: translateY(0);
 }
 
 .map-preview-image {
