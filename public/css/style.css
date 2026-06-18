@@ -561,24 +561,24 @@ body::before {
 .map-preview-card::before {
     content: attr(data-title);
     position: absolute;
-    left: clamp(1.2rem, 3vw, 2.4rem);
-    bottom: clamp(1.1rem, 2.8vw, 2.2rem);
+    left: clamp(1rem, 2vw, 1.35rem);
+    bottom: clamp(0.9rem, 1.8vw, 1.25rem);
     z-index: 3;
-    max-width: min(42rem, calc(100% - 3rem));
-    color: rgba(255, 255, 255, 0.72);
-    font-size: clamp(2rem, 5vw, 5.25rem);
-    font-weight: 800;
-    line-height: 1;
-    letter-spacing: 0.02em;
-    text-shadow: 0 0.8rem 2.2rem rgba(0, 0, 0, 0.42);
+    max-width: min(22rem, calc(100% - 2rem));
+    color: rgba(255, 255, 255, 0.82);
+    font-size: clamp(0.95rem, 1.25vw, 1.2rem);
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: 0.08em;
+    text-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.4);
     opacity: 0;
     pointer-events: none;
-    transform: translateY(0.8rem);
+    transform: translateY(0.35rem);
     transition: opacity 0.65s ease, transform 0.65s ease;
 }
 
 .map-preview-card:hover::before {
-    opacity: 0.32;
+    opacity: 0.62;
     transform: translateY(0);
 }
 
