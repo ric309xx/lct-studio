@@ -294,6 +294,7 @@ node --check public/js/main.js
 4. 若是作品集既有照片，可填 `category` + `filename`，系統會從 `data_photos.js` 找圖與 GPS。
 5. 若是額外圖片，可填 `image` 路徑，例如 `public/assets/...`。
 6. 調整完成後按「複製設定」，將輸出的 `window.mapMarkerData = [...]` 貼回 `public/js/map_markers.js`。
+7. 點位預覽會背景預載所有標示圖片，切換時用最新請求序號防止舊圖片載入完成後覆蓋目前點位。
 
 ### D. 服務項目
 1. 卡片圖片位置：`public/assets/services/`
@@ -301,7 +302,7 @@ node --check public/js/main.js
 3. 替換圖片時保持檔名不變，直接覆蓋 `building.jpg`、`construction.jpg`、`event.jpg`、`tourism.jpg`。
 
 ### E. Cache 版本
-1. 目前首頁使用 `style.css?v=68` 與 `main.js?v=64`。
+1. 目前首頁使用 `style.css?v=68` 與 `main.js?v=65`。
 2. 每次修改 CSS/JS 後需同步更新 `index.html` 內的 cache query，避免正式站吃到舊快取。
 
 ### F. 效能與圖片尺寸規則

@@ -386,6 +386,61 @@ document.addEventListener('DOMContentLoaded', () => {
             const photo = getMarkerPhoto(marker);
             return photo ? getPhotoSrc(photo) : 'public/assets/taiwan-aerial-map.webp';
         };
+        const previewImageCache = new Map();
+        let previewRequestId = 0;
+        const preloadPreviewImage = (src) => {
+            if (!src || previewImageCache.has(src)) return previewImageCache.get(src);
+            const image = new Image();
+            image.decoding = 'async';
+            const loadPromise = new Promise(resolve => {
+                image.addEventListener('load', () => resolve(true), { once: true });
+                image.addEventListener('error', () => resolve(false), { once: true });
+            });
+            image.src = src;
+            previewImageCache.set(src, loadPromise);
+            return loadPromise;
+        };
+        const waitForPreviewImage = () => {
+            if (previewImg.complete && previewImg.naturalWidth > 0) return Promise.resolve(true);
+            return new Promise(resolve => {
+                const finish = (loaded) => {
+                    previewImg.removeEventListener('load', onLoad);
+                    previewImg.removeEventListener('error', onError);
+                    resolve(loaded);
+                };
+                const onLoad = () => finish(true);
+                const onError = () => finish(false);
+                previewImg.addEventListener('load', onLoad, { once: true });
+                previewImg.addEventListener('error', onError, { once: true });
+            });
+        };
+        const setPreviewImage = (marker) => {
+            const src = getMarkerImageSrc(marker);
+            const title = getMarkerTitle(marker);
+            const requestId = ++previewRequestId;
+            const currentSrc = previewImg.getAttribute('src') || '';
+
+            previewImg.alt = title;
+            if (currentSrc !== src) {
+                previewImg.style.opacity = '0';
+                previewImg.src = src;
+            }
+
+            preloadPreviewImage(src);
+            waitForPreviewImage().then(() => {
+                if (requestId === previewRequestId) {
+                    previewImg.style.opacity = '1';
+                }
+            });
+        };
+        const preloadMarkerImages = () => {
+            const preloadAll = () => markers.forEach(marker => preloadPreviewImage(getMarkerImageSrc(marker)));
+            if ('requestIdleCallback' in window) {
+                window.requestIdleCallback(preloadAll, { timeout: 1800 });
+                return;
+            }
+            window.setTimeout(preloadAll, 300);
+        };
         const getMarkerGps = (marker) => {
             if (marker?.gps && Number.isFinite(marker.gps.lat) && Number.isFinite(marker.gps.lng)) return marker.gps;
             const photo = getMarkerPhoto(marker);
@@ -448,12 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const marker = markers[index];
             if (!marker) return;
             activeIndex = index;
-            previewImg.style.opacity = '0.55';
-            setTimeout(() => {
-                previewImg.src = getMarkerImageSrc(marker);
-                previewImg.alt = getMarkerTitle(marker);
-                previewImg.style.opacity = '1';
-            }, 80);
+            setPreviewImage(marker);
             if (previewCard) previewCard.dataset.title = getMarkerTitle(marker);
             if (previewTitle) previewTitle.textContent = getMarkerTitle(marker);
             const gps = getMarkerGps(marker);
@@ -600,6 +650,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         renderPins();
+        preloadMarkerImages();
     };
 
     const renderGallery = (categoryName) => {
