@@ -26,7 +26,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+TC:wght@400;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="public/css/style.css?v=55">
+    <link rel="stylesheet" href="public/css/style.css?v=67">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
 </head>
@@ -44,7 +44,7 @@
             <div class="hidden md:flex space-x-8">
                 <a href="#portfolio" class="text-white hover:text-gray-300 transition-colors text-lg">精選照片</a>
                 <a href="#videos" class="text-white hover:text-gray-300 transition-colors text-lg">精選影片</a>
-                <a href="#services" class="text-white hover:text-gray-300 transition-colors text-lg">影像服務</a>
+                <a href="#services" class="text-white hover:text-gray-300 transition-colors text-lg">服務項目</a>
                 <a href="#about" class="text-white hover:text-gray-300 transition-colors text-lg">關於我</a>
                 <a href="#contact" class="text-white hover:text-gray-300 transition-colors text-lg">聯絡我</a>
             </div>
@@ -66,7 +66,7 @@
                 <a href="#videos"
                     class="text-white hover:text-gray-300 transition-colors text-2xl mobile-menu-link">精選影片</a>
                 <a href="#services"
-                    class="text-white hover:text-gray-300 transition-colors text-2xl mobile-menu-link">影像服務</a>
+                    class="text-white hover:text-gray-300 transition-colors text-2xl mobile-menu-link">服務項目</a>
                 <a href="#about"
                     class="text-white hover:text-gray-300 transition-colors text-2xl mobile-menu-link">關於我</a>
                 <a href="#contact"
@@ -259,10 +259,25 @@
                         <span class="map-panel-kicker">Aerial Map</span>
                         <h2>空拍地圖標示</h2>
                     </div>
+                    <div class="map-edit-controls" aria-label="地圖標示編輯工具" hidden>
+                        <button type="button" id="map-edit-toggle" class="map-edit-btn">編輯</button>
+                        <button type="button" id="map-add-marker" class="map-edit-btn">新增</button>
+                        <button type="button" id="map-delete-marker" class="map-edit-btn map-edit-btn-muted">刪除</button>
+                        <button type="button" id="map-edit-copy" class="map-edit-btn map-edit-btn-muted">複製設定</button>
+                        <span id="map-edit-status">選取標示可查看或編輯</span>
+                    </div>
                     <div class="map-canvas-wrap" id="map-canvas-wrap" aria-label="空拍 GPS 旅程路線">
                         <img class="map-reference-image" src="public/assets/taiwan-aerial-map.png" alt="" aria-hidden="true">
                         <div id="map-route-segments" class="map-route-segments" aria-hidden="true"></div>
                         <div id="map-pins" class="map-pins"></div>
+                    </div>
+                    <div class="map-marker-editor" id="map-marker-editor">
+                        <label>標題<input id="map-marker-title" type="text" autocomplete="off"></label>
+                        <label>圖片路徑<input id="map-marker-image" type="text" autocomplete="off" placeholder="public/photos/... 或 public/assets/..."></label>
+                        <label>分類<input id="map-marker-category" type="text" autocomplete="off" placeholder="照片分類，可留空"></label>
+                        <label>檔名<input id="map-marker-filename" type="text" autocomplete="off" placeholder="相簿檔名，可留空"></label>
+                        <label>緯度<input id="map-marker-lat" type="number" step="0.00001" inputmode="decimal"></label>
+                        <label>經度<input id="map-marker-lng" type="number" step="0.00001" inputmode="decimal"></label>
                     </div>
                     <div class="map-route-hint">
                         <span>點選定位點切換作品</span>
@@ -292,7 +307,53 @@
         </div>
     </section>
 
-    <section id="videos" class="video-section pt-8 pb-16 md:pb-24 bg-gray-900">
+    <section id="before-after" class="comparison-section py-16 md:py-24">
+        <div class="container mx-auto px-6 md:px-20">
+            <div class="section-intro comparison-intro text-center reveal">
+                <p class="section-kicker">Before / After</p>
+                <h2 class="text-4xl font-bold text-center mb-4 text-white">前後影像對比</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto mb-12">
+                    透過同一視角的空拍影像，讓工程進度、地貌變化與日夜差異更直覺地被看見。
+                </p>
+            </div>
+
+            <div class="compare-showcase max-w-7xl mx-auto reveal" data-compare
+                data-day-x="33" data-day-y="53" data-day-zoom="109"
+                data-night-x="31" data-night-y="48" data-night-zoom="112">
+                <div class="compare-stage" aria-label="拖曳滑桿查看前後影像對比">
+                    <img class="compare-image compare-image-before" src="public/assets/compare/linkou-day.jpg" alt="林口日間空拍影像">
+                    <div class="compare-after-layer">
+                        <img class="compare-image compare-image-after" src="public/assets/compare/linkou-night.jpg" alt="林口夜間空拍影像">
+                    </div>
+                    <div class="compare-divider" aria-hidden="true">
+                        <span></span>
+                    </div>
+                    <div class="compare-label compare-label-before">Day</div>
+                    <div class="compare-label compare-label-after">Night</div>
+                    <input class="compare-range" type="range" min="0" max="100" value="52" aria-label="調整前後影像對比比例">
+                </div>
+                <div class="compare-editor" data-compare-editor hidden>
+                    <div class="compare-editor-tabs" aria-label="選擇要調整的照片">
+                        <button type="button" class="is-active" data-compare-target="day">日照</button>
+                        <button type="button" data-compare-target="night">夜照</button>
+                    </div>
+                    <label>縮放
+                        <input type="range" min="100" max="180" value="100" data-compare-control="zoom">
+                    </label>
+                    <label>左右
+                        <input type="range" min="0" max="100" value="50" data-compare-control="x">
+                    </label>
+                    <label>上下
+                        <input type="range" min="0" max="100" value="50" data-compare-control="y">
+                    </label>
+                    <button type="button" class="compare-copy-btn" data-compare-copy>複製設定</button>
+                    <span class="compare-editor-status" data-compare-status>調整後可複製設定</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="videos" class="video-section pt-8 pb-12 md:pb-16 bg-gray-900">
         <div class="container mx-auto px-6 md:px-20">
             <div class="section-intro video-intro text-center">
                 <p class="section-kicker">Motion Reel</p>
@@ -302,74 +363,57 @@
                 </p>
             </div>
 
-            <!-- Master-Detail Cinema Grid Layout -->
-            <div class="max-w-6xl mx-auto">
-
-                <!-- Main Player (Top) -->
-                <div class="mb-12">
-                    <div id="main-video-player"
-                        class="relative w-full pb-[56.25%] bg-black rounded-2xl overflow-hidden shadow-2xl border border-gray-800 ring-1 ring-white/10">
-                        <!-- Iframe injected here -->
-                    </div>
-                    <div class="mt-6">
-                        <h3 id="main-video-title" class="text-3xl font-bold text-white mb-2">請選擇影片</h3>
-                        <!-- Optional: Add Description or Tags here if data exists -->
-                    </div>
+            <!-- Featured motion reel -->
+            <div class="motion-reel mx-auto">
+                <div id="main-video-player" class="motion-feature" aria-live="polite">
+                    <!-- Featured video injected via JS -->
                 </div>
 
-                <!-- Playlist Grid (Bottom) -->
-                <div class="">
-                    <h4
-                        class="text-gray-400 text-sm font-semibold mb-6 uppercase tracking-wider border-l-4 border-blue-500 pl-3">
-                        更多影片</h4>
-                    <div id="video-playlist" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="motion-strip" aria-label="更多影片">
+                    <div id="video-playlist" class="motion-playlist">
                         <!-- Playlist items injected via JS -->
                     </div>
                 </div>
-
             </div>
         </div>
     </section>
 
-    <section id="services" class="services-section pt-16 pb-4 md:pt-20 md:pb-6">
+    <section id="services" class="services-section service-offerings py-16 md:py-24">
         <div class="container mx-auto px-6 md:px-20">
-            <div class="max-w-6xl mx-auto">
-                <div class="section-intro reveal">
-                    <p class="section-kicker">Commercial Use Cases</p>
-                    <h2 class="text-4xl md:text-5xl font-bold text-white mb-6">讓空拍成為專案的第一個說服力</h2>
-                    <p class="text-lg md:text-xl text-gray-300 max-w-3xl leading-relaxed">
-                        LCT Studio 可以把作品集的影像語言延伸到建案、工程進度、廠房與太陽能場域，
-                        用清楚的視覺敘事幫客戶說明規模、效率與信任感。
-                    </p>
-                </div>
+            <div class="service-heading text-center">
+                <p class="section-kicker">Service Items</p>
+                <h2 class="text-4xl font-bold text-white mb-4">服務項目</h2>
+                <p class="service-heading-copy text-gray-400 max-w-2xl mx-auto">
+                    以空拍視角記錄建築、工程、活動與景點，呈現場域特色、進度變化與宣傳亮點。
+                </p>
+            </div>
 
-                <div class="service-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mt-12">
-                    <article class="service-card reveal">
-                        <span class="service-number">01</span>
-                        <h3>空拍攝影</h3>
-                        <p>以高空視角建立品牌第一印象，適合形象官網、作品集與社群主視覺。</p>
-                    </article>
-                    <article class="service-card reveal reveal-delay-100">
-                        <span class="service-number">02</span>
-                        <h3>工程紀錄</h3>
-                        <p>用定期拍攝與影片剪輯呈現進度，讓業主、團隊與銷售端快速掌握現況。</p>
-                    </article>
-                    <article class="service-card reveal reveal-delay-200">
-                        <span class="service-number">03</span>
-                        <h3>建案視覺</h3>
-                        <p>凸顯基地周邊、交通動線與城市紋理，讓空間價值不只停留在平面圖。</p>
-                    </article>
-                    <article class="service-card reveal reveal-delay-300">
-                        <span class="service-number">04</span>
-                        <h3>太陽能場域</h3>
-                        <p>以全區俯瞰、設備排列與廠房尺度呈現能源專案的規模與專業度。</p>
-                    </article>
-                </div>
+            <div class="service-offering-grid max-w-7xl mx-auto">
+                <article class="service-offering-card reveal">
+                    <h3>建築形象空拍</h3>
+                    <p>建築外觀、施工紀錄、行銷拍攝</p>
+                    <img src="public/assets/services/building.jpg" alt="建築形象空拍">
+                </article>
+                <article class="service-offering-card reveal reveal-delay-100">
+                    <h3>工程進度紀錄</h3>
+                    <p>施工進度追蹤、定期紀錄比對</p>
+                    <img src="public/assets/services/construction.jpg" alt="工程進度紀錄">
+                </article>
+                <article class="service-offering-card reveal reveal-delay-200">
+                    <h3>活動影像紀錄</h3>
+                    <p>大型活動、運動會、活動花絮</p>
+                    <img src="public/assets/services/event.jpg" alt="活動影像紀錄">
+                </article>
+                <article class="service-offering-card reveal reveal-delay-300">
+                    <h3>景點旅遊宣傳</h3>
+                    <p>景點宣傳、旅遊形象與航拍紀錄</p>
+                    <img src="public/assets/services/tourism.jpg" alt="景點旅遊宣傳">
+                </article>
             </div>
         </div>
     </section>
 
-    <section id="about" class="py-8 md:py-10 container mx-auto px-6 md:px-20 relative overflow-hidden">
+    <section id="about" class="py-10 md:py-14 container mx-auto px-6 md:px-20 relative overflow-hidden">
         <div class="max-w-4xl mx-auto reveal relative z-10">
 
             <!-- Title Centered & Matched with Contact -->
@@ -580,7 +624,8 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
     <script src="public/js/data_videos.js"></script>
     <script src="public/js/data_photos.js"></script>
-    <script src="public/js/main.js?v=55"></script>
+    <script src="public/js/map_markers.js?v=2"></script>
+    <script src="public/js/main.js?v=63"></script>
 
 </body>
 

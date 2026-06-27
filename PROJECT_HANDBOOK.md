@@ -20,6 +20,7 @@
     *   **JS Data Objects (Current)**: 資料不再讀取 `json` 檔 (避免 CORS 問題)，而是讀取 `public/js/` 下的 `.js` 檔案，這些檔案會將數據掛載到全域變數 (`window.xxx`)。
         *   `data_photos.js` -> `window.globalPhotoData` (照片數據 + 色彩資訊 + GPS)
         *   `data_videos.js` -> `window.videoData` (影片清單)
+        *   `map_markers.js` -> `window.mapMarkerData` (空拍地圖標示，正式站預設隱藏編輯工具)
 
 *   **自動化工具 (Automation)**:
     *   `generate_photo_list.py`: 核心腳本。負責掃描照片、壓縮縮圖、壓制浮水印、分析主色調、提取 GPS，並生成 `data_photos.js`。
@@ -40,7 +41,11 @@
 │   ├── js/
 │   │   ├── main.js         # 主要邏輯 (畫冊、畫廊、影片)
 │   │   ├── data_photos.js  # [自動生成] 照片數據
-│   │   └── data_videos.js  # [手動維護] 影片數據 (~~舊版寫死在 main.js~~)
+│   │   ├── data_videos.js  # [手動維護] 影片數據 (~~舊版寫死在 main.js~~)
+│   │   └── map_markers.js  # [手動維護] 空拍地圖標示資料
+│   ├── assets/
+│   │   ├── compare/        # 日夜/前後對比圖片
+│   │   └── services/       # 服務項目卡片圖片
 │   └── css/                # style.css
 ├── background/             # 背景影片 (Hero Video)
 ├── generate_photo_list.py  # [核心] 照片處理與數據生成腳本
@@ -263,3 +268,38 @@ http://127.0.0.1:4173/?railTune=1#scroll-story
 ```powershell
 node --check public/js/main.js
 ```
+
+---
+
+## 10. 2026-06-27 首頁版型與互動功能維護備註
+
+### A. 精選影片
+1. 主視覺影片預設顯示 `public/js/data_videos.js` 的第一部精選影片。
+2. 下方縮圖列最多顯示 4 部影片；若影片超過 4 部，保留主影片並排除「林口空拍 (日+夜)」作為被替換項。
+3. 影片年份由 `data_videos.js` 的 `year` 欄位控制，例如 `2025` / `2026`。
+
+### B. 前後影像對比
+1. 日照圖：`public/assets/compare/linkou-day.jpg`
+2. 夜照圖：`public/assets/compare/linkou-night.jpg`
+3. 正式頁面只顯示可拖曳的日夜對比滑桿。
+4. 使用 `?editCompare=1` 或 `#edit-compare` 開啟調整工具，可分別調整日照/夜照的縮放、左右、上下。
+5. 目前固定參數：
+   - `data-day-x="33" data-day-y="53" data-day-zoom="109"`
+   - `data-night-x="31" data-night-y="48" data-night-zoom="112"`
+
+### C. 空拍地圖標示
+1. 資料檔：`public/js/map_markers.js`
+2. 正式站預設隱藏「編輯 / 新增 / 刪除 / 複製設定」工具。
+3. 使用 `?editMap=1` 或 `#edit-map` 開啟簡易編輯工具。
+4. 若是作品集既有照片，可填 `category` + `filename`，系統會從 `data_photos.js` 找圖與 GPS。
+5. 若是額外圖片，可填 `image` 路徑，例如 `public/assets/...`。
+6. 調整完成後按「複製設定」，將輸出的 `window.mapMarkerData = [...]` 貼回 `public/js/map_markers.js`。
+
+### D. 服務項目
+1. 卡片圖片位置：`public/assets/services/`
+2. 目前四項：建築形象空拍、工程進度紀錄、活動影像紀錄、景點旅遊宣傳。
+3. 替換圖片時保持檔名不變，直接覆蓋 `building.jpg`、`construction.jpg`、`event.jpg`、`tourism.jpg`。
+
+### E. Cache 版本
+1. 目前首頁使用 `style.css?v=67` 與 `main.js?v=63`。
+2. 每次修改 CSS/JS 後需同步更新 `index.html` 內的 cache query，避免正式站吃到舊快取。

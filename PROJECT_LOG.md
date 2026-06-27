@@ -15,6 +15,24 @@
 
 ---
 
+## [2026-06-27] 精選影片版型、日夜對比、服務項目與地圖編輯模式上線
+- **更新類型**: 首頁版型 / 互動功能 / 服務項目 / 地圖資料 / GitHub 上線
+- **主要變更**:
+  - 精選影片改為大型主視覺播放器搭配 4 個影片縮圖，修正播放其他影片後原主影片消失的問題。
+  - 影片年份改為依資料顯示 `2025` / `2026`，並移除主影片說明文字以保持畫面乾淨。
+  - 在精選影片前新增「前後影像對比」區塊，使用 `public/assets/compare/linkou-day.jpg` 與 `public/assets/compare/linkou-night.jpg` 做日夜滑桿對比。
+  - 新增 `?editCompare=1` 對比圖調整模式，可調整日照/夜照的縮放、左右、上下位置，最後固定為 `data-day-x="33" data-day-y="53" data-day-zoom="109"`、`data-night-x="31" data-night-y="48" data-night-zoom="112"`。
+  - 新增「服務項目」區塊，四項為「建築形象空拍」、「工程進度紀錄」、「活動影像紀錄」、「景點旅遊宣傳」，並使用 `public/assets/services/` 圖片。
+  - 空拍地圖標示改為獨立資料檔 `public/js/map_markers.js`，正式站預設隱藏編輯工具；需使用 `?editMap=1` 才顯示新增、修改、刪除、複製設定工具。
+  - 更新前端 cache 版本至 `style.css?v=67`、`main.js?v=63`，並新增 `map_markers.js?v=2`。
+- **驗證**:
+  - `node --check public/js/main.js`
+  - Codex 內建瀏覽器檢查 `http://localhost:5173/index.html` 與 `?editCompare=1`，確認新區塊、服務文字、地圖編輯隱藏/編輯模式正常。
+- **上線注意**:
+  - 正式地圖編輯入口：`/index.html?editMap=1`
+  - 日夜對比調整入口：`/index.html?editCompare=1`
+  - 工作區仍有既有未處理檔案狀態：`public/assets/logo-2.png` 刪除狀態、`public/assets/logo (1).png`、`public/assets/logo (2).png`、`scroll-animation-technique.md` 未追蹤；本次不納入上傳。
+
 ## [2026-01-26] Agent Skills 設定與畫廊修復
 - **變更類型**: 修復 & 文件
 - **詳細內容**:

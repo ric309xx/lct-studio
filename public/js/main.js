@@ -144,21 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     let globalPhotoData = {}; // Store fetched data
-    const MAP_JOURNEY_FILENAMES = [
-        '新北淡水海尾子海灘 (1).jpg',
-        '基隆望幽谷.jpg',
-        '台北社子島腳踏車道.jpg',
-        '新竹寶山小西湖.jpg',
-        '台中洲際棒球場.jpg',
-        '宜蘭五結防潮閘門-2.jpg',
-        '南投日月潭.jpg',
-        '花蓮清水斷崖.jpg',
-        '花蓮和平火車站旁-2.jpg',
-        '高雄舊高雄車站(高雄願景館).jpg',
-        '南投清境農場雲海A.png',
-        '雲林西螺落日剪影 (2).jpg',
-        '澎湖湖西菓葉觀日樓.jpg'
-    ];
+    const DEFAULT_MAP_MARKERS = Array.isArray(window.mapMarkerData) ? window.mapMarkerData : [];
+    const MAP_JOURNEY_FILENAMES = DEFAULT_MAP_MARKERS.map(marker => marker.filename).filter(Boolean);
     const MAP_JOURNEY_FILENAME_SET = new Set(MAP_JOURNEY_FILENAMES);
     const MAP_GPS_OVERRIDES = {
         // Taichung Intercontinental Baseball Stadium, Beitun District.
@@ -200,6 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '澎湖湖西菓葉觀日樓.jpg': { x: 26.22, y: 50.27 }
     };
     const MAP_POSITION_STORAGE_KEY = 'lct-map-pin-positions-v2';
+    const MAP_MARKER_STORAGE_KEY = 'lct-map-markers-v2';
 
     const getStoredMapPositions = () => {
         try {
@@ -217,6 +205,25 @@ document.addEventListener('DOMContentLoaded', () => {
             window.localStorage?.setItem(MAP_POSITION_STORAGE_KEY, JSON.stringify(positions));
         } catch (error) {
             console.warn('Unable to save map pin positions.', error);
+        }
+    };
+
+    const getStoredMapMarkers = () => {
+        try {
+            const raw = window.localStorage?.getItem(MAP_MARKER_STORAGE_KEY);
+            const parsed = raw ? JSON.parse(raw) : null;
+            return Array.isArray(parsed) ? parsed : null;
+        } catch (error) {
+            console.warn('Unable to read saved map markers.', error);
+            return null;
+        }
+    };
+
+    const saveStoredMapMarkers = (markers) => {
+        try {
+            window.localStorage?.setItem(MAP_MARKER_STORAGE_KEY, JSON.stringify(markers));
+        } catch (error) {
+            console.warn('Unable to save map markers.', error);
         }
     };
 
@@ -326,33 +333,38 @@ document.addEventListener('DOMContentLoaded', () => {
         const previewTitle = document.getElementById('map-preview-title');
         const activeCoords = document.getElementById('map-active-coords');
         const editToggle = document.getElementById('map-edit-toggle');
-        const editReset = document.getElementById('map-edit-reset');
+        const addMarker = document.getElementById('map-add-marker');
+        const deleteMarker = document.getElementById('map-delete-marker');
         const editCopy = document.getElementById('map-edit-copy');
         const editStatus = document.getElementById('map-edit-status');
+        const editor = document.getElementById('map-marker-editor');
+        const titleInput = document.getElementById('map-marker-title');
+        const imageInput = document.getElementById('map-marker-image');
+        const categoryInput = document.getElementById('map-marker-category');
+        const filenameInput = document.getElementById('map-marker-filename');
+        const latInput = document.getElementById('map-marker-lat');
+        const lngInput = document.getElementById('map-marker-lng');
 
         if (!mapWrap || !pinsWrap || !routeSegments || !previewImg) return;
         if (mapJourneyInitialized) return;
 
-        const allPhotos = flattenPhotos(globalPhotoData);
-        const journeyPhotos = MAP_JOURNEY_FILENAMES
-            .map(filename => {
-                const photo = allPhotos.find(item => item.filename === filename);
-                if (!photo) return null;
-                const gps = photo.gps || MAP_GPS_OVERRIDES[filename];
-                return gps ? { ...photo, gps } : null;
-            })
-            .filter(Boolean);
+        const params = new URLSearchParams(window.location.search);
+        const editToolsEnabled = params.get('editMap') === '1' || window.location.hash === '#edit-map';
+        if (editToolsEnabled) {
+            mapPanel?.classList.add('is-edit-enabled');
+            if (editToggle?.parentElement) editToggle.parentElement.hidden = false;
+        } else {
+            if (editToggle?.parentElement) editToggle.parentElement.hidden = true;
+            editor?.setAttribute('hidden', '');
+        }
 
-        if (!journeyPhotos.length) return;
+        const allPhotos = flattenPhotos(globalPhotoData);
+        let markers = getStoredMapMarkers() || DEFAULT_MAP_MARKERS.map(marker => ({ ...marker }));
+        if (!markers.length) {
+            markers = [{ id: `marker-${Date.now()}`, title: '新的空拍標示', position: { x: 50, y: 50 } }];
+        }
 
         mapJourneyInitialized = true;
-
-        const minLat = MAP_BOUNDS.minLat;
-        const maxLat = MAP_BOUNDS.maxLat;
-        const minLng = MAP_BOUNDS.minLng;
-        const maxLng = MAP_BOUNDS.maxLng;
-        const lngRange = maxLng - minLng;
-        const latRange = maxLat - minLat;
 
         let manualPositions = getStoredMapPositions();
         let editMode = false;
@@ -360,52 +372,128 @@ document.addEventListener('DOMContentLoaded', () => {
         let draggingPin = null;
         let suppressNextClick = false;
 
-        const getBasePoint = (photo) => {
-            const override = MAP_POSITION_OVERRIDES[photo.filename];
-            if (override) return override;
-
-            const lngRatio = Math.max(0, Math.min(1, (photo.gps.lng - minLng) / lngRange));
-            const latRatio = Math.max(0, Math.min(1, (maxLat - photo.gps.lat) / latRange));
-            const x = 34.5 + lngRatio * 43.5;
-            const y = 10 + latRatio * 76;
-            return { x, y };
-        };
-
-        const toPoint = (photo) => {
-            const saved = manualPositions[photo.filename];
-            if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
-                return { x: saved.x, y: saved.y };
+        const getMarkerPhoto = (marker) => {
+            if (!marker?.filename) return null;
+            if (marker.category) {
+                return allPhotos.find(item => item.category === marker.category && item.filename === marker.filename) || null;
             }
-            return getBasePoint(photo);
+            return allPhotos.find(item => item.filename === marker.filename) || null;
         };
 
-        let points = journeyPhotos.map(toPoint);
-        pinsWrap.innerHTML = '';
-        routeSegments.innerHTML = '';
+        const getMarkerTitle = (marker) => marker.title || getBaseLocationName(marker.filename || '') || '新的空拍標示';
+        const getMarkerImageSrc = (marker) => {
+            if (marker.image) return marker.image;
+            const photo = getMarkerPhoto(marker);
+            return photo ? getPhotoSrc(photo) : 'public/assets/taiwan-aerial-map.png';
+        };
+        const getMarkerGps = (marker) => {
+            if (marker?.gps && Number.isFinite(marker.gps.lat) && Number.isFinite(marker.gps.lng)) return marker.gps;
+            const photo = getMarkerPhoto(marker);
+            return photo?.gps || MAP_GPS_OVERRIDES[marker.filename] || null;
+        };
+        const getBasePoint = (marker) => {
+            if (marker.position && Number.isFinite(marker.position.x) && Number.isFinite(marker.position.y)) return marker.position;
+            const override = marker.filename ? MAP_POSITION_OVERRIDES[marker.filename] : null;
+            if (override) return override;
+            const gps = getMarkerGps(marker);
+            if (gps) {
+                const lngRatio = Math.max(0, Math.min(1, (gps.lng - MAP_BOUNDS.minLng) / (MAP_BOUNDS.maxLng - MAP_BOUNDS.minLng)));
+                const latRatio = Math.max(0, Math.min(1, (MAP_BOUNDS.maxLat - gps.lat) / (MAP_BOUNDS.maxLat - MAP_BOUNDS.minLat)));
+                return { x: 34.5 + lngRatio * 43.5, y: 10 + latRatio * 76 };
+            }
+            return { x: 50, y: 50 };
+        };
+        const toPoint = (marker) => {
+            const saved = manualPositions[marker.id] || manualPositions[marker.filename];
+            return saved && Number.isFinite(saved.x) && Number.isFinite(saved.y) ? { x: saved.x, y: saved.y } : getBasePoint(marker);
+        };
 
+        let points = markers.map(toPoint);
         const setPinPosition = (pin, point) => {
             pin.style.left = `${point.x}%`;
             pin.style.top = `${point.y}%`;
         };
-
-        const renderRouteSegments = () => {
-            routeSegments.innerHTML = '';
-        };
-
         const updateEditStatus = (text) => {
             if (editStatus) editStatus.textContent = text;
         };
-
+        const persistMarkers = () => {
+            markers = markers.map((marker, index) => ({
+                ...marker,
+                position: { x: Number(points[index].x.toFixed(2)), y: Number(points[index].y.toFixed(2)) }
+            }));
+            saveStoredMapMarkers(markers);
+        };
         const savePinPosition = (index) => {
-            const photo = journeyPhotos[index];
-            if (!photo) return;
-            manualPositions[photo.filename] = {
+            const marker = markers[index];
+            if (!marker) return;
+            manualPositions[marker.id || marker.filename] = {
                 x: Number(points[index].x.toFixed(2)),
                 y: Number(points[index].y.toFixed(2))
             };
             saveStoredMapPositions(manualPositions);
+            persistMarkers();
         };
-
+        const syncEditor = () => {
+            const marker = markers[activeIndex];
+            if (!marker) return;
+            const gps = getMarkerGps(marker);
+            if (titleInput) titleInput.value = getMarkerTitle(marker);
+            if (imageInput) imageInput.value = marker.image || '';
+            if (categoryInput) categoryInput.value = marker.category || '';
+            if (filenameInput) filenameInput.value = marker.filename || '';
+            if (latInput) latInput.value = gps?.lat ?? '';
+            if (lngInput) lngInput.value = gps?.lng ?? '';
+        };
+        const setActiveStop = (index) => {
+            const marker = markers[index];
+            if (!marker) return;
+            activeIndex = index;
+            previewImg.style.opacity = '0.55';
+            setTimeout(() => {
+                previewImg.src = getMarkerImageSrc(marker);
+                previewImg.alt = getMarkerTitle(marker);
+                previewImg.style.opacity = '1';
+            }, 80);
+            if (previewCard) previewCard.dataset.title = getMarkerTitle(marker);
+            if (previewTitle) previewTitle.textContent = getMarkerTitle(marker);
+            const gps = getMarkerGps(marker);
+            activeCoords.textContent = gps ? `${formatCoord(gps.lat)}, ${formatCoord(gps.lng)}` : `X ${points[index].x.toFixed(1)} / Y ${points[index].y.toFixed(1)}`;
+            pinsWrap.querySelectorAll('.map-pin').forEach((pin, pinIndex) => {
+                pin.classList.toggle('is-active', pinIndex === index);
+            });
+            syncEditor();
+        };
+        const renderPins = () => {
+            pinsWrap.innerHTML = '';
+            routeSegments.innerHTML = '';
+            markers.forEach((marker, index) => {
+                const photo = getMarkerPhoto(marker);
+                const pin = document.createElement('button');
+                pin.type = 'button';
+                pin.className = 'map-pin';
+                setPinPosition(pin, points[index]);
+                pin.style.setProperty('--pin-color', getColorCss(photo?.color, 1));
+                pin.dataset.title = getMarkerTitle(marker);
+                pin.setAttribute('aria-label', `標示 ${getMarkerTitle(marker)}`);
+                pin.addEventListener('pointerdown', (event) => {
+                    if (!editMode) return;
+                    event.preventDefault();
+                    draggingPin = { pin, index, pointerId: event.pointerId };
+                    pin.setPointerCapture?.(event.pointerId);
+                    window.addEventListener('pointermove', handlePinPointerMove);
+                    window.addEventListener('pointerup', handlePinPointerUp, { once: true });
+                });
+                pin.addEventListener('click', () => {
+                    if (suppressNextClick) {
+                        suppressNextClick = false;
+                        return;
+                    }
+                    setActiveStop(index);
+                });
+                pinsWrap.appendChild(pin);
+            });
+            setActiveStop(Math.min(activeIndex, markers.length - 1));
+        };
         const handlePinPointerMove = (event) => {
             if (!draggingPin) return;
             const rect = mapWrap.getBoundingClientRect();
@@ -414,95 +502,89 @@ document.addEventListener('DOMContentLoaded', () => {
             const index = draggingPin.index;
             points[index] = { x, y };
             setPinPosition(draggingPin.pin, points[index]);
-            renderRouteSegments();
             updateEditStatus(`${String(index + 1).padStart(2, '0')} / X ${x.toFixed(1)} Y ${y.toFixed(1)}`);
             suppressNextClick = true;
         };
-
         const handlePinPointerUp = () => {
             if (!draggingPin) return;
             savePinPosition(draggingPin.index);
             draggingPin.pin.releasePointerCapture?.(draggingPin.pointerId);
             draggingPin = null;
-            updateEditStatus('定位已儲存於此瀏覽器');
+            updateEditStatus('位置已更新，複製設定後可貼回資料檔');
             window.removeEventListener('pointermove', handlePinPointerMove);
             window.removeEventListener('pointerup', handlePinPointerUp);
         };
 
-        renderRouteSegments();
-
-        const setActiveStop = (index) => {
-            const photo = journeyPhotos[index];
-            if (!photo) return;
-            activeIndex = index;
-
-            previewImg.style.opacity = '0.55';
-            setTimeout(() => {
-                previewImg.src = getPhotoSrc(photo);
-                previewImg.alt = getBaseLocationName(photo.filename);
-                previewImg.style.opacity = '1';
-            }, 80);
-
-            if (previewCard) previewCard.dataset.title = getBaseLocationName(photo.filename);
-            if (previewTitle) previewTitle.textContent = getBaseLocationName(photo.filename);
-            activeCoords.textContent = `${formatCoord(photo.gps.lat)}, ${formatCoord(photo.gps.lng)}`;
-
-            pinsWrap.querySelectorAll('.map-pin').forEach((pin, pinIndex) => {
-                pin.classList.toggle('is-active', pinIndex === index);
-            });
-        };
-
-        journeyPhotos.forEach((photo, index) => {
-            const point = points[index];
-            const pin = document.createElement('button');
-            pin.type = 'button';
-            pin.className = 'map-pin';
-            setPinPosition(pin, point);
-            pin.style.setProperty('--pin-color', getColorCss(photo.color, 1));
-            pin.dataset.title = getBaseLocationName(photo.filename);
-            pin.setAttribute('aria-label', `查看 ${getBaseLocationName(photo.filename)}`);
-            pin.addEventListener('pointerdown', (event) => {
-                if (!editMode) return;
-                event.preventDefault();
-                draggingPin = { pin, index, pointerId: event.pointerId };
-                pin.setPointerCapture?.(event.pointerId);
-                window.addEventListener('pointermove', handlePinPointerMove);
-                window.addEventListener('pointerup', handlePinPointerUp, { once: true });
-            });
-            pin.addEventListener('click', () => {
-                if (suppressNextClick) {
-                    suppressNextClick = false;
-                    return;
-                }
-                setActiveStop(index);
-            });
-            pinsWrap.appendChild(pin);
-        });
-
         editToggle?.addEventListener('click', () => {
+            if (!editToolsEnabled) return;
             editMode = !editMode;
             mapPanel?.classList.toggle('is-editing', editMode);
-            editToggle.textContent = editMode ? '完成調整' : '調整定位';
-            updateEditStatus(editMode ? '拖曳地圖上的定位點即可微調' : '定位調整已關閉');
+            editor?.toggleAttribute('hidden', !editMode);
+            editor?.classList.toggle('is-visible', editMode);
+            editToggle.textContent = editMode ? '完成' : '編輯';
+            updateEditStatus(editMode ? '拖曳標示、點新增、或直接修改欄位' : '編輯已關閉');
         });
-
-        editReset?.addEventListener('click', () => {
-            manualPositions = {};
-            saveStoredMapPositions(manualPositions);
-            points = journeyPhotos.map(getBasePoint);
-            pinsWrap.querySelectorAll('.map-pin').forEach((pin, index) => {
-                setPinPosition(pin, points[index]);
+        addMarker?.addEventListener('click', () => {
+            if (!editToolsEnabled) return;
+            const marker = { id: `marker-${Date.now()}`, title: '新的空拍標示', position: { x: 50, y: 50 } };
+            markers.push(marker);
+            points.push(marker.position);
+            activeIndex = markers.length - 1;
+            persistMarkers();
+            renderPins();
+            updateEditStatus('已新增標示，可拖曳或編輯欄位');
+        });
+        deleteMarker?.addEventListener('click', () => {
+            if (!editToolsEnabled) return;
+            if (!markers.length) return;
+            markers.splice(activeIndex, 1);
+            points.splice(activeIndex, 1);
+            if (!markers.length) {
+                const marker = { id: `marker-${Date.now()}`, title: '新的空拍標示', position: { x: 50, y: 50 } };
+                markers.push(marker);
+                points.push(marker.position);
+            }
+            activeIndex = Math.max(0, activeIndex - 1);
+            persistMarkers();
+            renderPins();
+            updateEditStatus('已刪除目前標示');
+        });
+        mapWrap.addEventListener('click', (event) => {
+            if (!editToolsEnabled || !editMode || event.target.closest('.map-pin')) return;
+            const rect = mapWrap.getBoundingClientRect();
+            const x = Math.max(2, Math.min(98, ((event.clientX - rect.left) / rect.width) * 100));
+            const y = Math.max(2, Math.min(98, ((event.clientY - rect.top) / rect.height) * 100));
+            const marker = { id: `marker-${Date.now()}`, title: '新的空拍標示', position: { x: Number(x.toFixed(2)), y: Number(y.toFixed(2)) } };
+            markers.push(marker);
+            points.push(marker.position);
+            activeIndex = markers.length - 1;
+            persistMarkers();
+            renderPins();
+            updateEditStatus('已在點選位置新增標示');
+        });
+        [titleInput, imageInput, categoryInput, filenameInput, latInput, lngInput].forEach(input => {
+            input?.addEventListener('input', () => {
+                if (!editToolsEnabled) return;
+                const marker = markers[activeIndex];
+                if (!marker) return;
+                marker.title = titleInput?.value.trim() || '新的空拍標示';
+                marker.image = imageInput?.value.trim() || undefined;
+                marker.category = categoryInput?.value.trim() || undefined;
+                marker.filename = filenameInput?.value.trim() || undefined;
+                const lat = Number(latInput?.value);
+                const lng = Number(lngInput?.value);
+                marker.gps = Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : undefined;
+                persistMarkers();
+                renderPins();
             });
-            renderRouteSegments();
-            setActiveStop(activeIndex);
-            updateEditStatus('已重設為預設定位');
         });
-
         editCopy?.addEventListener('click', async () => {
-            const text = JSON.stringify(manualPositions, null, 2);
+            if (!editToolsEnabled) return;
+            persistMarkers();
+            const text = `window.mapMarkerData = ${JSON.stringify(markers, null, 4)};`;
             try {
                 await navigator.clipboard.writeText(text);
-                updateEditStatus('已複製手動定位座標');
+                updateEditStatus('已複製設定，可貼回 public/js/map_markers.js');
             } catch (error) {
                 const textarea = document.createElement('textarea');
                 textarea.value = text;
@@ -513,11 +595,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 textarea.select();
                 document.execCommand('copy');
                 textarea.remove();
-                updateEditStatus('已複製手動定位座標');
+                updateEditStatus('已複製設定，可貼回 public/js/map_markers.js');
             }
         });
 
-        setActiveStop(0);
+        renderPins();
     };
 
     const renderGallery = (categoryName) => {
@@ -590,6 +672,129 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('載入照片資料時發生錯誤：', error);
         }
+    };
+
+    const setupCompareSliders = () => {
+        document.querySelectorAll('[data-compare]').forEach((compare) => {
+            const stage = compare.querySelector('.compare-stage');
+            const range = compare.querySelector('.compare-range');
+            const editor = compare.querySelector('[data-compare-editor]');
+            const targetButtons = [...compare.querySelectorAll('[data-compare-target]')];
+            const controls = [...compare.querySelectorAll('[data-compare-control]')];
+            const copyButton = compare.querySelector('[data-compare-copy]');
+            const status = compare.querySelector('[data-compare-status]');
+            if (!stage || !range) return;
+
+            const editEnabled = new URLSearchParams(window.location.search).get('editCompare') === '1' || window.location.hash === '#edit-compare';
+            const storageKey = 'lct-compare-settings-v1';
+            const defaultSettings = {
+                day: {
+                    x: Number(compare.dataset.dayX || 50),
+                    y: Number(compare.dataset.dayY || 50),
+                    zoom: Number(compare.dataset.dayZoom || 100)
+                },
+                night: {
+                    x: Number(compare.dataset.nightX || 50),
+                    y: Number(compare.dataset.nightY || 50),
+                    zoom: Number(compare.dataset.nightZoom || 100)
+                }
+            };
+            let selectedTarget = 'day';
+            let settings = defaultSettings;
+
+            try {
+                const saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
+                if (saved?.day && saved?.night) settings = saved;
+            } catch (error) {
+                settings = defaultSettings;
+            }
+
+            const setPosition = (value) => {
+                const numericValue = Math.max(0, Math.min(100, Number(value) || 0));
+                compare.style.setProperty('--compare-position', `${numericValue}%`);
+                range.value = String(numericValue);
+            };
+
+            const applyImageSettings = () => {
+                const dayShiftX = (50 - settings.day.x) * 0.45;
+                const dayShiftY = (50 - settings.day.y) * 0.35;
+                const nightShiftX = (50 - settings.night.x) * 0.45;
+                const nightShiftY = (50 - settings.night.y) * 0.35;
+                compare.style.setProperty('--compare-day-x', `${settings.day.x}%`);
+                compare.style.setProperty('--compare-day-y', `${settings.day.y}%`);
+                compare.style.setProperty('--compare-day-zoom', String(settings.day.zoom / 100));
+                compare.style.setProperty('--compare-day-shift-x', `${dayShiftX}%`);
+                compare.style.setProperty('--compare-day-shift-y', `${dayShiftY}%`);
+                compare.style.setProperty('--compare-night-x', `${settings.night.x}%`);
+                compare.style.setProperty('--compare-night-y', `${settings.night.y}%`);
+                compare.style.setProperty('--compare-night-zoom', String(settings.night.zoom / 100));
+                compare.style.setProperty('--compare-night-shift-x', `${nightShiftX}%`);
+                compare.style.setProperty('--compare-night-shift-y', `${nightShiftY}%`);
+            };
+
+            const syncControls = () => {
+                controls.forEach((control) => {
+                    control.value = String(settings[selectedTarget][control.dataset.compareControl]);
+                });
+                targetButtons.forEach((button) => {
+                    button.classList.toggle('is-active', button.dataset.compareTarget === selectedTarget);
+                });
+            };
+
+            const saveSettings = () => {
+                localStorage.setItem(storageKey, JSON.stringify(settings));
+            };
+
+            const setFromPointer = (event) => {
+                const rect = stage.getBoundingClientRect();
+                const x = Math.max(0, Math.min(rect.width, event.clientX - rect.left));
+                setPosition((x / rect.width) * 100);
+            };
+
+            applyImageSettings();
+            setPosition(range.value);
+            range.addEventListener('input', () => setPosition(range.value));
+            stage.addEventListener('pointerdown', (event) => {
+                setFromPointer(event);
+                stage.setPointerCapture?.(event.pointerId);
+            });
+            stage.addEventListener('pointermove', (event) => {
+                if (event.buttons !== 1) return;
+                setFromPointer(event);
+            });
+
+            if (editEnabled && editor) {
+                editor.hidden = false;
+                syncControls();
+            }
+
+            targetButtons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    selectedTarget = button.dataset.compareTarget || 'day';
+                    syncControls();
+                });
+            });
+
+            controls.forEach((control) => {
+                control.addEventListener('input', () => {
+                    const key = control.dataset.compareControl;
+                    settings[selectedTarget][key] = Number(control.value);
+                    applyImageSettings();
+                    saveSettings();
+                    if (status) status.textContent = '已套用，可複製設定';
+                });
+            });
+
+            copyButton?.addEventListener('click', async () => {
+                const text = `data-day-x="${settings.day.x}" data-day-y="${settings.day.y}" data-day-zoom="${settings.day.zoom}" data-night-x="${settings.night.x}" data-night-y="${settings.night.y}" data-night-zoom="${settings.night.zoom}"`;
+                try {
+                    await navigator.clipboard.writeText(text);
+                    if (status) status.textContent = '已複製設定，可貼給 Codex 回填';
+                } catch (error) {
+                    if (status) status.textContent = text;
+                }
+            });
+        });
     };
 
     // --- 5. Scroll Animation (IntersectionObserver) ---
@@ -775,7 +980,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 6. Videos ---
     const setupVideoSection = () => {
         const mainPlayerContainer = document.getElementById('main-video-player');
-        const mainTitle = document.getElementById('main-video-title');
         const playlistContainer = document.getElementById('video-playlist');
 
         if (!mainPlayerContainer || !playlistContainer) return;
@@ -800,60 +1004,110 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Helper to extract ID
         const getVideoId = (url) => {
             if (!url) return '';
             const parts = url.split('/');
             return parts[parts.length - 1].split('?')[0];
         };
 
-        // Function to play video in main player
-        window.playVideoManual = (url, title) => {
-            if (!mainPlayerContainer) return;
-            mainPlayerContainer.innerHTML = `<iframe class="absolute top-0 left-0 w-full h-full animate-fade-in" src="${url}?autoplay=1&rel=0" title="${title}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>`;
-            if (mainTitle) mainTitle.textContent = title;
+        const getThumbnailUrl = (url, quality = 'maxresdefault') => {
+            const videoId = getVideoId(url);
+            return videoId ? `https://img.youtube.com/vi/${videoId}/${quality}.jpg` : '';
         };
 
-        // Initial Setup (Display First Video in Main Player)
-        if (finalVideos.length > 0) {
-            const firstVideo = finalVideos[0];
-            const videoId = getVideoId(firstVideo.url);
+        const normalizeEmbedUrl = (url, autoplay = false) => {
+            if (!url) return '';
+            const joiner = url.includes('?') ? '&' : '?';
+            const params = autoplay ? 'autoplay=1&rel=0' : 'rel=0';
+            return `${url}${joiner}${params}`;
+        };
 
-            // Render thumbnail with play button for first video
+        const escapeHTML = (value = '') => String(value).replace(/[&<>"']/g, (char) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        })[char]);
+
+        const renderFeaturePreview = (video) => {
+            const thumbnailUrl = getThumbnailUrl(video.url);
+            const safeTitle = escapeHTML(video.title);
+            const displayYear = video.year || (video.title?.includes('林口') ? '2026' : '2025');
             mainPlayerContainer.innerHTML = `
-                <img src="https://img.youtube.com/vi/${videoId}/maxresdefault.jpg" class="absolute inset-0 w-full h-full object-cover">
-                <div class="absolute inset-0 flex items-center justify-center group cursor-pointer" onclick="window.playVideoManual('${firstVideo.url}', '${firstVideo.title}')">
-                    <div class="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/50 group-hover:scale-110 group-hover:bg-red-600 transition-all duration-300 shadow-lg">
-                        <svg class="w-10 h-10 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                    </div>
+                <img src="${thumbnailUrl}" alt="${safeTitle}" class="motion-feature-image">
+                <div class="motion-feature-shade"></div>
+                <div class="motion-feature-copy">
+                    <span class="motion-badge">空拍作品</span>
+                    <h3>${safeTitle}</h3>
+                </div>
+                <button class="motion-play-main" type="button" aria-label="播放 ${safeTitle}">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+                </button>
+                <div class="motion-feature-meta">
+                    ${video.duration ? `<span>${escapeHTML(video.duration)}</span>` : ''}
+                    <span>4K</span>
+                    <span>${escapeHTML(displayYear)}</span>
                 </div>
             `;
-            if (mainTitle) mainTitle.textContent = firstVideo.title;
-        }
 
-        // Render Playlist (All 3 videos)
+            const playButton = mainPlayerContainer.querySelector('.motion-play-main');
+            playButton.addEventListener('click', () => playVideo(video, true));
+        };
+
+        const playVideo = (video, autoplay = false) => {
+            mainPlayerContainer.innerHTML = `
+                <iframe class="motion-feature-frame animate-fade-in" src="${normalizeEmbedUrl(video.url, autoplay)}" title="${escapeHTML(video.title)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+            `;
+        };
+
         playlistContainer.innerHTML = '';
-        finalVideos.forEach(video => {
-            const videoId = getVideoId(video.url);
+
+        if (finalVideos.length === 0) return;
+
+        const [featuredVideo, ...otherVideos] = finalVideos;
+        renderFeaturePreview(featuredVideo);
+
+        const playlistVideos = [
+            featuredVideo,
+            ...otherVideos.filter(video => video.title !== '林口空拍 (日+夜)')
+        ].slice(0, 4);
+
+        playlistVideos.forEach(video => {
+            const thumbnailUrl = getThumbnailUrl(video.url, 'mqdefault');
+            const safeTitle = escapeHTML(video.title);
             const card = document.createElement('div');
-            card.className = "relative w-full pb-[56.25%] rounded-xl overflow-hidden shadow-lg bg-gray-900 group cursor-pointer border border-gray-800 transition-transform transform hover:scale-105";
+            card.className = 'motion-thumb';
+            card.setAttribute('role', 'button');
+            card.setAttribute('tabindex', '0');
+            card.setAttribute('aria-label', `播放 ${video.title}`);
             card.innerHTML = `
-                <img src="https://img.youtube.com/vi/${videoId}/mqdefault.jpg" alt="${video.title}" class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity">
-                <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all"></div>
-                <div class="absolute bottom-0 left-0 w-full p-2 bg-gradient-to-t from-black/90 to-transparent">
-                    <p class="text-white text-sm font-medium truncate">${video.title}</p>
+                <div class="motion-thumb-media">
+                    <img src="${thumbnailUrl}" alt="${safeTitle}">
+                    <span class="motion-thumb-play" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                    </span>
+                    ${video.duration ? `<span class="motion-duration">${escapeHTML(video.duration)}</span>` : ''}
                 </div>
-                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                     <svg class="w-12 h-12 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                </div>
+                <p>${safeTitle}</p>
              `;
-            card.onclick = () => {
-                window.playVideoManual(video.url, video.title);
+
+            const selectVideo = () => {
+                renderFeaturePreview(video);
                 window.scrollTo({
-                    top: mainPlayerContainer.getBoundingClientRect().top + window.scrollY - 100, // Offset for header
+                    top: mainPlayerContainer.getBoundingClientRect().top + window.scrollY - 100,
                     behavior: 'smooth'
                 });
             };
+
+            card.addEventListener('click', selectVideo);
+            card.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    selectVideo();
+                }
+            });
+
             playlistContainer.appendChild(card);
         });
     };
@@ -1869,6 +2123,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchPhotoData();
     setupVideoSection();
     setupHeroVideo();
+    setupCompareSliders();
     setupScrollCinematics();
     setupRailTuningPanel();
 
