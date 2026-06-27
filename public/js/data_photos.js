@@ -662,11 +662,48 @@ window.globalPhotoData = {
       ]
     },
     {
-      "filename": "南投清境農場日出.jpg",
+      "filename": "南投清境日出.jpg",
       "color": [
         7,
-        3,
-        2
+        1,
+        1
+      ]
+    },
+    {
+      "filename": "南投清境日落.jpg",
+      "color": [
+        9,
+        5,
+        4
+      ]
+    },
+    {
+      "filename": "南投清境農場日出A.png",
+      "color": [
+        62,
+        77,
+        94
+      ]
+    },
+    {
+      "filename": "南投清境農場日落-2.jpg",
+      "color": [
+        182,
+        176,
+        175
+      ],
+      "gps": {
+        "lat": 24.119244,
+        "lng": 121.265987,
+        "alt": 3069.1
+      }
+    },
+    {
+      "filename": "南投清境農場日落.jpg",
+      "color": [
+        186,
+        125,
+        90
       ]
     },
     {
@@ -1143,14 +1180,6 @@ window.globalPhotoData = {
       }
     },
     {
-      "filename": "新北淡水淡江大橋.png",
-      "color": [
-        198,
-        179,
-        159
-      ]
-    },
-    {
       "filename": "新北淡水輕軌 (1).jpg",
       "color": [
         129,
@@ -1294,19 +1323,6 @@ window.globalPhotoData = {
         70,
         77
       ]
-    },
-    {
-      "filename": "澎湖湖西菓葉觀日樓.jpg",
-      "color": [
-        73,
-        71,
-        70
-      ],
-      "gps": {
-        "lat": 23.581545,
-        "lng": 119.679776,
-        "alt": 74.53
-      }
     },
     {
       "filename": "花蓮和平火車站旁.jpg",
