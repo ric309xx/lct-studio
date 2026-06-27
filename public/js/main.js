@@ -384,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const getMarkerImageSrc = (marker) => {
             if (marker.image) return marker.image;
             const photo = getMarkerPhoto(marker);
-            return photo ? getPhotoSrc(photo) : 'public/assets/taiwan-aerial-map.png';
+            return photo ? getPhotoSrc(photo) : 'public/assets/taiwan-aerial-map.webp';
         };
         const getMarkerGps = (marker) => {
             if (marker?.gps && Number.isFinite(marker.gps.lat) && Number.isFinite(marker.gps.lng)) return marker.gps;

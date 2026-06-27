@@ -196,10 +196,10 @@
   * 背景大字 `.story-rail` 已校正到最後對齊 `SUNSET`。
 
 ### C. 目前故事照片
-* `public/assets/story-sunrise-qingjing.png`
-* `public/assets/story-morning-qingjing-cloudsea.png`
-* `public/assets/story-golden-xiluo-silhouette.jpg`
-* `public/assets/story-sunset-yilan-wujie.png`
+* `public/assets/story-sunrise-qingjing.webp`
+* `public/assets/story-morning-qingjing-cloudsea.webp`
+* `public/assets/story-golden-xiluo-silhouette.webp`
+* `public/assets/story-sunset-yilan-wujie.webp`
 
 若未來替換照片，建議直接輸出網站用寬版裁切圖，優先使用 16:9 或 21:9，並預留文字區域，會比只靠 `object-position` 更穩。
 
@@ -301,5 +301,12 @@ node --check public/js/main.js
 3. 替換圖片時保持檔名不變，直接覆蓋 `building.jpg`、`construction.jpg`、`event.jpg`、`tourism.jpg`。
 
 ### E. Cache 版本
-1. 目前首頁使用 `style.css?v=67` 與 `main.js?v=63`。
+1. 目前首頁使用 `style.css?v=68` 與 `main.js?v=64`。
 2. 每次修改 CSS/JS 後需同步更新 `index.html` 內的 cache query，避免正式站吃到舊快取。
+
+### F. 效能與圖片尺寸規則
+1. 首頁大圖優先使用 WebP；照片型圖片若需 JPEG，建議使用 progressive JPEG。
+2. 首頁區塊展示圖不建議超過 1920px 寬，除非是下載用或真的需要 4K 檢視。
+3. 日夜/前後對比圖片目前固定為 1920x1080 等級，避免兩張圖合計超過數 MB。
+4. 下方區塊圖片需保留 `loading="lazy"` 與 `decoding="async"`。
+5. 若替換 `public/assets/compare/` 或 `public/assets/services/` 圖片，替換後先檢查檔案大小，首頁單張圖建議控制在 500KB 以內。

@@ -33,6 +33,28 @@
   - 日夜對比調整入口：`/index.html?editCompare=1`
   - 工作區仍有既有未處理檔案狀態：`public/assets/logo-2.png` 刪除狀態、`public/assets/logo (1).png`、`public/assets/logo (2).png`、`scroll-animation-technique.md` 未追蹤；本次不納入上傳。
 
+## [2026-06-27] 首頁效能與圖片載入優化
+- **更新類型**: 效能優化 / 圖片壓縮 / 載入策略
+- **主要變更**:
+  - 將日夜對比圖由 3840x2160 壓縮為 1920x1080 漸進式 JPEG：
+    - `public/assets/compare/linkou-day.jpg` 約 6.1MB -> 約 489KB
+    - `public/assets/compare/linkou-night.jpg` 約 4.0MB -> 約 286KB
+  - 將首頁故事段落大圖轉為 WebP：
+    - `story-sunrise-qingjing.webp`
+    - `story-morning-qingjing-cloudsea.webp`
+    - `story-golden-xiluo-silhouette.webp`
+    - `story-sunset-yilan-wujie.webp`
+  - 將空拍地圖底圖改為 `public/assets/taiwan-aerial-map.webp`，並同步更新 JS fallback。
+  - 移除已被 WebP 取代的舊大型 PNG/JPG 發布資產。
+  - 為故事圖、地圖、日夜對比圖、服務項目圖補上 `loading="lazy"` 與 `decoding="async"`。
+  - 對 `cdn.jsdelivr.net`、Google Fonts、YouTube 圖片與 YouTube iframe domain 補上 preconnect。
+  - 底部 CDN 與本地 JS script 改為 `defer`，並更新 cache 至 `style.css?v=68`、`main.js?v=64`。
+- **驗證**:
+  - `node --check public/js/main.js`
+  - `node --check public/js/data_photos.js`
+  - `node --check public/js/map_markers.js`
+  - 確認首頁程式不再引用舊故事 PNG/JPG 與舊地圖 PNG。
+
 ## [2026-01-26] Agent Skills 設定與畫廊修復
 - **變更類型**: 修復 & 文件
 - **詳細內容**:
