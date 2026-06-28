@@ -84,9 +84,17 @@ window.mapMarkerData = [
     },
     {
         id: "penghu-guoye",
-        title: "澎湖菓葉觀日樓",
+        title: "澎湖後寮天堂路",
         category: "大地映像",
-        filename: "澎湖湖西菓葉觀日樓.jpg",
+        filename: "澎湖後寮天堂路  (2).jpg",
         position: { x: 26.22, y: 50.27 }
+    },
+    {
+        id: "tucheng-industrial-sunset",
+        title: "新北土城工業區日落",
+        category: "城市光影",
+        filename: "新北土城工業區日落.jpg",
+        gps: { lat: 24.962, lng: 121.4229 },
+        position: { x: 60.34, y: 22.84 }
     }
 ];

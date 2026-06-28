@@ -22,7 +22,6 @@ font_color = (255, 255, 255, 76) # RGBA，A=76 為約 30% 透明度
 
 # 4. 資料夾設定
 portfolio_categories = ["城市光影", "大地映像"]
-asset_folders = ["assets"]
 
 # 5. 其他設定
 supported_extensions = ['.jpg', '.jpeg', '.png', '.gif']
@@ -31,15 +30,14 @@ supported_extensions = ['.jpg', '.jpeg', '.png', '.gif']
 
 def clean_output():
     """
-    (已修正) 刪除舊的 public/photos 和 public/assets 資料夾及 JSON 檔案。
+    只刪除舊的 public/photos 和 legacy JSON 檔案。
+    不可刪除 public/assets，首頁固定素材、服務項目圖、地圖底圖都放在那裡。
     增加錯誤處理，防止因檔案被占用而閃退。
     """
     print("--- 正在清理舊檔案... ---")
     
-    # 統一處理要刪除的資料夾路徑
+    # 只清作品照片輸出資料夾，避免誤刪網站固定素材。
     paths_to_delete = [os.path.join(output_parent_folder, 'photos')]
-    for asset_folder in asset_folders:
-        paths_to_delete.append(os.path.join(output_parent_folder, asset_folder))
     
     # 刪除資料夾
     for path in paths_to_delete:
@@ -343,28 +341,7 @@ def run_processor():
     # Legacy JSON file (optional, keeping for backup if needed, or remove)
     # output_json_path = os.path.join(public_dir, 'photos.json')
     # ... (Removing JSON writing to avoid confusion)
-    print("\n--- 正在處理網站素材 (不加浮水印) ---")
-    for asset_dir in asset_folders:
-        source_asset_path = os.path.join(source_parent_folder, asset_dir)
-        output_asset_path = os.path.join(output_parent_folder, asset_dir)
-
-        if not os.path.isdir(source_asset_path):
-            print(f"警告：找不到素材資料夾 '{source_asset_path}'，已跳過。")
-            continue
-
-        os.makedirs(output_asset_path, exist_ok=True)
-        files = [f for f in os.listdir(source_asset_path) if os.path.splitext(f)[1].lower() in supported_extensions]
-        
-        if not files:
-            print(f"  - 素材資料夾 '{asset_dir}' 中沒有找到圖片。")
-            continue
-
-        for filename in files:
-            source_path = os.path.join(source_asset_path, filename)
-            output_path = os.path.join(output_asset_path, filename)
-            process_image(source_path, output_path, target_width=asset_resize_width, add_watermark=False)
-
-    print("\n--- 所有處理程序完成！ ---")
+    print("\n--- 所有處理程序完成！public/assets 未被修改。 ---")
 
 
 if __name__ == '__main__':

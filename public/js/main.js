@@ -344,6 +344,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const filenameInput = document.getElementById('map-marker-filename');
         const latInput = document.getElementById('map-marker-lat');
         const lngInput = document.getElementById('map-marker-lng');
+        const markerSelect = document.getElementById('map-marker-select');
+        const photoPicker = document.getElementById('map-photo-picker');
+        const photoOptions = document.getElementById('map-photo-options');
+        const addFromPhoto = document.getElementById('map-add-from-photo');
+        const applyPhoto = document.getElementById('map-apply-photo');
 
         if (!mapWrap || !pinsWrap || !routeSegments || !previewImg) return;
         if (mapJourneyInitialized) return;
@@ -371,6 +376,73 @@ document.addEventListener('DOMContentLoaded', () => {
         let activeIndex = 0;
         let draggingPin = null;
         let suppressNextClick = false;
+        const photoOptionMap = new Map();
+
+        const slugifyMarkerId = (text) => {
+            const normalized = String(text || 'marker')
+                .trim()
+                .toLowerCase()
+                .replace(/\.[^.]+$/, '')
+                .replace(/[^\p{L}\p{N}]+/gu, '-')
+                .replace(/^-+|-+$/g, '');
+            return normalized || 'marker';
+        };
+        const getPhotoLabel = (photo) => `${photo.category} / ${photo.filename}`;
+        const populatePhotoOptions = () => {
+            if (!photoOptions) return;
+            photoOptions.innerHTML = '';
+            photoOptionMap.clear();
+            allPhotos.forEach((photo) => {
+                const label = getPhotoLabel(photo);
+                photoOptionMap.set(label, photo);
+                const option = document.createElement('option');
+                option.value = label;
+                photoOptions.appendChild(option);
+            });
+        };
+        const getPickedPhoto = () => {
+            const value = photoPicker?.value.trim();
+            if (!value) return null;
+            return photoOptionMap.get(value)
+                || allPhotos.find(photo => photo.filename === value)
+                || allPhotos.find(photo => getBaseLocationName(photo.filename) === value)
+                || null;
+        };
+        const buildMarkerFromPhoto = (photo, point = { x: 50, y: 50 }) => {
+            const title = getBaseLocationName(photo.filename);
+            const marker = {
+                id: `${slugifyMarkerId(title)}-${Date.now()}`,
+                title,
+                category: photo.category,
+                filename: photo.filename,
+                position: { x: Number(point.x.toFixed(2)), y: Number(point.y.toFixed(2)) }
+            };
+            if (photo.gps) marker.gps = photo.gps;
+            return marker;
+        };
+        const applyPhotoToMarker = (marker, photo) => {
+            if (!marker || !photo) return;
+            marker.title = getBaseLocationName(photo.filename);
+            marker.category = photo.category;
+            marker.filename = photo.filename;
+            delete marker.image;
+            if (photo.gps) {
+                marker.gps = photo.gps;
+            } else {
+                delete marker.gps;
+            }
+        };
+        const syncMarkerSelect = () => {
+            if (!markerSelect) return;
+            markerSelect.innerHTML = '';
+            markers.forEach((marker, index) => {
+                const option = document.createElement('option');
+                option.value = String(index);
+                option.textContent = `${String(index + 1).padStart(2, '0')} ${getMarkerTitle(marker)}`;
+                markerSelect.appendChild(option);
+            });
+            markerSelect.value = String(activeIndex);
+        };
 
         const getMarkerPhoto = (marker) => {
             if (!marker?.filename) return null;
@@ -492,10 +564,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const marker = markers[activeIndex];
             if (!marker) return;
             const gps = getMarkerGps(marker);
+            syncMarkerSelect();
             if (titleInput) titleInput.value = getMarkerTitle(marker);
             if (imageInput) imageInput.value = marker.image || '';
             if (categoryInput) categoryInput.value = marker.category || '';
             if (filenameInput) filenameInput.value = marker.filename || '';
+            if (photoPicker && marker.category && marker.filename) {
+                photoPicker.value = `${marker.category} / ${marker.filename}`;
+            } else if (photoPicker && marker.image) {
+                photoPicker.value = '';
+            }
             if (latInput) latInput.value = gps?.lat ?? '';
             if (lngInput) lngInput.value = gps?.lng ?? '';
         };
@@ -612,6 +690,39 @@ document.addEventListener('DOMContentLoaded', () => {
             renderPins();
             updateEditStatus('已在點選位置新增標示');
         });
+        markerSelect?.addEventListener('change', () => {
+            const index = Number(markerSelect.value);
+            if (!Number.isFinite(index)) return;
+            setActiveStop(Math.max(0, Math.min(markers.length - 1, index)));
+        });
+        addFromPhoto?.addEventListener('click', () => {
+            if (!editToolsEnabled) return;
+            const photo = getPickedPhoto();
+            if (!photo) {
+                updateEditStatus('請先從作品照片選擇一張照片');
+                return;
+            }
+            const marker = buildMarkerFromPhoto(photo, { x: 50, y: 50 });
+            markers.push(marker);
+            points.push(toPoint(marker));
+            activeIndex = markers.length - 1;
+            persistMarkers();
+            renderPins();
+            updateEditStatus('已用作品照片新增標示，可拖曳點位調整位置');
+        });
+        applyPhoto?.addEventListener('click', () => {
+            if (!editToolsEnabled) return;
+            const marker = markers[activeIndex];
+            const photo = getPickedPhoto();
+            if (!marker || !photo) {
+                updateEditStatus('請先選取標示和作品照片');
+                return;
+            }
+            applyPhotoToMarker(marker, photo);
+            persistMarkers();
+            renderPins();
+            updateEditStatus('已套用作品照片到目前標示');
+        });
         [titleInput, imageInput, categoryInput, filenameInput, latInput, lngInput].forEach(input => {
             input?.addEventListener('input', () => {
                 if (!editToolsEnabled) return;
@@ -649,6 +760,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        populatePhotoOptions();
         renderPins();
         preloadMarkerImages();
     };
@@ -1259,7 +1371,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Mobile Cover: More padding for vertical look? Or keep it clean.
             // Let's use a vertical flex layout for mobile.
 
-            slide.className = 'swiper-slide flex items-center justify-center p-1 md:p-8 box-border';
+            slide.className = 'swiper-slide flex items-center justify-center p-1 md:p-4 box-border';
 
             let coverInnerHtml = '';
 
@@ -1292,7 +1404,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // --- Desktop Landscape Cover (Original) ---
                 coverInnerHtml = `
                 <div class="relative bg-white shadow-2xl mx-auto flex flex-col overflow-hidden" 
-                     style="aspect-ratio: ${aspectRatio}; height: auto; width: auto; max-width: 95vw; max-height: 70vh;">
+                     style="aspect-ratio: ${aspectRatio}; height: auto; width: auto; max-width: 92vw; max-height: 82vh;">
                    
                    <div class="absolute inset-4 sm:inset-8 border border-black/80 pointer-events-none z-20"></div>
 
@@ -1389,15 +1501,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const slide = document.createElement('div');
             // Unified Padding for Consistency
-            slide.className = 'swiper-slide flex items-center justify-center p-1 md:p-8 box-border';
+            slide.className = 'swiper-slide flex items-center justify-center p-1 md:p-4 box-border';
 
             const aspectRatio = isMobile ? '297/420' : '420/297';
-            // Mobile can go a bit taller, say 75vh, desktop safely 70vh
-            const maxHeight = isMobile ? '75vh' : '70vh';
+            // Mobile keeps the original vertical reading size; desktop uses more of the modal frame.
+            const maxHeight = isMobile ? '75vh' : '82vh';
 
             const containerHtmlStart = `
-                <div class="relative bg-white shadow-2xl p-4 md:p-10 mx-auto flex items-center justify-center overflow-hidden"
-            style="aspect-ratio: ${aspectRatio}; height: auto; width: auto; max-width: 95vw; max-height: ${maxHeight};">
+                <div class="relative bg-white shadow-2xl p-4 md:p-6 mx-auto flex items-center justify-center overflow-hidden"
+            style="aspect-ratio: ${aspectRatio}; height: auto; width: auto; max-width: 92vw; max-height: ${maxHeight};">
                 <div class="w-full h-full flex items-center justify-center">
                     `;
             const containerHtmlEnd = `

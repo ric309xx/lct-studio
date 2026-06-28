@@ -29,7 +29,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+TC:wght@400;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="public/css/style.css?v=68">
+    <link rel="stylesheet" href="public/css/style.css?v=69">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
 </head>
@@ -275,6 +275,17 @@
                         <div id="map-pins" class="map-pins"></div>
                     </div>
                     <div class="map-marker-editor" id="map-marker-editor">
+                        <label class="map-editor-wide">快速選取標示
+                            <select id="map-marker-select"></select>
+                        </label>
+                        <label class="map-editor-wide">從作品照片選擇
+                            <input id="map-photo-picker" type="text" list="map-photo-options" autocomplete="off" placeholder="輸入地名或檔名搜尋">
+                            <datalist id="map-photo-options"></datalist>
+                        </label>
+                        <div class="map-editor-actions">
+                            <button type="button" id="map-add-from-photo" class="map-edit-btn">用照片新增</button>
+                            <button type="button" id="map-apply-photo" class="map-edit-btn map-edit-btn-muted">套用到目前標示</button>
+                        </div>
                         <label>標題<input id="map-marker-title" type="text" autocomplete="off"></label>
                         <label>圖片路徑<input id="map-marker-image" type="text" autocomplete="off" placeholder="public/photos/... 或 public/assets/..."></label>
                         <label>分類<input id="map-marker-category" type="text" autocomplete="off" placeholder="照片分類，可留空"></label>
@@ -312,7 +323,7 @@
 
     <section id="before-after" class="comparison-section py-16 md:py-24">
         <div class="container mx-auto px-6 md:px-20">
-            <div class="section-intro comparison-intro text-center reveal">
+            <div class="section-intro comparison-intro text-center">
                 <p class="section-kicker">Before / After</p>
                 <h2 class="text-4xl font-bold text-center mb-4 text-white">前後影像對比</h2>
                 <p class="text-gray-400 max-w-2xl mx-auto mb-12">
@@ -331,8 +342,8 @@
                     <div class="compare-divider" aria-hidden="true">
                         <span></span>
                     </div>
-                    <div class="compare-label compare-label-before">Day</div>
-                    <div class="compare-label compare-label-after">Night</div>
+                    <div class="compare-label compare-label-before">Night</div>
+                    <div class="compare-label compare-label-after">Day</div>
                     <input class="compare-range" type="range" min="0" max="100" value="52" aria-label="調整前後影像對比比例">
                 </div>
                 <div class="compare-editor" data-compare-editor hidden>
@@ -627,8 +638,8 @@
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
     <script defer src="public/js/data_videos.js"></script>
     <script defer src="public/js/data_photos.js"></script>
-    <script defer src="public/js/map_markers.js?v=2"></script>
-    <script defer src="public/js/main.js?v=65"></script>
+    <script defer src="public/js/map_markers.js?v=4"></script>
+    <script defer src="public/js/main.js?v=67"></script>
 
 </body>
 

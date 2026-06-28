@@ -25,6 +25,46 @@ window.globalPhotoData = {
       ]
     },
     {
+      "filename": "新北土城天好運2(2).jpg",
+      "color": [
+        71,
+        126,
+        185
+      ]
+    },
+    {
+      "filename": "新北土城天好運2.jpg",
+      "color": [
+        67,
+        91,
+        94
+      ]
+    },
+    {
+      "filename": "新北土城工業區.jpg",
+      "color": [
+        173,
+        111,
+        88
+      ]
+    },
+    {
+      "filename": "新北土城工業區日落.jpg",
+      "color": [
+        103,
+        84,
+        41
+      ]
+    },
+    {
+      "filename": "新北土城德友植仁社區.jpg",
+      "color": [
+        169,
+        149,
+        61
+      ]
+    },
+    {
       "filename": "新北新店行政園區.jpg",
       "color": [
         0,

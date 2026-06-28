@@ -434,6 +434,17 @@ body::before {
     display: grid;
 }
 
+.map-editor-wide {
+    grid-column: span 2;
+}
+
+.map-editor-actions {
+    display: flex;
+    align-items: end;
+    gap: 0.45rem;
+    min-width: 0;
+}
+
 .map-marker-editor label {
     min-width: 0;
     color: rgba(229, 231, 235, 0.72);
@@ -442,7 +453,8 @@ body::before {
     letter-spacing: 0.06em;
 }
 
-.map-marker-editor input {
+.map-marker-editor input,
+.map-marker-editor select {
     width: 100%;
     min-height: 2rem;
     margin-top: 0.28rem;
@@ -454,7 +466,12 @@ body::before {
     outline: none;
 }
 
-.map-marker-editor input:focus {
+.map-marker-editor select {
+    appearance: none;
+}
+
+.map-marker-editor input:focus,
+.map-marker-editor select:focus {
     border-color: rgba(70, 217, 255, 0.62);
 }
 
@@ -2209,19 +2226,19 @@ body::before {
         linear-gradient(180deg, rgba(6, 16, 29, 0.94), rgba(5, 10, 16, 0.82)),
         linear-gradient(135deg, rgba(59, 130, 246, 0.14), transparent 54%);
     box-shadow: 0 26px 72px rgba(0, 0, 0, 0.36);
-    transition-duration: 1.15s;
+    transition-duration: 1.55s;
 }
 
 .service-offering-card.reveal-delay-100 {
-    transition-delay: 0.22s;
+    transition-delay: 0.42s;
 }
 
 .service-offering-card.reveal-delay-200 {
-    transition-delay: 0.44s;
+    transition-delay: 0.84s;
 }
 
 .service-offering-card.reveal-delay-300 {
-    transition-delay: 0.66s;
+    transition-delay: 1.26s;
 }
 
 .service-offering-card::before {
