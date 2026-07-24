@@ -298,14 +298,22 @@ node --check public/js/main.js
 
 ### D. 服務項目
 1. 卡片圖片位置：`public/assets/services/`
-2. 目前四項：建築形象空拍、工程進度紀錄、活動影像紀錄、景點旅遊宣傳。
+2. 目前四項：建築形象空拍、工程進度紀錄、活動影像紀錄、旅遊航拍紀錄。
 3. 替換圖片時保持檔名不變，直接覆蓋 `building.jpg`、`construction.jpg`、`event.jpg`、`tourism.jpg`。
+4. 「活動影像紀錄」與「旅遊航拍紀錄」卡片共用精品影片燈箱；影片分別由 `public/js/data_videos.js` 的 `events`、`tourism` 分類維護。
+5. 活動影片支援 `url`、`title`、`year`、選填 `duration` 與 `description`。網址必須是合法 YouTube 網址或 11 碼影片 ID，實際播放會轉成 `youtube-nocookie.com`。
+6. `events` 與 `tourism` 不會加入首頁「精選影片」的隨機抽選，避免同一作品重複出現。
 
-### E. Cache 版本
-1. 目前首頁使用 `style.css?v=68` 與 `main.js?v=65`。
+### E. 前端安全
+1. `index.html` 使用 HTML CSP allowlist，配合目前 GitHub Pages 靜態部署限制；若未來改用 Cloudflare Pages、Netlify 或自有伺服器，應改以 HTTP response header 發送 CSP、`X-Content-Type-Options`、`Referrer-Policy` 與 `Permissions-Policy`。
+2. 動態照片標題與影片資訊應使用 `textContent` 或既有的 `escapeHTML()`，不可直接將外部資料拼入 HTML。
+3. YouTube iframe 必須經 `getYouTubeId()` 驗證，並使用 `getYouTubeEmbedUrl()` 產生 privacy-enhanced 網址。
+
+### F. Cache 版本
+1. 目前首頁使用 `style.css?v=71`、`data_videos.js?v=2` 與 `main.js?v=70`。
 2. 每次修改 CSS/JS 後需同步更新 `index.html` 內的 cache query，避免正式站吃到舊快取。
 
-### F. 效能與圖片尺寸規則
+### G. 效能與圖片尺寸規則
 1. 首頁大圖優先使用 WebP；照片型圖片若需 JPEG，建議使用 progressive JPEG。
 2. 首頁區塊展示圖不建議超過 1920px 寬，除非是下載用或真的需要 4K 檢視。
 3. 日夜/前後對比圖片目前固定為 1920x1080 等級，避免兩張圖合計超過數 MB。

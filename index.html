@@ -13,6 +13,8 @@
         gtag('config', 'G-KCVGE7H30R');
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://img.youtube.com https://i.ytimg.com https://www.google-analytics.com https://www.googletagmanager.com; media-src 'self'; frame-src https://www.youtube-nocookie.com https://www.youtube.com; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://formspree.io; form-action 'self' https://formspree.io; upgrade-insecure-requests">
     <title>空拍作品集 | LCT Studio</title>
     <meta name="description" content="LCT Studio 空拍作品集 - 用不同角度紀錄台灣的城市與自然之美。提供高品質空拍照片與影片服務。">
     <meta property="og:title" content="空拍作品集 | LCT Studio">
@@ -29,7 +31,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+TC:wght@400;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="public/css/style.css?v=69">
+    <link rel="stylesheet" href="public/css/style.css?v=71">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
 </head>
@@ -110,19 +112,19 @@
         <div class="story-pin">
             <div class="story-photo-stage" aria-label="光線階段照片展示">
                 <figure class="story-photo-panel story-photo-sunrise">
-                    <img src="public/assets/story-sunrise-qingjing.webp" alt="南投清境農場日出空拍照片" loading="lazy" decoding="async">
+                    <img src="public/assets/story-sunrise-qingjing.webp" alt="南投清境農場日出空拍照片" loading="eager" decoding="async">
                     <figcaption>SUNRISE / QINGJING</figcaption>
                 </figure>
                 <figure class="story-photo-panel story-photo-morning">
-                    <img src="public/assets/story-morning-qingjing-cloudsea.webp" alt="南投清境農場雲海空拍照片" loading="lazy" decoding="async">
+                    <img src="public/assets/story-morning-qingjing-cloudsea.webp" alt="南投清境農場雲海空拍照片" loading="eager" decoding="async">
                     <figcaption>MORNING LIGHT / QINGJING</figcaption>
                 </figure>
                 <figure class="story-photo-panel story-photo-golden">
-                    <img src="public/assets/story-golden-xiluo-silhouette.webp" alt="雲林西螺落日剪影空拍照片" loading="lazy" decoding="async">
+                    <img src="public/assets/story-golden-xiluo-silhouette.webp" alt="雲林西螺落日剪影空拍照片" loading="eager" decoding="async">
                     <figcaption>GOLDEN HOUR / XILUO</figcaption>
                 </figure>
                 <figure class="story-photo-panel story-photo-sunset">
-                    <img src="public/assets/story-sunset-yilan-wujie.webp" alt="宜蘭五結日落空拍照片" loading="lazy" decoding="async">
+                    <img src="public/assets/story-sunset-yilan-wujie.webp" alt="宜蘭五結日落空拍照片" loading="eager" decoding="async">
                     <figcaption>SUNSET / YILAN WUJIE</figcaption>
                 </figure>
             </div>
@@ -413,16 +415,34 @@
                     <p>施工進度追蹤、定期紀錄比對</p>
                     <img src="public/assets/services/construction.jpg" alt="工程進度紀錄" loading="lazy" decoding="async">
                 </article>
-                <article class="service-offering-card reveal reveal-delay-200">
+                <button type="button"
+                    class="service-offering-card service-offering-card--interactive reveal reveal-delay-200"
+                    id="open-event-films-btn" data-film-category="events" data-film-title="活動影像紀錄"
+                    data-film-kicker="Event Films" aria-haspopup="dialog" aria-controls="event-film-modal">
                     <h3>活動影像紀錄</h3>
                     <p>大型活動、運動會、活動花絮</p>
                     <img src="public/assets/services/event.jpg" alt="活動影像紀錄" loading="lazy" decoding="async">
-                </article>
-                <article class="service-offering-card reveal reveal-delay-300">
-                    <h3>景點旅遊宣傳</h3>
-                    <p>景點宣傳、旅遊形象與航拍紀錄</p>
-                    <img src="public/assets/services/tourism.jpg" alt="景點旅遊宣傳" loading="lazy" decoding="async">
-                </article>
+                    <span class="service-film-action" aria-hidden="true">
+                        <span class="service-film-play">
+                            <svg viewBox="0 0 24 24"><path d="M9 6.5v11l8-5.5z"></path></svg>
+                        </span>
+                        <span>WATCH FILM</span>
+                    </span>
+                </button>
+                <button type="button"
+                    class="service-offering-card service-offering-card--interactive reveal reveal-delay-300"
+                    id="open-tourism-films-btn" data-film-category="tourism" data-film-title="旅遊航拍紀錄"
+                    data-film-kicker="Travel Films" aria-haspopup="dialog" aria-controls="event-film-modal">
+                    <h3>旅遊航拍紀錄</h3>
+                    <p>地景探索、旅遊路線、目的地氛圍</p>
+                    <img src="public/assets/services/tourism.jpg" alt="旅遊航拍紀錄" loading="lazy" decoding="async">
+                    <span class="service-film-action" aria-hidden="true">
+                        <span class="service-film-play">
+                            <svg viewBox="0 0 24 24"><path d="M9 6.5v11l8-5.5z"></path></svg>
+                        </span>
+                        <span>WATCH FILM</span>
+                    </span>
+                </button>
             </div>
         </div>
     </section>
@@ -628,6 +648,30 @@
         <div id="immersive-3d-caption" class="immersive-3d-caption">LCT STUDIO</div>
     </div>
 
+    <div id="event-film-modal" class="event-film-modal hidden" role="dialog" aria-modal="true"
+        aria-hidden="true" aria-labelledby="event-film-title">
+        <div class="event-film-backdrop" data-event-film-close></div>
+        <div class="event-film-dialog" role="document">
+            <header class="event-film-header">
+                <div>
+                    <p class="section-kicker" id="event-film-kicker">Event Films</p>
+                    <h2 id="event-film-title">活動影像紀錄</h2>
+                </div>
+                <button type="button" id="close-event-films-btn" class="event-film-close" aria-label="關閉活動影片">
+                    <span></span>
+                    <span></span>
+                </button>
+            </header>
+            <div class="event-film-layout">
+                <div id="event-film-stage" class="event-film-stage" aria-live="polite"></div>
+                <aside class="event-film-sidebar" aria-label="活動影片清單">
+                    <p class="event-film-index-label">SELECTED WORKS</p>
+                    <div id="event-film-list" class="event-film-list"></div>
+                </aside>
+            </div>
+        </div>
+    </div>
+
 
 
 
@@ -636,10 +680,10 @@
     <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/MotionPathPlugin.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-    <script defer src="public/js/data_videos.js"></script>
+    <script defer src="public/js/data_videos.js?v=2"></script>
     <script defer src="public/js/data_photos.js"></script>
     <script defer src="public/js/map_markers.js?v=4"></script>
-    <script defer src="public/js/main.js?v=67"></script>
+    <script defer src="public/js/main.js?v=70"></script>
 
 </body>
 

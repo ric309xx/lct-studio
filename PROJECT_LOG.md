@@ -254,3 +254,15 @@
 - **備註**:
   - `?railTune=1` 僅供調整使用，正常網址不會顯示調整面板。
   - 工作區仍有既有未處理檔案狀態：`public/assets/logo-2.png` 刪除狀態、`public/assets/logo (1).png`、`public/assets/logo (2).png`、`scroll-animation-technique.md` 未追蹤；本次不上傳這些檔案。
+# [2026-07-24] 活動影片精品燈箱與前端安全補強
+- **更新類型**: 服務項目互動 / YouTube 播放 / 安全性 / 無障礙
+- **內容**:
+  - 「活動影像紀錄」改為可點擊卡片，新增活動影片精品燈箱與資料驅動清單。
+  - 新增水樂園活動影片，活動作品集中於 `data_videos.js` 的 `events` 分類。
+  - YouTube 網址改為驗證影片 ID 後使用 `youtube-nocookie.com`，iframe 延遲至使用者按下播放才建立。
+  - 燈箱支援 Esc、背景關閉、焦點循環、關閉後焦點還原與背景捲動鎖定。
+  - 動態照片卡片改用 DOM API，並補上相容現有第三方服務的 HTML CSP allowlist。
+  - 更新首頁 cache query；本次未執行 Git commit 或 push。
+  - 服務項目「景點旅遊宣傳」調整為「旅遊航拍紀錄」，文案聚焦地景、路線與目的地氛圍，與活動現場紀錄做出區隔。
+  - 新增 `tourism` 影片分類與兩支旅遊 Shorts，並讓活動、旅遊卡片共用同一套資料驅動精品燈箱。
+  - 優化 Sun Path 滾動敘事：移除 CSS sticky 與 GSAP pin 的重複定位、縮短 scrub 追趕時間、將階段動畫收斂為 GPU 友善的 transform／opacity，並提前解碼四張故事背景圖。

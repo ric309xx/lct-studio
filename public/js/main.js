@@ -30,6 +30,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 2. Helper Functions ---
 
+    const escapeHTML = (value = '') => String(value).replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    })[char]);
+
+    const getYouTubeId = (value) => {
+        const rawValue = String(value || '').trim();
+        if (/^[A-Za-z0-9_-]{11}$/.test(rawValue)) return rawValue;
+
+        try {
+            const parsed = new URL(rawValue);
+            const hostname = parsed.hostname.toLowerCase().replace(/^www\./, '');
+            let candidate = '';
+
+            if (hostname === 'youtu.be') {
+                candidate = parsed.pathname.split('/').filter(Boolean)[0] || '';
+            } else if (['youtube.com', 'm.youtube.com', 'youtube-nocookie.com'].includes(hostname)) {
+                if (parsed.pathname === '/watch') {
+                    candidate = parsed.searchParams.get('v') || '';
+                } else {
+                    const segments = parsed.pathname.split('/').filter(Boolean);
+                    if (['embed', 'shorts', 'live'].includes(segments[0])) candidate = segments[1] || '';
+                }
+            }
+
+            return /^[A-Za-z0-9_-]{11}$/.test(candidate) ? candidate : '';
+        } catch {
+            return '';
+        }
+    };
+
+    const getYouTubeThumbnail = (value, quality = 'maxresdefault') => {
+        const videoId = getYouTubeId(value);
+        const safeQualities = new Set(['maxresdefault', 'hqdefault', 'mqdefault']);
+        const safeQuality = safeQualities.has(quality) ? quality : 'hqdefault';
+        return videoId ? `https://img.youtube.com/vi/${videoId}/${safeQuality}.jpg` : '';
+    };
+
+    const getYouTubeEmbedUrl = (value, autoplay = false) => {
+        const videoId = getYouTubeId(value);
+        if (!videoId) return '';
+        const params = new URLSearchParams({
+            rel: '0',
+            modestbranding: '1',
+            playsinline: '1'
+        });
+        if (autoplay) params.set('autoplay', '1');
+        return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
+    };
+
     const getBaseLocationName = (filename) => {
         const baseName = filename.replace(/[-_(\（].*|\.\w+$/g, '').trim();
         if (baseName === '南投清境農場雲海A') return '南投清境農場雲海';
@@ -783,19 +836,29 @@ document.addEventListener('DOMContentLoaded', () => {
         if (photosToDisplay.length === 0) {
             galleryContainer.innerHTML = `<p class="text-center text-gray-400 col-span-full">此分類暫無照片。</p>`;
         } else {
-            photosToDisplay.forEach((photo, index) => {
+            photosToDisplay.forEach((photo) => {
                 const title = getBaseLocationName(photo.filename);
                 const imagePath = `./public/photos/${encodeURIComponent(categoryName)}/${encodeURIComponent(photo.filename)}`;
-                const cardHtml = `
-                    <div class="relative w-full h-80 rounded-xl overflow-hidden shadow-2xl photo-card transition-transform transform hover:scale-105 cursor-pointer" 
-                         data-category="${categoryName}" 
-                         data-filename="${photo.filename}">
-                        <img src="${imagePath}" alt="${title}" class="w-full h-full object-cover">
-                        <div class="photo-overlay absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 transition-opacity duration-300">
-                            <span class="text-white text-xl font-semibold text-center px-2">${title}</span>
-                        </div>
-                    </div>`;
-                galleryContainer.insertAdjacentHTML('beforeend', cardHtml);
+                const card = document.createElement('div');
+                card.className = 'relative w-full h-80 rounded-xl overflow-hidden shadow-2xl photo-card transition-transform transform hover:scale-105 cursor-pointer';
+                card.dataset.category = categoryName;
+                card.dataset.filename = photo.filename;
+
+                const image = document.createElement('img');
+                image.src = imagePath;
+                image.alt = title;
+                image.className = 'w-full h-full object-cover';
+
+                const overlay = document.createElement('div');
+                overlay.className = 'photo-overlay absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 transition-opacity duration-300';
+
+                const label = document.createElement('span');
+                label.className = 'text-white text-xl font-semibold text-center px-2';
+                label.textContent = title;
+
+                overlay.appendChild(label);
+                card.append(image, overlay);
+                galleryContainer.appendChild(card);
             });
         }
 
@@ -1027,12 +1090,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const phaseLabels = gsap.utils.toArray('.story-flight-meta span');
             const storyPhotos = gsap.utils.toArray('.story-photo-panel');
             gsap.set(phaseLabels, {
-                opacity: 0.34,
-                color: 'rgba(237, 242, 244, 0.72)',
-                backgroundColor: 'rgba(7, 10, 15, 0.22)',
-                borderColor: 'rgba(229, 231, 235, 0.12)'
+                opacity: 0.26
             });
             gsap.set(storyPhotos, { opacity: 0, scale: 1.025 });
+            gsap.set([storyRail, '.story-orbit', '.story-sun', ...storyPhotos, ...storyPanels], {
+                force3D: true
+            });
 
             const storyTimeline = gsap.timeline({
                 defaults: { ease: 'none' },
@@ -1040,10 +1103,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     trigger: story,
                     start: 'top top',
                     end: 'bottom bottom',
-                    scrub: 0.8,
+                    scrub: 0.35,
                     pin: storyPin,
                     anticipatePin: 1,
-                    invalidateOnRefresh: true
+                    invalidateOnRefresh: true,
+                    fastScrollEnd: true
                 }
             });
 
@@ -1058,7 +1122,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     },
                     duration: 0.82
                 }, 0)
-                .to('.story-route-progress', { strokeDashoffset: 0, duration: 0.82 }, 0)
                 .to('.story-sun', window.MotionPathPlugin ? {
                     motionPath: {
                         path: '.story-route-progress',
@@ -1074,17 +1137,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 .to('.story-orbit', { scale: 1.04, duration: 0.82 }, 0)
                 .to('.story-photo-sunrise', { opacity: 0.62, scale: 1, duration: 0.16, ease: 'power2.out' }, 0)
                 .to('.story-photo-sunrise', { opacity: 0, scale: 1.015, duration: 0.14, ease: 'power2.in' }, 0.2)
-                .to(phaseLabels[0], { opacity: 1, color: '#fff0bf', backgroundColor: 'rgba(241, 188, 94, 0.18)', borderColor: 'rgba(241, 188, 94, 0.48)', duration: 0.1 }, 0)
-                .to(phaseLabels[0], { opacity: 0.34, color: 'rgba(237, 242, 244, 0.72)', backgroundColor: 'rgba(7, 10, 15, 0.22)', borderColor: 'rgba(229, 231, 235, 0.12)', duration: 0.1 }, 0.2)
+                .to(phaseLabels[0], { opacity: 1, duration: 0.1 }, 0)
+                .to(phaseLabels[0], { opacity: 0.26, duration: 0.1 }, 0.2)
                 .to('.story-photo-morning', { opacity: 0.62, scale: 1, duration: 0.16, ease: 'power2.out' }, 0.23)
                 .to('.story-photo-morning', { opacity: 0, scale: 1.015, duration: 0.14, ease: 'power2.in' }, 0.43)
-                .to(phaseLabels[1], { opacity: 1, color: '#fff0bf', backgroundColor: 'rgba(241, 188, 94, 0.18)', borderColor: 'rgba(241, 188, 94, 0.48)', duration: 0.1 }, 0.23)
-                .to(phaseLabels[1], { opacity: 0.34, color: 'rgba(237, 242, 244, 0.72)', backgroundColor: 'rgba(7, 10, 15, 0.22)', borderColor: 'rgba(229, 231, 235, 0.12)', duration: 0.1 }, 0.43)
+                .to(phaseLabels[1], { opacity: 1, duration: 0.1 }, 0.23)
+                .to(phaseLabels[1], { opacity: 0.26, duration: 0.1 }, 0.43)
                 .to('.story-photo-golden', { opacity: 0.62, scale: 1, duration: 0.16, ease: 'power2.out' }, 0.46)
                 .to('.story-photo-golden', { opacity: 0, scale: 1.015, duration: 0.14, ease: 'power2.in' }, 0.7)
-                .to(phaseLabels[2], { opacity: 1, color: '#fff0bf', backgroundColor: 'rgba(241, 188, 94, 0.18)', borderColor: 'rgba(241, 188, 94, 0.48)', duration: 0.1 }, 0.46)
-                .to(phaseLabels[2], { opacity: 0.34, color: 'rgba(237, 242, 244, 0.72)', backgroundColor: 'rgba(7, 10, 15, 0.22)', borderColor: 'rgba(229, 231, 235, 0.12)', duration: 0.1 }, 0.7)
-                .to(phaseLabels[3], { opacity: 1, color: '#fff0bf', backgroundColor: 'rgba(241, 188, 94, 0.18)', borderColor: 'rgba(241, 188, 94, 0.48)', duration: 0.1 }, 0.74)
+                .to(phaseLabels[2], { opacity: 1, duration: 0.1 }, 0.46)
+                .to(phaseLabels[2], { opacity: 0.26, duration: 0.1 }, 0.7)
+                .to(phaseLabels[3], { opacity: 1, duration: 0.1 }, 0.74)
                 .to('.story-photo-sunset', { opacity: 0.72, scale: 1, duration: 0.18, ease: 'power2.out' }, 0.72)
                 .to(storyPanels[0], { y: -58, opacity: 0, duration: 0.18 }, 0.16)
                 .to(storyPanels[1], { y: 0, opacity: 1, duration: 0.18 }, 0.24)
@@ -1157,7 +1220,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 2. 其他類別個別隨機挑選一部影片
             Object.keys(window.videoData.categories).forEach(catName => {
-                if (catName !== 'showcase') {
+                if (!['showcase', 'events', 'tourism'].includes(catName)) {
                     const catVideos = window.videoData.categories[catName];
                     if (catVideos && catVideos.length > 0) {
                         const randomVideo = catVideos[Math.floor(Math.random() * catVideos.length)];
@@ -1167,34 +1230,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        const getVideoId = (url) => {
-            if (!url) return '';
-            const parts = url.split('/');
-            return parts[parts.length - 1].split('?')[0];
-        };
-
-        const getThumbnailUrl = (url, quality = 'maxresdefault') => {
-            const videoId = getVideoId(url);
-            return videoId ? `https://img.youtube.com/vi/${videoId}/${quality}.jpg` : '';
-        };
-
-        const normalizeEmbedUrl = (url, autoplay = false) => {
-            if (!url) return '';
-            const joiner = url.includes('?') ? '&' : '?';
-            const params = autoplay ? 'autoplay=1&rel=0' : 'rel=0';
-            return `${url}${joiner}${params}`;
-        };
-
-        const escapeHTML = (value = '') => String(value).replace(/[&<>"']/g, (char) => ({
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        })[char]);
-
         const renderFeaturePreview = (video) => {
-            const thumbnailUrl = getThumbnailUrl(video.url);
+            const thumbnailUrl = getYouTubeThumbnail(video.url);
             const safeTitle = escapeHTML(video.title);
             const displayYear = video.year || (video.title?.includes('林口') ? '2026' : '2025');
             mainPlayerContainer.innerHTML = `
@@ -1219,8 +1256,10 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const playVideo = (video, autoplay = false) => {
+            const embedUrl = getYouTubeEmbedUrl(video.url, autoplay);
+            if (!embedUrl) return;
             mainPlayerContainer.innerHTML = `
-                <iframe class="motion-feature-frame animate-fade-in" src="${normalizeEmbedUrl(video.url, autoplay)}" title="${escapeHTML(video.title)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                <iframe class="motion-feature-frame animate-fade-in" src="${embedUrl}" title="${escapeHTML(video.title)}" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" sandbox="allow-scripts allow-same-origin allow-presentation" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
             `;
         };
 
@@ -1237,7 +1276,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ].slice(0, 4);
 
         playlistVideos.forEach(video => {
-            const thumbnailUrl = getThumbnailUrl(video.url, 'mqdefault');
+            const thumbnailUrl = getYouTubeThumbnail(video.url, 'mqdefault');
             const safeTitle = escapeHTML(video.title);
             const card = document.createElement('div');
             card.className = 'motion-thumb';
@@ -1272,6 +1311,170 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             playlistContainer.appendChild(card);
+        });
+    };
+
+    const setupEventFilmModal = () => {
+        const openButtons = [...document.querySelectorAll('[data-film-category]')];
+        const modal = document.getElementById('event-film-modal');
+        const closeButton = document.getElementById('close-event-films-btn');
+        const stage = document.getElementById('event-film-stage');
+        const list = document.getElementById('event-film-list');
+        const modalTitle = document.getElementById('event-film-title');
+        const modalKicker = document.getElementById('event-film-kicker');
+
+        if (openButtons.length === 0 || !modal || !closeButton || !stage || !list || !modalTitle || !modalKicker) return;
+
+        let currentVideos = [];
+        let activeVideo = null;
+        let returnFocus = null;
+
+        const buildPreview = (video) => {
+            stage.replaceChildren();
+            if (!video) {
+                const empty = document.createElement('p');
+                empty.className = 'event-film-empty';
+                empty.textContent = '目前尚無可播放的活動影片。';
+                stage.appendChild(empty);
+                return;
+            }
+
+            const preview = document.createElement('button');
+            preview.type = 'button';
+            preview.className = 'event-film-preview';
+            preview.setAttribute('aria-label', `播放 ${video.title || '活動影片'}`);
+
+            const image = document.createElement('img');
+            image.src = getYouTubeThumbnail(video.url);
+            image.alt = video.title || '活動影片封面';
+
+            const play = document.createElement('span');
+            play.className = 'event-film-preview-play';
+            play.setAttribute('aria-hidden', 'true');
+            play.innerHTML = '<svg viewBox="0 0 24 24"><path d="M9 6.5v11l8-5.5z"></path></svg>';
+
+            const copy = document.createElement('span');
+            copy.className = 'event-film-preview-copy';
+            const title = document.createElement('h3');
+            title.textContent = video.title || '活動影片';
+            copy.appendChild(title);
+
+            if (video.description) {
+                const description = document.createElement('p');
+                description.textContent = video.description;
+                copy.appendChild(description);
+            }
+
+            preview.append(image, play, copy);
+            preview.addEventListener('click', () => {
+                const embedUrl = getYouTubeEmbedUrl(video.url, true);
+                if (!embedUrl) return;
+
+                const frame = document.createElement('iframe');
+                frame.className = 'event-film-frame animate-fade-in';
+                frame.src = embedUrl;
+                frame.title = video.title || '活動影片';
+                frame.loading = 'lazy';
+                frame.referrerPolicy = 'strict-origin-when-cross-origin';
+                frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
+                frame.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture');
+                frame.setAttribute('allowfullscreen', '');
+                stage.replaceChildren(frame);
+            });
+
+            stage.appendChild(preview);
+        };
+
+        const selectVideo = (video) => {
+            activeVideo = video;
+            buildPreview(video);
+            list.querySelectorAll('.event-film-item').forEach((item) => {
+                const isActive = item.dataset.videoId === getYouTubeId(video.url);
+                item.classList.toggle('is-active', isActive);
+                item.setAttribute('aria-pressed', String(isActive));
+            });
+        };
+
+        const renderList = () => {
+            list.replaceChildren();
+            currentVideos.forEach((video) => {
+                const item = document.createElement('button');
+                item.type = 'button';
+                item.className = 'event-film-item';
+                item.dataset.videoId = getYouTubeId(video.url);
+
+                const media = document.createElement('span');
+                media.className = 'event-film-item-media';
+                const image = document.createElement('img');
+                image.src = getYouTubeThumbnail(video.url, 'mqdefault');
+                image.alt = '';
+                image.loading = 'lazy';
+                media.appendChild(image);
+
+                const copy = document.createElement('span');
+                copy.className = 'event-film-item-copy';
+                const title = document.createElement('strong');
+                title.textContent = video.title || '活動影片';
+                const metadata = document.createElement('span');
+                metadata.textContent = [video.year, video.duration].filter(Boolean).join(' · ') || 'LCT Studio';
+                copy.append(title, metadata);
+
+                item.append(media, copy);
+                item.addEventListener('click', () => selectVideo(video));
+                list.appendChild(item);
+            });
+        };
+
+        const openModal = (trigger) => {
+            const category = trigger.dataset.filmCategory || '';
+            const sourceVideos = window.videoData?.categories?.[category] || [];
+            currentVideos = sourceVideos.filter(video => getYouTubeId(video?.url));
+            activeVideo = currentVideos[0] || null;
+            modalTitle.textContent = trigger.dataset.filmTitle || '影像紀錄';
+            modalKicker.textContent = trigger.dataset.filmKicker || 'Selected Films';
+            renderList();
+            returnFocus = trigger;
+            modal.classList.remove('hidden');
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('event-film-open');
+            selectVideo(activeVideo);
+            closeButton.focus();
+        };
+
+        const closeModal = () => {
+            modal.classList.add('hidden');
+            modal.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('event-film-open');
+            stage.replaceChildren();
+            if (returnFocus instanceof HTMLElement) returnFocus.focus();
+        };
+
+        const trapFocus = (event) => {
+            if (event.key !== 'Tab' || modal.classList.contains('hidden')) return;
+            const focusable = [...modal.querySelectorAll('button:not([disabled]), iframe')];
+            if (focusable.length === 0) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        };
+
+        openButtons.forEach(button => {
+            button.addEventListener('click', () => openModal(button));
+        });
+        closeButton.addEventListener('click', closeModal);
+        modal.querySelectorAll('[data-event-film-close]').forEach(element => {
+            element.addEventListener('click', closeModal);
+        });
+        modal.addEventListener('keydown', trapFocus);
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
         });
     };
 
@@ -1344,9 +1547,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const src = `./public/photos/${encodeURIComponent(p.category)}/${encodeURIComponent(p.filename)}`;
             return `
                 <div class="relative group w-full h-full overflow-hidden rounded-lg shadow-md transition-transform duration-500 hover:-translate-y-1 hover:shadow-xl bg-gray-50 min-h-0">
-                    <img src="${src}" alt="${title}" loading="lazy" class="w-full h-full ${className}">
+                    <img src="${src}" alt="${escapeHTML(title)}" loading="lazy" class="w-full h-full ${className}">
                     <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/60 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                         <p class="text-white text-xs md:text-sm font-medium tracking-widest text-shadow truncate">${title}</p>
+                         <p class="text-white text-xs md:text-sm font-medium tracking-widest text-shadow truncate">${escapeHTML(title)}</p>
                     </div>
                 </div>`;
         };
@@ -2285,6 +2488,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize
     fetchPhotoData();
     setupVideoSection();
+    setupEventFilmModal();
     setupHeroVideo();
     setupCompareSliders();
     setupScrollCinematics();
