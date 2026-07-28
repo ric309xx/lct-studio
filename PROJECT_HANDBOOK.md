@@ -319,3 +319,36 @@ node --check public/js/main.js
 3. 日夜/前後對比圖片目前固定為 1920x1080 等級，避免兩張圖合計超過數 MB。
 4. 下方區塊圖片需保留 `loading="lazy"` 與 `decoding="async"`。
 5. 若替換 `public/assets/compare/` 或 `public/assets/services/` 圖片，替換後先檢查檔案大小，首頁單張圖建議控制在 500KB 以內。
+## 11. 3D GIS Viewer 維護
+
+### A. 正式站檔案
+1. Viewer 入口：`3d-viewer/index.html`。
+2. 密碼入口樣式與流程：`3d-viewer/access-gate.css`、`3d-viewer/access-gate.js`。
+3. Viewer 正式版程式：`3d-viewer/assets/`。
+4. Cesium 靜態資源：`3d-viewer/cesium/`，包含 Workers、Widgets、Assets 與第三方資源，不可任意刪除。
+5. 首頁示範影片：`public/videos/3d-gis-operation.mp4`。
+
+### B. 原始碼與建置
+1. Viewer 原始碼位於 `D:\OneDrive\Codex\12_Drone_GIS_Platform\viewer`，不直接在正式站的壓縮 bundle 內修改功能。
+2. 正式站建置需使用 `VITE_BASE_PATH=/3d-viewer/`，確保 GitHub Pages 子路徑能正確載入資源。
+3. 建置完成後，以 `dist/` 更新正式站 `3d-viewer/`；保留密碼入口頁，並同步更新 `access-gate.js` 內最新的 hashed CSS／JS 檔名。
+4. 更新後只保留入口實際引用的 `index-*.js` 與 `index-*.css`，避免歷史 bundle 累積。
+
+### C. 專案與權限
+1. 專案清單與初始視角集中在原始碼 `src/config/projects.ts` 維護。
+2. 一般觀看者可操作底圖、地形、量測、分享及基本相機控制。
+3. 管理員額外提供模型範圍框選與複製視角。
+4. 目前角色密碼由前端檢查，僅能防止誤操作；若用於客戶機密資料，必須改成伺服器端登入、Session 與授權檢查。
+5. 公開文件不要記錄實際密碼；密碼調整後也應重新建置並清除瀏覽器 Session 測試。
+
+### D. Token 與授權
+1. `VITE_CESIUM_ION_ACCESS_TOKEN` 在建置時寫入前端，瀏覽器使用者可以看到，不能使用主帳號或具寫入權限的 token。
+2. Token 僅授予必要的 `assets:read`、限制可讀取 Asset，並設定本機與正式站 Allowed URLs。
+3. Viewer 中的 Cesium ion／資料來源 attribution 必須保留。
+
+### E. 驗證與發布檢查
+1. 執行 `pnpm lint`、`pnpm test -- --run` 與 `pnpm build`。
+2. 在正式站路徑測試一般／管理員登入、模型載入、底圖、地形、距離與面積量測、分享連結及重新整理。
+3. 確認 Network 沒有 401、403、404，且 `/3d-viewer/` 所有資源均從正確子路徑載入。
+4. 首頁影片維持 muted、autoplay、loop、playsinline 與 lazy-load，不加入 controls 或外部連結。
+5. 提交前確認沒有 `.env`、未限制的 token、OBJ 原始檔或未使用的歷史 bundle。

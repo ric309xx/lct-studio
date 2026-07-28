@@ -31,7 +31,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+TC:wght@400;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="public/css/style.css?v=71">
+    <link rel="stylesheet" href="public/css/style.css?v=75">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
 </head>
@@ -447,6 +447,39 @@
         </div>
     </section>
 
+    <section id="interactive-3d" class="three-d-showcase" aria-labelledby="three-d-showcase-title">
+        <div class="three-d-showcase-grid">
+            <div class="three-d-showcase-copy reveal">
+                <p class="section-kicker">Interactive Reality Model</p>
+                <h2 id="three-d-showcase-title">
+                    <span>可分享、可量測、</span>
+                    <span>可分析的 3D GIS 成果</span>
+                </h2>
+                <p>
+                    3D 模型展示、GIS 圖層、工程量測與成果分享平台，
+                    讓客戶不需安裝任何軟體，即可透過瀏覽器查看現場。
+                </p>
+                <ul class="three-d-feature-list" aria-label="3D 模型功能">
+                    <li>三維模型展示</li>
+                    <li>GIS 圖層整合</li>
+                    <li>一鍵分享成果</li>
+                </ul>
+                <a class="three-d-launch" href="3d-viewer/index.html">
+                    <span>開始瀏覽 3D 模型</span>
+                    <span aria-hidden="true">↗</span>
+                </a>
+            </div>
+            <div class="three-d-visual reveal reveal-delay-100" aria-label="3D GIS 模型操作影片">
+                <video id="three-d-preview-video" class="three-d-preview-video" muted loop playsinline preload="none"
+                    aria-label="3D GIS 模型操作畫面">
+                    <source data-src="public/videos/3d-gis-operation.mp4" type="video/mp4">
+                </video>
+                <span class="three-d-video-shade" aria-hidden="true"></span>
+                <span class="three-d-grid" aria-hidden="true"></span>
+            </div>
+        </div>
+    </section>
+
     <section id="about" class="py-10 md:py-14 container mx-auto px-6 md:px-20 relative overflow-hidden">
         <div class="max-w-4xl mx-auto reveal relative z-10">
 
@@ -684,6 +717,36 @@
     <script defer src="public/js/data_photos.js"></script>
     <script defer src="public/js/map_markers.js?v=4"></script>
     <script defer src="public/js/main.js?v=70"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const video = document.getElementById('three-d-preview-video');
+            if (!video) return;
+
+            const loadVideo = () => {
+                const source = video.querySelector('source[data-src]');
+                if (source) {
+                    source.src = source.dataset.src;
+                    source.removeAttribute('data-src');
+                    video.load();
+                }
+                video.play().catch(() => {});
+            };
+
+            if ('IntersectionObserver' in window) {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach((entry) => {
+                        if (entry.isIntersecting) {
+                            loadVideo();
+                            observer.disconnect();
+                        }
+                    });
+                }, { rootMargin: '240px 0px' });
+                observer.observe(video);
+            } else {
+                loadVideo();
+            }
+        });
+    </script>
 
 </body>
 

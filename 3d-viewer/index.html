@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#071019" />
+    <meta name="description" content="LCT Studio 空拍實景 3D 模型瀏覽器" />
+    <title>3D模型｜LCT Studio</title>
+    <link rel="stylesheet" href="/3d-viewer/access-gate.css" />
+  </head>
+  <body>
+    <main id="access-gate" class="access-gate">
+      <section class="access-card" aria-labelledby="access-title">
+        <a class="access-back" href="../">← 返回 LCT Studio</a>
+        <p class="access-kicker">PRIVATE 3D VIEWER</p>
+        <h1 id="access-title">3D模型</h1>
+        <p class="access-copy">此展示內容設有瀏覽密碼，請輸入密碼後繼續。</p>
+        <form id="access-form" class="access-form">
+          <label for="access-password">瀏覽密碼</label>
+          <div class="access-input-row">
+            <input id="access-password" name="password" type="password"
+              autocomplete="current-password" required autofocus aria-describedby="access-error" />
+            <button type="button" id="toggle-password" class="toggle-password"
+              aria-label="顯示密碼">顯示</button>
+          </div>
+          <p id="access-error" class="access-error" role="alert" aria-live="polite"></p>
+          <button class="access-submit" type="submit">進入 3D模型</button>
+        </form>
+        <p class="access-note">驗證通過後，本次瀏覽期間不需重複輸入。</p>
+      </section>
+    </main>
+    <div id="root"></div>
+    <script src="/3d-viewer/access-gate.js"></script>
+  </body>
+</html>
