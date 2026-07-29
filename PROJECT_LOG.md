@@ -3,6 +3,12 @@
 此文件用於記錄專案的每一次執行、變更與迭代。
 請 Agent 在每次任務結束時，將重要變更記錄於此。
 
+## [2026-07-29] 3D Viewer 固定使用真實地形
+- 移除側欄「地形」區塊與「真實地形／平面」切換按鈕。
+- Viewer 啟動時固定載入 Cesium World Terrain；載入失敗時顯示 token 權限提示。
+- 更新正式站 Viewer bundle，並移除被取代的舊版 bundle。
+- ESLint、14 項測試、TypeScript 與正式版建置均通過。
+
 ## 格式範例
 ```markdown
 ### [YYYY-MM-DD] 任務名稱

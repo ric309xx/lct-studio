@@ -335,11 +335,21 @@ node --check public/js/main.js
 4. 更新後只保留入口實際引用的 `index-*.js` 與 `index-*.css`，避免歷史 bundle 累積。
 
 ### C. 專案與權限
-1. 專案清單與初始視角集中在原始碼 `src/config/projects.ts` 維護。
+1. 專案清單與初始視角集中在原始碼 `src/projects.ts` 維護。
 2. 一般觀看者可操作底圖、地形、量測、分享及基本相機控制。
 3. 管理員額外提供模型範圍框選與複製視角。
 4. 目前角色密碼由前端檢查，僅能防止誤操作；若用於客戶機密資料，必須改成伺服器端登入、Session 與授權檢查。
 5. 公開文件不要記錄實際密碼；密碼調整後也應重新建置並清除瀏覽器 Session 測試。
+
+目前 Viewer 固定使用 Cesium World Terrain，前台不提供平面地球切換。若真實地形無法載入，應先檢查 token 是否具有地形讀取權限及 Allowed URLs，而不是讓使用者改用平面模式。
+
+### C-1. 更新航測 OBJ 模型
+1. 將 OBJ、MTL 與所有貼圖使用相對路徑整理在同一資料夾後壓縮為 ZIP。
+2. 在 Cesium ion 的 My Assets 使用 Add Data 上傳，選擇 3D Model 並轉為 3D Tiles。
+3. 完成定位與高度調整後，記下新 Asset ID。
+4. 在 Viewer 原始碼的 `src/projects.ts` 更新對應專案的 `assetId`；若希望保留舊模型，新增另一個專案項目。
+5. 確認公開 token 可讀取新 Asset，重新建置並同步 `dist` 到正式站。
+6. 測試初始視角、模型範圍、地形貼合、量測與分享連結。新 Asset 的框選範圍使用獨立儲存鍵，通常需要管理員重新框選。
 
 ### D. Token 與授權
 1. `VITE_CESIUM_ION_ACCESS_TOKEN` 在建置時寫入前端，瀏覽器使用者可以看到，不能使用主帳號或具寫入權限的 token。
