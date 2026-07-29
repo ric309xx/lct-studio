@@ -32,7 +32,7 @@
     const script = document.createElement("script");
     script.type = "module";
     script.crossOrigin = "anonymous";
-    script.src = "/3d-viewer/assets/index-CNcITXYl.js";
+    script.src = "/3d-viewer/assets/index-B0XivAnA.js";
     script.dataset.viewerApp = "true";
     document.body.appendChild(script);
   };
