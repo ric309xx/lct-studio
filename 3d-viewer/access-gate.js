@@ -26,13 +26,13 @@
     const stylesheet = document.createElement("link");
     stylesheet.rel = "stylesheet";
     stylesheet.crossOrigin = "anonymous";
-    stylesheet.href = "/3d-viewer/assets/index-B9DwooyM.css";
+    stylesheet.href = "/3d-viewer/assets/index-D6_zrEDq.css";
     document.head.appendChild(stylesheet);
 
     const script = document.createElement("script");
     script.type = "module";
     script.crossOrigin = "anonymous";
-    script.src = "/3d-viewer/assets/index-B0XivAnA.js";
+    script.src = "/3d-viewer/assets/index-BBghjWCx.js";
     script.dataset.viewerApp = "true";
     document.body.appendChild(script);
   };
