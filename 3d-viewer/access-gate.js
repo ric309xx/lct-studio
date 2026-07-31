@@ -1,10 +1,14 @@
 (() => {
-  const ACCESS_PROFILES = {
-    "0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c": "admin",
-    "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4": "viewer"
-  };
-  const SESSION_KEY = "lct-3d-viewer-access";
+  const config = window.LCT_VIEWER_ACCESS;
+  if (!config) {
+    throw new Error("缺少專案存取設定。");
+  }
+
   const ROLE_KEY = "lct-3d-viewer-role";
+  const PROJECTS_KEY = "lct-3d-viewer-projects";
+  const ACTIVE_PROJECT_KEY = "lct-3d-viewer-active-project";
+  const ACCESS_SESSION_POINTER = "lct-3d-viewer-access-session-key";
+  const sessionKey = `lct-3d-viewer-access:${config.accessId}`;
   const gate = document.querySelector("#access-gate");
   const form = document.querySelector("#access-form");
   const input = document.querySelector("#access-password");
@@ -19,27 +23,43 @@
       .join("");
   };
 
+  const applyAccess = () => {
+    sessionStorage.setItem(ROLE_KEY, config.role);
+    sessionStorage.setItem(ACCESS_SESSION_POINTER, sessionKey);
+
+    if (config.role === "admin") {
+      sessionStorage.removeItem(PROJECTS_KEY);
+      const queryProject = new URLSearchParams(window.location.search).get(
+        "project"
+      );
+      if (queryProject) {
+        sessionStorage.setItem(ACTIVE_PROJECT_KEY, queryProject);
+      }
+      return;
+    }
+
+    sessionStorage.setItem(PROJECTS_KEY, JSON.stringify([config.projectId]));
+    sessionStorage.setItem(ACTIVE_PROJECT_KEY, config.projectId);
+  };
+
   const loadViewer = () => {
     if (document.querySelector("script[data-viewer-app]")) return;
     gate.hidden = true;
+    applyAccess();
 
     const stylesheet = document.createElement("link");
     stylesheet.rel = "stylesheet";
-    stylesheet.crossOrigin = "anonymous";
-    stylesheet.href = "/3d-viewer/assets/index-D6_zrEDq.css";
+    stylesheet.href = "/3d-viewer/assets/viewer.css";
     document.head.appendChild(stylesheet);
 
     const script = document.createElement("script");
     script.type = "module";
-    script.crossOrigin = "anonymous";
-    script.src = "/3d-viewer/assets/index-BBghjWCx.js";
+    script.src = "/3d-viewer/assets/viewer.js";
     script.dataset.viewerApp = "true";
     document.body.appendChild(script);
   };
 
-  const storedHash = sessionStorage.getItem(SESSION_KEY);
-  if (storedHash && ACCESS_PROFILES[storedHash]) {
-    sessionStorage.setItem(ROLE_KEY, ACCESS_PROFILES[storedHash]);
+  if (sessionStorage.getItem(sessionKey) === config.passwordHash) {
     loadViewer();
   }
 
@@ -56,15 +76,13 @@
     error.textContent = "";
     const submittedHash = await sha256(input.value);
 
-    const role = ACCESS_PROFILES[submittedHash];
-    if (!role) {
+    if (submittedHash !== config.passwordHash) {
       error.textContent = "密碼不正確，請重新輸入。";
       input.select();
       return;
     }
 
-    sessionStorage.setItem(SESSION_KEY, submittedHash);
-    sessionStorage.setItem(ROLE_KEY, role);
+    sessionStorage.setItem(sessionKey, submittedHash);
     loadViewer();
   });
 })();

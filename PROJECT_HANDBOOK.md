@@ -322,24 +322,29 @@ node --check public/js/main.js
 ## 11. 3D GIS Viewer 維護
 
 ### A. 正式站檔案
-1. Viewer 入口：`3d-viewer/index.html`。
+1. 管理員入口：`3d-viewer/index.html`。
 2. 密碼入口樣式與流程：`3d-viewer/access-gate.css`、`3d-viewer/access-gate.js`。
-3. Viewer 正式版程式：`3d-viewer/assets/`。
-4. Cesium 靜態資源：`3d-viewer/cesium/`，包含 Workers、Widgets、Assets 與第三方資源，不可任意刪除。
-5. 首頁示範影片：`public/videos/3d-gis-operation.mp4`。
+3. 客戶專案入口：`3d-viewer/p/<隨機代碼>/index.html`；每個入口只對應單一專案。
+4. Viewer 正式版程式：`3d-viewer/assets/viewer.js`、`3d-viewer/assets/viewer.css`。
+5. Cesium 靜態資源：`3d-viewer/cesium/`，包含 Workers、Widgets、Assets 與第三方資源，不可任意刪除。
+6. 首頁示範影片：`public/videos/3d-gis-operation.mp4`。
 
 ### B. 原始碼與建置
 1. Viewer 原始碼位於 `D:\OneDrive\Codex\12_Drone_GIS_Platform\viewer`，不直接在正式站的壓縮 bundle 內修改功能。
 2. 正式站建置需使用 `VITE_BASE_PATH=/3d-viewer/`，確保 GitHub Pages 子路徑能正確載入資源。
-3. 建置完成後，以 `dist/` 更新正式站 `3d-viewer/`；保留密碼入口頁，並同步更新 `access-gate.js` 內最新的 hashed CSS／JS 檔名。
-4. 更新後只保留入口實際引用的 `index-*.js` 與 `index-*.css`，避免歷史 bundle 累積。
+3. 建置完成後，以 `dist/assets/viewer.js` 與 `dist/assets/viewer.css` 更新正式站；登入頁固定使用這兩個檔名，不需再手動更新雜湊檔名。
+4. 同步原始碼 `gate/` 下的 `access-gate.js`、管理員入口及各專案入口。
+5. 更新後移除未被入口引用的舊版 `index-*.js`／`index-*.css`，避免歷史 bundle 累積。
 
 ### C. 專案與權限
-1. 專案清單與初始視角集中在原始碼 `src/projects.ts` 維護。
-2. 一般觀看者可操作底圖、地形、量測、分享及基本相機控制。
-3. 管理員額外提供模型範圍框選與複製視角。
-4. 目前角色密碼由前端檢查，僅能防止誤操作；若用於客戶機密資料，必須改成伺服器端登入、Session 與授權檢查。
-5. 公開文件不要記錄實際密碼；密碼調整後也應重新建置並清除瀏覽器 Session 測試。
+1. 專案清單、初始視角與分享路徑集中在原始碼 `src/projects.ts` 維護。
+2. 官網與管理員登入頁不公開列出客戶專案；每個專案使用獨立隨機網址與個別密碼。
+3. 客戶入口只授權一個專案，不顯示其他專案選項；分享按鈕只複製網址，不包含密碼。
+4. 一般觀看者可操作底圖、地形、量測、分享及基本相機控制。
+5. 管理員額外提供完整專案切換、模型範圍框選與複製視角。
+6. 專案入口需設定 `noindex, nofollow, noarchive`，且不可加入 sitemap 或首頁公開連結。
+7. 目前角色密碼由前端檢查，僅能防止誤操作；若用於客戶機密資料，必須改成伺服器端登入、Session 與授權檢查。
+8. 公開文件不要記錄實際密碼；密碼調整後也應重新建置並清除瀏覽器 Session 測試。
 
 目前 Viewer 固定使用 Cesium World Terrain，前台不提供平面地球切換。若真實地形無法載入，應先檢查 token 是否具有地形讀取權限及 Allowed URLs，而不是讓使用者改用平面模式。
 
@@ -358,10 +363,11 @@ node --check public/js/main.js
 
 ### E. 驗證與發布檢查
 1. 執行 `pnpm lint`、`pnpm test -- --run` 與 `pnpm build`。
-2. 在正式站路徑測試一般／管理員登入、模型載入、底圖、地形、距離與面積量測、分享連結及重新整理。
+2. 在正式站路徑分別測試管理員入口與每一個隱藏專案入口，確認密碼及專案隔離正確。
 3. 確認 Network 沒有 401、403、404，且 `/3d-viewer/` 所有資源均從正確子路徑載入。
-4. 首頁影片維持 muted、autoplay、loop、playsinline 與 lazy-load，不加入 controls 或外部連結。
-5. 提交前確認沒有 `.env`、未限制的 token、OBJ 原始檔或未使用的歷史 bundle。
+4. 測試模型載入、底圖、地形、距離與面積量測、分享連結及重新整理；分享連結不得包含密碼。
+5. 首頁影片維持 muted、autoplay、loop、playsinline 與 lazy-load，不加入 controls 或外部連結。
+6. 提交前確認沒有 `.env`、未限制的 token、OBJ 原始檔或未使用的歷史 bundle。
 
 ### F. 手機版介面
 1. 在 760px 以下，專案設定面板提供收合按鈕；收合後只保留左側 48px 展開按鈕。
