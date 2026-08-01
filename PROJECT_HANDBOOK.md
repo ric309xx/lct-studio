@@ -346,6 +346,8 @@ node --check public/js/main.js
 7. 目前角色密碼由前端檢查，僅能防止誤操作；若用於客戶機密資料，必須改成伺服器端登入、Session 與授權檢查。
 8. 公開文件不要記錄實際密碼；密碼調整後也應重新建置並清除瀏覽器 Session 測試。
 
+目前正式站共有 3 個專案入口：林口工廠、三峽太陽能板，以及三峽太陽能板2。三峽太陽能板2使用 Cesium ion Asset `5105006` 與隱藏入口 `/3d-viewer/p/T7nV2qL9bX4m/`；觀看密碼只保存在產生器資料與入口雜湊中，不在公開文件記錄明文。
+
 目前 Viewer 固定使用 Cesium World Terrain，前台不提供平面地球切換。若真實地形無法載入，應先檢查 token 是否具有地形讀取權限及 Allowed URLs，而不是讓使用者改用平面模式。
 
 ### C-1. 更新航測 OBJ 模型
@@ -360,6 +362,7 @@ node --check public/js/main.js
 1. `VITE_CESIUM_ION_ACCESS_TOKEN` 在建置時寫入前端，瀏覽器使用者可以看到，不能使用主帳號或具寫入權限的 token。
 2. Token 僅授予必要的 `assets:read`、限制可讀取 Asset，並設定本機與正式站 Allowed URLs。
 3. Viewer 中的 Cesium ion／資料來源 attribution 必須保留。
+4. 新增 Asset 後要同步加入 Viewer token 的 Selected Assets；Asset `5105006` 在發布前曾以目前 token 驗證為 `403 Forbidden`，完成授權前網頁可登入但無法載入模型。
 
 ### E. 驗證與發布檢查
 1. 執行 `pnpm lint`、`pnpm test -- --run` 與 `pnpm build`。

@@ -3,6 +3,14 @@
 此文件用於記錄專案的每一次執行、變更與迭代。
 請 Agent 在每次任務結束時，將重要變更記錄於此。
 
+## [2026-08-01] 新增三峽太陽能板2專案並發布
+- 新增「新北市三峽區太陽能板2」，使用 Cesium ion Asset `5105006`，正式專案總數由 2 個增為 3 個。
+- 建立獨立隱藏入口 `/3d-viewer/p/T7nV2qL9bX4m/`、個別密碼雜湊與單一專案觀看隔離；公開文件不記錄密碼明文。
+- 同步更新 Local Uploader 的 `project-data/projects.json`、產生的 `src/projects.ts`、登入頁與 README，並以正式建置輸出更新網站 Viewer bundle。
+- Local Uploader 依賴曾損壞，已移至 `viewer_node_modules_broken_20260801` 備份並依鎖檔重建；ESLint、16 項測試、TypeScript 與正式版建置通過。
+- 目前 Viewer token 查詢 Asset `5105006` 回傳 `403 Forbidden`；需在 Cesium ion 將該 Asset 加入 token 的 Selected Assets 後，才能完成模型載入驗證。
+- 依使用者指示，一併刪除不再使用的照片 `public/photos/城市光影/新北土城天好運2(2).jpg`。
+
 ## [2026-07-29] 手機版專案面板收合
 - 在 760px 以下畫面加入專案面板「收合／展開」按鈕。
 - 收合後面板縮為左側 48px 按鈕，釋放模型瀏覽空間；桌面版維持原版面。
