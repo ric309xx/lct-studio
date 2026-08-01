@@ -7,6 +7,8 @@
   const ROLE_KEY = "lct-3d-viewer-role";
   const PROJECTS_KEY = "lct-3d-viewer-projects";
   const ACTIVE_PROJECT_KEY = "lct-3d-viewer-active-project";
+  const ACTIVE_COMPARISON_KEY = "lct-3d-viewer-active-comparison";
+  const COMPARISONS_KEY = "lct-3d-viewer-comparisons";
   const ACCESS_SESSION_POINTER = "lct-3d-viewer-access-session-key";
   const sessionKey = `lct-3d-viewer-access:${config.accessId}`;
   const gate = document.querySelector("#access-gate");
@@ -29,6 +31,7 @@
 
     if (config.role === "admin") {
       sessionStorage.removeItem(PROJECTS_KEY);
+      sessionStorage.removeItem(COMPARISONS_KEY);
       const queryProject = new URLSearchParams(window.location.search).get(
         "project"
       );
@@ -38,6 +41,19 @@
       return;
     }
 
+    if (config.comparisonId) {
+      sessionStorage.setItem(PROJECTS_KEY, JSON.stringify(config.projectIds));
+      sessionStorage.setItem(
+        COMPARISONS_KEY,
+        JSON.stringify([config.comparisonId])
+      );
+      sessionStorage.setItem(ACTIVE_COMPARISON_KEY, config.comparisonId);
+      sessionStorage.setItem(ACTIVE_PROJECT_KEY, config.comparisonId);
+      return;
+    }
+
+    sessionStorage.removeItem(COMPARISONS_KEY);
+    sessionStorage.removeItem(ACTIVE_COMPARISON_KEY);
     sessionStorage.setItem(PROJECTS_KEY, JSON.stringify([config.projectId]));
     sessionStorage.setItem(ACTIVE_PROJECT_KEY, config.projectId);
   };
