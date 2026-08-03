@@ -326,18 +326,18 @@ node --check public/js/main.js
 2. 密碼入口樣式與流程：`3d-viewer/access-gate.css`、`3d-viewer/access-gate.js`。
 3. 客戶專案入口：`3d-viewer/p/<隨機代碼>/index.html`；每個入口只對應單一專案。
 4. Viewer 正式版程式：`3d-viewer/assets/viewer.js`、`3d-viewer/assets/viewer.css`。
-5. Cesium 靜態資源：`3d-viewer/cesium/`，包含 Workers、Widgets、Assets 與第三方資源，不可任意刪除。
+5. Cesium 靜態資源使用版本化目錄；目前為 `3d-viewer/cesium-1.143.0/`，包含 Workers、Widgets、Assets 與第三方資源。Viewer bundle 與 runtime 必須來自同一次建置，不可混用版本。
 6. 首頁示範影片：`public/videos/3d-gis-operation.mp4`。
 
 ### B. 原始碼與建置
 1. Viewer 原始碼位於 `D:\OneDrive\Codex\12_Drone_GIS_Platform\viewer`，不直接在正式站的壓縮 bundle 內修改功能。
-2. 正式站建置需使用 `VITE_BASE_PATH=/3d-viewer/`，確保 GitHub Pages 子路徑能正確載入資源。
+2. 正式站建置必須使用 `VITE_BASE_PATH=/3d-viewer/`，確保 GitHub Pages 子路徑能正確載入 Viewer bundle、Cesium Workers 與 WASM；遺漏時可能出現 `An error occurred while rendering` 並讓所有專案停止繪製。
 3. 建置完成後，以 `dist/assets/viewer.js` 與 `dist/assets/viewer.css` 更新正式站；登入頁固定使用這兩個檔名，不需再手動更新雜湊檔名。
 4. 同步原始碼 `gate/` 下的 `access-gate.js`、管理員入口及各專案入口。
 5. 更新後移除未被入口引用的舊版 `index-*.js`／`index-*.css`，避免歷史 bundle 累積。
 
 ### C. 專案與權限
-1. 專案清單、初始視角與分享路徑集中在原始碼 `src/projects.ts` 維護。
+1. 專案清單、初始視角、分享路徑與密碼雜湊集中在原始碼 `project-data/projects.json` 維護，再由 `scripts/generate-projects.mjs` 產生 `src/projects.ts` 與分享入口。
 2. 官網與管理員登入頁不公開列出客戶專案；每個專案使用獨立隨機網址與個別密碼。
 3. 客戶入口只授權一個專案，不顯示其他專案選項；分享按鈕只複製網址，不包含密碼。
 4. 一般觀看者可操作底圖、地形、量測、分享及基本相機控制。
@@ -346,7 +346,7 @@ node --check public/js/main.js
 7. 目前角色密碼由前端檢查，僅能防止誤操作；若用於客戶機密資料，必須改成伺服器端登入、Session 與授權檢查。
 8. 公開文件不要記錄實際密碼；密碼調整後也應重新建置並清除瀏覽器 Session 測試。
 
-目前正式站共有 3 個專案入口：林口工廠、三峽太陽能板，以及三峽太陽能板2。三峽太陽能板2使用 Cesium ion Asset `5105006` 與隱藏入口 `/3d-viewer/p/T7nV2qL9bX4m/`；觀看密碼只保存在產生器資料與入口雜湊中，不在公開文件記錄明文。
+目前 Viewer 收錄 5 個單一專案：林口工廠、三峽太陽能板、三峽太陽能板2、三峽太陽能板 B3DMS，以及瑞芳邊坡測試 OBJ，另有 1 個 OBJ／B3DMS 對比項目。瑞芳專案使用 Cesium ion Asset `5107551` 與隱藏入口 `/3d-viewer/p/L5cT7iQ1nA9x/`；觀看密碼只保存在產生器資料與入口雜湊中，不在公開文件記錄明文。
 
 目前 Viewer 固定使用 Cesium World Terrain，前台不提供平面地球切換。若真實地形無法載入，應先檢查 token 是否具有地形讀取權限及 Allowed URLs，而不是讓使用者改用平面模式。
 
@@ -354,7 +354,7 @@ node --check public/js/main.js
 1. 將 OBJ、MTL 與所有貼圖使用相對路徑整理在同一資料夾後壓縮為 ZIP。
 2. 在 Cesium ion 的 My Assets 使用 Add Data 上傳，選擇 3D Model 並轉為 3D Tiles。
 3. 完成定位與高度調整後，記下新 Asset ID。
-4. 在 Viewer 原始碼的 `src/projects.ts` 更新對應專案的 `assetId`；若希望保留舊模型，新增另一個專案項目。
+4. 在 Viewer 原始碼的 `project-data/projects.json` 更新對應專案的 `assetId`；若希望保留舊模型，新增另一個專案項目，再執行產生器與建置。
 5. 確認公開 token 可讀取新 Asset，重新建置並同步 `dist` 到正式站。
 6. 測試初始視角、模型範圍、地形貼合、量測與分享連結。新 Asset 的框選範圍使用獨立儲存鍵，通常需要管理員重新框選。
 
