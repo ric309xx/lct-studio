@@ -31,7 +31,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+TC:wght@400;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="public/css/style.css?v=75">
+    <link rel="stylesheet" href="public/css/style.css?v=86">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
 </head>
@@ -50,6 +50,7 @@
                 <a href="#portfolio" class="text-white hover:text-gray-300 transition-colors text-lg">精選照片</a>
                 <a href="#videos" class="text-white hover:text-gray-300 transition-colors text-lg">精選影片</a>
                 <a href="#services" class="text-white hover:text-gray-300 transition-colors text-lg">服務項目</a>
+                <a href="#digital-archive" class="text-white hover:text-gray-300 transition-colors text-lg">數位典藏</a>
                 <a href="#about" class="text-white hover:text-gray-300 transition-colors text-lg">關於我</a>
                 <a href="#contact" class="text-white hover:text-gray-300 transition-colors text-lg">聯絡我</a>
             </div>
@@ -72,6 +73,8 @@
                     class="text-white hover:text-gray-300 transition-colors text-2xl mobile-menu-link">精選影片</a>
                 <a href="#services"
                     class="text-white hover:text-gray-300 transition-colors text-2xl mobile-menu-link">服務項目</a>
+                <a href="#digital-archive"
+                    class="text-white hover:text-gray-300 transition-colors text-2xl mobile-menu-link">數位典藏</a>
                 <a href="#about"
                     class="text-white hover:text-gray-300 transition-colors text-2xl mobile-menu-link">關於我</a>
                 <a href="#contact"
@@ -447,35 +450,31 @@
         </div>
     </section>
 
-    <section id="interactive-3d" class="three-d-showcase" aria-labelledby="three-d-showcase-title">
-        <div class="three-d-showcase-grid">
-            <div class="three-d-showcase-copy reveal">
-                <p class="section-kicker">Interactive Reality Model</p>
-                <h2 id="three-d-showcase-title">
-                    <span>可分享、可量測、</span>
-                    <span>可分析的 3D GIS 成果</span>
-                </h2>
-                <p>
-                    3D 模型展示、GIS 圖層、工程量測與成果分享平台，
-                    讓客戶不需安裝任何軟體，即可透過瀏覽器查看現場。
-                </p>
-                <ul class="three-d-feature-list" aria-label="3D 模型功能">
-                    <li>三維模型展示</li>
-                    <li>GIS 圖層整合</li>
-                    <li>一鍵分享成果</li>
-                </ul>
-                <a class="three-d-launch" href="3d-viewer/index.html">
-                    <span>開始瀏覽 3D 模型</span>
-                    <span aria-hidden="true">↗</span>
-                </a>
+    <section id="digital-archive" class="archive-preview" aria-labelledby="archive-preview-title">
+        <div class="archive-preview-heading reveal">
+            <p class="section-kicker">Digital Landscape Archive</p>
+            <h2 id="archive-preview-title">數位典藏</h2>
+            <p class="archive-preview-statement">保存文化資產，延續地景的空間記憶。</p>
+        </div>
+        <div class="archive-showcase reveal">
+            <div class="archive-showcase-media">
+                <iframe id="archive-feature-video"
+                    src="https://www.youtube.com/embed/YHBrDgMuH6s?rel=0&modestbranding=1"
+                    title="三維模型展示"
+                    allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen></iframe>
             </div>
-            <div class="three-d-visual reveal reveal-delay-100" aria-label="3D GIS 模型操作影片">
-                <video id="three-d-preview-video" class="three-d-preview-video" muted loop playsinline preload="none"
-                    aria-label="3D GIS 模型操作畫面">
-                    <source data-src="public/videos/3d-gis-operation.mp4" type="video/mp4">
-                </video>
-                <span class="three-d-video-shade" aria-hidden="true"></span>
-                <span class="three-d-grid" aria-hidden="true"></span>
+            <div id="archive-feature-playlist" class="archive-feature-playlist" aria-label="數位典藏功能示範影片">
+                <button type="button" class="active" data-youtube-id="YHBrDgMuH6s" data-embed-host="www.youtube.com" data-title="三維模型展示" aria-pressed="true"><small>01 / MODEL</small><strong>三維模型展示</strong></button>
+                <button type="button" data-youtube-id="L9hcYXXJouk" data-title="不同時期/格式比較" aria-pressed="false"><small>02 / COMPARE</small><strong>不同時期/格式比較</strong></button>
+                <button type="button" data-youtube-id="dF9_ijqgAiA" data-title="日照模擬" aria-pressed="false"><small>03 / SUNLIGHT</small><strong>日照模擬</strong></button>
+                <button type="button" data-youtube-id="uaM8StiEALo" data-title="距離/面積量測" aria-pressed="false"><small>04 / MEASURE</small><strong>距離/面積量測</strong></button>
+            </div>
+            <div class="archive-showcase-footer">
+                <p>三維模型展示、不同時期/格式比較、日照模擬、距離/面積量測</p>
+                <a class="archive-preview-cta" href="archive/">
+                    <span>進入數位典藏</span><span aria-hidden="true">EXPLORE ARCHIVE ↗</span>
+                </a>
             </div>
         </div>
     </section>
@@ -714,6 +713,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/MotionPathPlugin.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
     <script defer src="public/js/data_videos.js?v=2"></script>
+    <script defer src="public/js/archive_showcase.js?v=4"></script>
     <script defer src="public/js/data_photos.js"></script>
     <script defer src="public/js/map_markers.js?v=4"></script>
     <script defer src="public/js/main.js?v=70"></script>

@@ -16,6 +16,27 @@
   const input = document.querySelector("#access-password");
   const error = document.querySelector("#access-error");
   const toggle = document.querySelector("#toggle-password");
+  let passwordEntryStarted = false;
+
+  // 避免瀏覽器密碼管理員把上一次內容帶入分享頁；使用者開始輸入後不再干預。
+  input.setAttribute("autocomplete", "new-password");
+  input.setAttribute("autocapitalize", "none");
+  input.setAttribute("spellcheck", "false");
+  const clearAutofilledPassword = () => {
+    if (!passwordEntryStarted) input.value = "";
+  };
+  clearAutofilledPassword();
+  requestAnimationFrame(clearAutofilledPassword);
+  [80, 250, 700].forEach((delay) =>
+    window.setTimeout(clearAutofilledPassword, delay)
+  );
+  window.addEventListener("pageshow", clearAutofilledPassword);
+  input.addEventListener("keydown", () => {
+    passwordEntryStarted = true;
+  });
+  input.addEventListener("paste", () => {
+    passwordEntryStarted = true;
+  });
 
   const sha256 = async (value) => {
     const bytes = new TextEncoder().encode(value);
@@ -26,6 +47,10 @@
   };
 
   const applyAccess = () => {
+    const hasElevatedAdminSession =
+      config.role !== "admin" && sessionStorage.getItem(ROLE_KEY) === "admin";
+    if (hasElevatedAdminSession) return;
+
     sessionStorage.setItem(ROLE_KEY, config.role);
     sessionStorage.setItem(ACCESS_SESSION_POINTER, sessionKey);
 
@@ -58,26 +83,38 @@
     sessionStorage.setItem(ACTIVE_PROJECT_KEY, config.projectId);
   };
 
+  const applyViewerRouteContext = () => {
+    if (
+      config.role === "admin" ||
+      sessionStorage.getItem(ROLE_KEY) === "admin"
+    ) return;
+
+    const projectId =
+      config.comparisonId || config.projectId || config.projectIds?.[0];
+    if (!projectId) return;
+
+    const url = new URL(window.location.href);
+    url.searchParams.set("project", projectId);
+    window.history.replaceState({}, "", url);
+  };
+
   const loadViewer = () => {
     if (document.querySelector("script[data-viewer-app]")) return;
     gate.hidden = true;
     applyAccess();
+    applyViewerRouteContext();
 
     const stylesheet = document.createElement("link");
     stylesheet.rel = "stylesheet";
-    stylesheet.href = "/3d-viewer/assets/viewer.css";
+    stylesheet.href = "/3d-viewer/assets/viewer.css?v=20260814c";
     document.head.appendChild(stylesheet);
 
     const script = document.createElement("script");
     script.type = "module";
-    script.src = "/3d-viewer/assets/viewer.js";
+    script.src = "/3d-viewer/assets/viewer.js?v=20260814c";
     script.dataset.viewerApp = "true";
     document.body.appendChild(script);
   };
-
-  if (sessionStorage.getItem(sessionKey) === config.passwordHash) {
-    loadViewer();
-  }
 
   toggle.addEventListener("click", () => {
     const show = input.type === "password";
@@ -98,7 +135,7 @@
       return;
     }
 
-    sessionStorage.setItem(sessionKey, submittedHash);
+    sessionStorage.removeItem(sessionKey);
     loadViewer();
   });
 })();

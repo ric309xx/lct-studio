@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#071018">
+  <meta name="description" content="LCT Studio 數位地景典藏，以 3D 模型與空拍影像保存台灣海岸地貌。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; media-src 'self'; connect-src 'self'; frame-src https://www.youtube-nocookie.com https://www.youtube.com; form-action 'self'; upgrade-insecure-requests">
+  <title>數位地景典藏｜LCT Studio</title>
+  <link rel="stylesheet" href="archive.css?v=2">
+  <link rel="stylesheet" href="archive-video.css?v=1">
+</head>
+<body>
+  <header class="archive-header">
+    <a class="archive-brand" href="../"><img src="../public/assets/logo-1.png" alt=""><span>LCT Studio</span></a>
+    <div class="archive-header-title"><span>DIGITAL LANDSCAPE ARCHIVE</span><strong>數位地景典藏</strong></div>
+    <a class="archive-back" href="../">返回首頁 <span aria-hidden="true">↗</span></a>
+  </header>
+
+  <main>
+    <nav id="site-tabs" class="site-tabs" aria-label="典藏地點"></nav>
+
+    <section class="model-section" aria-labelledby="site-title">
+      <div class="model-stage-shell">
+        <video id="archive-video" class="archive-video" controls playsinline preload="metadata" aria-label="模型飛行導覽影片"></video>
+        <iframe id="archive-youtube" class="archive-youtube" title="模型飛行導覽影片" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen hidden></iframe>
+        <img id="archive-video-poster" class="archive-video-poster" alt="">
+        <span class="archive-video-shade" aria-hidden="true"></span>
+        <div class="archive-video-label"><span>MODEL FLIGHT / FILM</span><strong id="film-title">南雅奇岩模型飛行導覽</strong></div>
+        <div id="film-list" class="archive-film-list" hidden aria-label="主題影片清單"></div>
+        <button type="button" id="play-archive-video" class="archive-video-play" aria-label="播放模型飛行導覽">
+          <span aria-hidden="true">▶</span><strong>播放導覽</strong>
+        </button>
+        <a id="open-interactive-model" class="interactive-model-link" href="../3d-viewer/p/Y8nA4rK2mP7x/">
+          <span><small>INTERACTIVE 3D</small>進入三維模型平台</span><span aria-hidden="true">↗</span>
+        </a>
+      </div>
+      <aside class="model-info">
+        <p class="model-index" id="site-index">01 / 02</p>
+        <h2 id="site-title">南雅奇岩</h2>
+        <p class="model-location" id="site-location">新北市瑞芳區 · 東北角海岸</p>
+        <p id="site-description"></p>
+        <dl id="site-meta"></dl>
+      </aside>
+    </section>
+
+    <section id="photo-story" class="photo-story" aria-labelledby="photo-title">
+      <header><div><p>PHOTO STORY</p><h2 id="photo-title">地景影像紀錄</h2></div><span id="photo-count">05 FRAMES</span></header>
+      <div id="photo-grid" class="photo-grid"></div>
+    </section>
+
+  </main>
+
+  <footer><span>© LCT STUDIO</span><span>LANDSCAPE / AERIAL / REALITY CAPTURE</span></footer>
+
+  <div id="photo-modal" class="photo-modal" hidden role="dialog" aria-modal="true" aria-label="照片檢視">
+    <button type="button" id="photo-close" aria-label="關閉照片">×</button>
+    <img id="photo-full" alt="">
+    <p id="photo-caption"></p>
+  </div>
+
+  <script src="archive.js?v=7"></script>
+</body>
+</html>

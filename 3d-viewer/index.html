@@ -4,12 +4,39 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#071019" />
-    <meta name="description" content="無人機攝影測量 3D 模型檢視器" />
-    <title>Drone 3D Viewer</title>
-    <script type="module" crossorigin src="/3d-viewer/assets/viewer-C-5sqWEF.js"></script>
-    <link rel="stylesheet" crossorigin href="/3d-viewer/assets/viewer-DDGnLMEX.css">
+    <meta name="description" content="LCT Studio 私人 3D 專案管理入口" />
+    <title>3D 專案管理｜LCT Studio</title>
+    <link rel="stylesheet" href="/3d-viewer/access-gate.css" />
   </head>
   <body>
+    <main id="access-gate" class="access-gate">
+      <section class="access-card" aria-labelledby="access-title">
+        <a class="access-back" href="/">← 返回 LCT Studio</a>
+        <p class="access-kicker">PRIVATE 3D VIEWER</p>
+        <h1 id="access-title">3D 專案管理</h1>
+        <p class="access-copy">此入口僅供管理員使用。客戶請使用收到的專案分享網址。</p>
+        <form id="access-form" class="access-form">
+          <label for="access-password">管理員密碼</label>
+          <div class="access-input-row">
+            <input id="access-password" name="password" type="password"
+              autocomplete="current-password" required autofocus aria-describedby="access-error" />
+            <button type="button" id="toggle-password" class="toggle-password"
+              aria-label="顯示密碼">顯示</button>
+          </div>
+          <p id="access-error" class="access-error" role="alert" aria-live="polite"></p>
+          <button class="access-submit" type="submit">進入管理模式</button>
+        </form>
+        <p class="access-note">分享專案時只傳送專案網址，密碼請使用其他方式提供。</p>
+      </section>
+    </main>
     <div id="root"></div>
+    <script>
+      window.LCT_VIEWER_ACCESS = {
+        accessId: "admin",
+        role: "admin",
+        passwordHash: "0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c"
+      };
+    </script>
+    <script src="/3d-viewer/access-gate.js?v=20260814c"></script>
   </body>
 </html>
