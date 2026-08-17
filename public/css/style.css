@@ -2415,6 +2415,14 @@ body::before {
 .archive-showcase { position: relative; z-index: 1; max-width: 1440px; margin: 0 auto; border: 1px solid rgba(121,189,207,.28); background: #07131b; }
 .archive-showcase-media { position: relative; aspect-ratio: 16/9; overflow: hidden; background: radial-gradient(circle at 70% 35%,rgba(87,184,199,.18),transparent 28%),#061018; }
 .archive-showcase-media video,.archive-showcase-media iframe { display: block; width: 100%; height: 100%; border: 0; object-fit: cover; background: #061018; }
+.archive-feature-poster { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: .8rem; width: 100%; padding: 0; overflow: hidden; color: #fff; border: 0; background: #061018; cursor: pointer; }
+.archive-feature-poster[hidden] { display: none; }
+.archive-feature-poster::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg,rgba(1,8,12,.05),rgba(1,8,12,.54)); }
+.archive-feature-poster img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .6s ease,filter .6s ease; }
+.archive-feature-poster span,.archive-feature-poster strong { position: relative; z-index: 1; }
+.archive-feature-poster span { display: grid; place-items: center; width: 4.5rem; height: 4.5rem; padding-left: .25rem; border: 1px solid rgba(255,255,255,.65); border-radius: 50%; background: rgba(3,12,18,.68); font-size: 1.45rem; backdrop-filter: blur(8px); }
+.archive-feature-poster strong { font-size: 1rem; letter-spacing: .08em; text-shadow: 0 2px 10px #000; }
+.archive-feature-poster:hover img { transform: scale(1.025); filter: brightness(.88); }
 .archive-feature-playlist { display: grid; grid-template-columns: repeat(4,1fr); border-top: 1px solid rgba(255,255,255,.12); }
 .archive-feature-playlist button { min-width: 0; display: grid; gap: .55rem; padding: 1.35rem 1.45rem; color: #c3cdd2; text-align: left; background: #07131b; border: 0; border-right: 1px solid rgba(255,255,255,.15); cursor: pointer; transition: color .25s,background .25s,box-shadow .25s; }
 .archive-feature-playlist button:last-child { border-right: 0; }
