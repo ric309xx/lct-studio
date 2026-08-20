@@ -379,6 +379,14 @@ node --check public/js/main.js
 3. 開發模式的「切換身分」會直接在管理員與一般觀看間切換，便於本機測試。
 4. 正式環境的「切換身分」仍會清除 Session 並返回密碼入口，不可改成免密碼切換。
 
+### G. 比較模式效能與模型切換
+
+1. 三模型與 OBJ／B3DMS 比較的模型選單只能替換單側 tileset，不得把選取狀態加入 Viewer 初始化 effect 的 dependencies，否則會重建底圖、地形與相機並從地球視角重新載入。
+2. 替換單側模型時先載入新 tileset，成功後才移除舊 tileset；失敗時保留原模型，不呼叫 `focusModels`，以維持使用者當下視角。
+3. 左右交換應直接互換兩側 tileset reference 與 `splitDirection`，不可重新建立 Viewer。
+4. 比較模式目前使用 SSE `20`、dynamic SSE、漸進解析度 `0.45`、移動時請求裁切、`256 MB` cache／`128 MB` overflow，並停用 tileset 陰影。這些設定優先確保雙模型操作流暢度；單模型專案不套用此降載設定。
+5. 若未來調整比較畫質，需同時用桌機與行動裝置驗證拖曳、縮放、模型切換、左右交換及量測，並確認切換前後 Cesium canvas 與相機位置沒有重設。
+
 ## 12. 數位地景典藏維護
 
 ### A. 公開頁面與資料

@@ -3,6 +3,14 @@
 此文件用於記錄專案的每一次執行、變更與迭代。
 請 Agent 在每次任務結束時，將重要變更記錄於此。
 
+## [2026-08-20] Viewer 比較模式效能與視角保留
+- 三模型與 OBJ／B3DMS 比較改為在既有 Cesium Viewer 中只替換被選取側的 tileset；底圖、地形、相機與另一側模型不重建，切換後維持原視角。
+- 左右交換改為直接交換既有 tileset 與 split direction，不重新載入地圖或模型。
+- 比較模式採較平衡的渲染設定：SSE `20`、dynamic SSE、漸進解析度 `0.45`、移動時請求裁切、`256 MB` cache／`128 MB` overflow，並停用模型陰影；單模型專案維持原品質設定。
+- TypeScript 與正式版 Vite 建置通過，並同步 Viewer bundle 與 Cesium runtime 至本機網站。
+- 本機瀏覽器確認切換與交換過程維持同一個 Cesium canvas；目前本機 token 無法讀取比較 Asset，因此完整模型畫面仍需在具正確 Cesium ion 授權的來源網域複驗。
+- Vitest 因既有 `expect-type` 套件缺少 `./branding` 檔案而無法啟動，與本次 Viewer 程式變更無關。
+
 ## [2026-08-03] 新增瑞芳邊坡 OBJ 專案並修正 Cesium 靜態資源路徑
 - 新增「新北市瑞芳區邊坡測試_OBJ」，使用 Cesium ion Asset `5107551`，並建立隱藏入口 `/3d-viewer/p/L5cT7iQ1nA9x/`；入口只保存既有格式的密碼雜湊，不在公開文件記錄明文。
 - 設定專案預設視角為經度 `121.84313649`、緯度 `25.12754186`、高度 `120.01`、heading `141.554`、pitch `-21.041`、roll `0`。
