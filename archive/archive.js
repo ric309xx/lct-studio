@@ -19,6 +19,7 @@
       location: "新北市瑞芳區 · 東北角海岸",
       description: "東北角海岸長期風化、侵蝕所形成的奇特岩層，以三維實景模型保存岩體輪廓與細緻紋理。",
       interactivePath: "../3d-viewer/?project=ruifang-nanya-rock-20260810",
+      cesiumJsPath: "https://lct-private-3d-viewer.private-3d-viewer.workers.dev/",
       meta: [
         ["地景類型", "海蝕岩岸"],
         ["地景特色", "風化岩層與海蝕紋理"],
@@ -78,7 +79,7 @@
   const ids = [
     "site-tabs", "site-title", "site-index", "site-location", "site-description",
     "site-meta", "archive-video", "archive-youtube", "archive-video-poster", "film-title", "film-list",
-    "play-archive-video", "open-interactive-model", "photo-story", "photo-title",
+    "play-archive-video", "open-interactive-model", "open-cesiumjs-model", "photo-story", "photo-title",
     "photo-count", "photo-grid", "photo-modal", "photo-full", "photo-caption"
   ];
   const dom = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
@@ -206,6 +207,15 @@
       modelLink.querySelector("small").textContent = "3D MODEL / COMING SOON";
       modelLink.querySelector("span:first-child").lastChild.textContent = "三維模型待串接";
       modelLink.setAttribute("aria-label", `${site.name}三維模型待串接`);
+    }
+    const cesiumJsLink = dom["open-cesiumjs-model"];
+    if (site.cesiumJsPath) {
+      cesiumJsLink.href = site.cesiumJsPath;
+      cesiumJsLink.hidden = false;
+      cesiumJsLink.setAttribute("aria-label", `開啟${site.name} CesiumJS 自架極致模型，需要輸入密碼`);
+    } else {
+      cesiumJsLink.hidden = true;
+      cesiumJsLink.removeAttribute("href");
     }
     history.replaceState(null, "", `${location.pathname}?site=${site.id}`);
     renderTabs();

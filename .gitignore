@@ -5,5 +5,12 @@
 __pycache__/
 *.pyc
 
+# Cloudflare Wrangler / package manager local state
+/.wrangler/
+/.pnpm-store/
+/.codex-tmp/
+.dev.vars
+**/.dev.vars
+
 # (選擇性) 如果你最後都把東西複製到 publish，其實 public 也可以忽略
 # 但為了保險起見，我們先只忽略大圖就好

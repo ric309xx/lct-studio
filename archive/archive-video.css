@@ -136,6 +136,8 @@
 .interactive-model-link:hover,
 .interactive-model-link:focus-visible { background: #10252d; border-color: #6bd3e9; outline: none; }
 .interactive-model-link.is-disabled { cursor: not-allowed; opacity: .6; pointer-events: none; }
+.cesiumjs-model-link { bottom: 6rem; }
+.cesiumjs-model-link[hidden] { display: none; }
 
 .model-stage-shell.is-playing .archive-video-shade,
 .model-stage-shell.is-playing .archive-video-label { opacity: 0; }
@@ -144,6 +146,7 @@
   .archive-video-play { width: 5.7rem; height: 5.7rem; }
   .archive-video-label { left: 1.2rem; bottom: 6rem; }
   .interactive-model-link { left: .7rem; right: .7rem; bottom: .7rem; min-width: 0; }
+  .cesiumjs-model-link { bottom: 5.8rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
