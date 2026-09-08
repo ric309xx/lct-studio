@@ -52,7 +52,7 @@ async function routeRequest(request, env) {
   }
 
   if (url.pathname === "/app.js" && request.method === "GET") {
-    return assetResponse(APP_JS, "text/javascript; charset=utf-8");
+    return assetResponse(ARCHIVE_BACK_JS + APP_JS, "text/javascript; charset=utf-8");
   }
 
   if (url.pathname.startsWith("/tiles/")) {
@@ -81,6 +81,20 @@ async function routeRequest(request, env) {
 
   return textResponse("Not found", 404);
 }
+
+// Keep archive navigation independent of model loading and experimental tools.
+const ARCHIVE_BACK_JS = `(() => {
+  const actions = document.querySelector(".top-actions");
+  if (!actions) return;
+  const link = document.createElement("a");
+  link.className = "site-back logout";
+  link.href = ["localhost", "127.0.0.1"].includes(location.hostname)
+    ? "http://127.0.0.1:5500/archive/"
+    : "https://lctstudio.tw/archive/";
+  link.textContent = "← 返回數位典藏";
+  link.style.textDecoration = "none";
+  actions.prepend(link);
+})();\n`;
 
 async function handleLogin(request, env) {
   if (!hasRequiredSecrets(env)) {
