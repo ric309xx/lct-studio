@@ -73,6 +73,26 @@
         poster: `${PHOTO_BASE}新北市瑞芳區水湳洞選煉廠遺址 (1).jpg`
       }],
       photos: photoSeries("新北市瑞芳區水湳洞選煉廠遺址", 2)
+    },
+    {
+      id: "longteng",
+      name: "龍騰斷橋模型",
+      location: "苗栗縣三義鄉 · 龍騰斷橋",
+      description: "以高精度三維實景模型保存龍騰斷橋的橋墩、拱圈、周邊步道與植被空間，提供可自由旋轉與量測的數位地景紀錄。",
+      cesiumJsPath: "https://lct-private-3d-viewer.private-3d-viewer.workers.dev/viewer?project=longteng-20260906",
+      meta: [
+        ["地景類型", "鐵道文化資產"],
+        ["地景特色", "磚造橋墩、拱圈與山林地景"],
+        ["保存內容", "高精度三維模型與現況紋理"],
+        ["適合瀏覽", "橋體結構與周邊空間關係"]
+      ],
+      films: [{
+        id: "longteng-model",
+        title: "龍騰斷橋模型飛行模擬",
+        youtubeId: "lG7icG_jwsU",
+        poster: `${PHOTO_BASE}苗栗縣三義鄉龍騰斷橋 (1).jpg`
+      }],
+      photos: selectedPhotos("苗栗縣三義鄉龍騰斷橋", [1, 2, 3, 4])
     }
   ];
 
