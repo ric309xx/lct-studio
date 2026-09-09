@@ -90,6 +90,7 @@
 
 .archive-video-play span { font-size: 1.2rem; transform: translateX(.12rem); }
 .archive-video-play strong { font-size: .72rem; letter-spacing: .08em; }
+.archive-video-play[hidden] { display: none; }
 
 .archive-film-list {
   position: absolute;

@@ -10,16 +10,58 @@ document.addEventListener('DOMContentLoaded', () => {
     const mobileMenuLinks = document.querySelectorAll('.mobile-menu-link');
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    // Keep keyboard focus inside visible photo/album dialogs and restore the opener.
+    for (const [id, label] of [['photo-modal', '照片檢視'], ['magazine-modal', '線上相簿']]) {
+        const dialog = document.getElementById(id);
+        if (!dialog) continue;
+        dialog.setAttribute('role', 'dialog');
+        dialog.setAttribute('aria-modal', 'true');
+        dialog.setAttribute('aria-label', label);
+        dialog.tabIndex = -1;
+        let opener = null;
+        let visible = !dialog.classList.contains('hidden');
+        const focusable = () => [...dialog.querySelectorAll('button:not([disabled]), a[href], input, [tabindex="0"]')]
+            .filter(element => element.getClientRects().length > 0);
+        new MutationObserver(() => {
+            const nextVisible = !dialog.classList.contains('hidden');
+            if (nextVisible === visible) return;
+            visible = nextVisible;
+            if (visible) {
+                opener = document.activeElement;
+                (focusable()[0] || dialog).focus();
+            } else if (opener?.isConnected) opener.focus();
+        }).observe(dialog, { attributes: true, attributeFilter: ['class'] });
+        dialog.addEventListener('keydown', event => {
+            if (!visible) return;
+            if (event.key === 'Escape') {
+                event.stopPropagation();
+                if (id === 'photo-modal') closeLightbox();
+                else document.getElementById('close-magazine-btn')?.click();
+            }
+            if (event.key !== 'Tab') return;
+            const items = focusable();
+            const first = items[0] || dialog;
+            const last = items[items.length - 1] || dialog;
+            if (event.shiftKey && (document.activeElement === first || document.activeElement === dialog)) {
+                event.preventDefault(); last.focus();
+            } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === dialog)) {
+                event.preventDefault(); first.focus();
+            }
+        });
+    }
+
     // Lightbox Navigation Elements (Created dynamically or selected if in HTML)
     let currentCategoryPhotos = []; // Stores the current list of photos being viewed
     let currentPhotoIndex = -1;
 
     // Create Nav Buttons for Modal
     const prevBtn = document.createElement('button');
+    prevBtn.setAttribute('aria-label', '上一張照片');
     prevBtn.className = 'lightbox-nav-btn lightbox-prev';
     prevBtn.innerHTML = '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>';
 
     const nextBtn = document.createElement('button');
+    nextBtn.setAttribute('aria-label', '下一張照片');
     nextBtn.className = 'lightbox-nav-btn lightbox-next';
     nextBtn.innerHTML = '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>';
 
@@ -1482,6 +1524,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const heroVideo = document.getElementById('hero-video');
         if (!heroVideo) return;
 
+        // Keep the poster without downloading video on mobile or reduced-data/motion devices.
+        if (window.matchMedia('(max-width: 767px)').matches || prefersReducedMotion || navigator.connection?.saveData) return;
+
         // Currently only video 4 exists in the folder
         const baseFilename = `your-hero-video4`;
 
@@ -2475,8 +2520,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- 9. Event Listeners ---
-    mobileMenuButton.addEventListener('click', () => { mobileMenu.classList.toggle('hidden'); });
-    mobileMenuLinks.forEach(link => { link.addEventListener('click', () => { mobileMenu.classList.add('hidden'); }); });
+    const setMobileMenuOpen = (open) => {
+        mobileMenu.classList.toggle('hidden', !open);
+        mobileMenuButton.setAttribute('aria-expanded', String(open));
+        mobileMenuButton.setAttribute('aria-label', open ? '關閉選單' : '開啟選單');
+    };
+    mobileMenuButton.addEventListener('click', () => {
+        setMobileMenuOpen(mobileMenu.classList.contains('hidden'));
+    });
+    mobileMenuLinks.forEach(link => {
+        link.addEventListener('click', () => setMobileMenuOpen(false));
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !mobileMenu.classList.contains('hidden')) {
+            setMobileMenuOpen(false);
+            mobileMenuButton.focus();
+        }
+    });
+    window.matchMedia('(min-width: 768px)').addEventListener('change', (event) => {
+        if (event.matches) setMobileMenuOpen(false);
+    });
     window.addEventListener('scroll', () => { header.classList.toggle('header-scrolled', window.scrollY > 50); });
 
     // Lightbox Close

@@ -135,6 +135,22 @@ const PROJECTS = {
 5. **回到指定視角**：每案保存 longitude、latitude、height、heading、pitch、roll，避免每次重新找模型。
 6. **專案清單與權限**：三案以上改用伺服器端 allowlist，每個專案可配置模型路徑、封面、介紹、相機與可用工具。
 
+### 南雅奇岩自架 Viewer 目前實作
+
+- 固定初始／回復視角：`121.89251409, 25.11970394, 69.3 m`，heading `56.958°`、pitch `-39.588°`、roll `0°`。相機會在模型加入、下一個畫面影格及第一批圖磚完成時校正，避免載入流程覆蓋視角。
+- 距離量測：點選兩個模型表面位置，顯示三維直線距離。
+- 面積量測：點選三個模型表面位置，以三維三角形面積顯示；目前不是任意多邊形或貼地表面積。
+- 日照模擬：以南雅模型日期 `2026-08-10` 與台灣時區為基準，可切換 06:00–18:00，並開啟地球與模型陰影；避開太陽位於地平線下、模型幾乎全暗的時段。
+- 地籍套繪：介面與 GeoJSON 載入器已建立，但 `CADASTRAL_GEOJSON_URL` 暫為 `null`，所以按鈕保持停用並顯示「地籍資料尚未匯入」。
+
+取得地籍 GeoJSON 並完成 TWD97 → WGS84 驗證後，將檔案放在受權限保護的路徑，再於 `workers/private-3d-viewer/src/index.js` 設定：
+
+```js
+const CADASTRAL_GEOJSON_URL = "/data/nanya-cadastral.geojson";
+```
+
+同時需在 Worker 增加 `/data/` 的受保護回傳路由；不要把未公開的地籍資料放在 GitHub Pages 公開目錄。套繪上線前應以控制點檢查 CRS、平移、旋轉與高程，並保留「僅供參考」聲明。
+
 ### 後續功能
 
 - 地籍圖／正射影像／歷史圖層透明度滑桿。
@@ -168,3 +184,9 @@ const PROJECTS = {
 - 目前 `X-Frame-Options: DENY`，所以不能直接 iframe 嵌入官網。若未來確定要嵌入，應只允許自己的官網網域，不能全面開放 frame。
 
 程式上 Git 後，仍需由 Cloudflare 部署 Worker、綁定 R2 Bucket 並設定 Secrets，才能實際運行。Git 可再串接 Cloudflare Workers Builds／GitHub Actions 自動部署，但 Secrets 必須放在 Cloudflare 或 GitHub Actions Secrets，不能寫入版本庫。
+
+## 八、2026-09-09 龍騰多專案準備
+
+本機程式已改為 `src/projects.mjs` 伺服器 allowlist，新增 `longteng-20260906`（龍騰），R2 prefix 為 `projects/longteng/20260906-v1/terra_b3dms/`。南雅原 prefix、舊 `/tiles/` 路由與標的 key 保留。龍騰以 ECEF bounding sphere 自動 flyTo，可另設經驗證的 camera 校正。
+
+目前僅完成本機檢查與實際渲染；Cloudflare 未登入，尚未上傳及部署。前面「單一 MODEL_PREFIX」描述的是改版前正式服務。完整驗證證據、CLI 路徑、續跑順序與未完成項目見 [LONGTENG_RELEASE.md](./LONGTENG_RELEASE.md)。

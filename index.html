@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-KCVGE7H30R"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
@@ -19,7 +19,9 @@
     <meta name="description" content="LCT Studio 空拍作品集 - 用不同角度紀錄台灣的城市與自然之美。提供高品質空拍照片與影片服務。">
     <meta property="og:title" content="空拍作品集 | LCT Studio">
     <meta property="og:description" content="從不一樣的角度，看見世界。紀錄山川壯麗與城市脈動的空拍作品集。">
-    <meta property="og:image" content="public/assets/profile.jpg">
+    <meta property="og:image" content="https://lctstudio.tw/public/assets/profile.jpg">
+    <meta property="og:url" content="https://lctstudio.tw/">
+    <link rel="canonical" href="https://lctstudio.tw/">
     <meta property="og:type" content="website">
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -55,7 +57,7 @@
                 <a href="#contact" class="text-white hover:text-gray-300 transition-colors text-lg">聯絡我</a>
             </div>
 
-            <button id="mobile-menu-button" class="md:hidden text-white focus:outline-none z-20">
+            <button id="mobile-menu-button" type="button" aria-label="開啟選單" aria-controls="mobile-menu" aria-expanded="false" class="md:hidden text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 z-20">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                     xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7">
@@ -84,9 +86,7 @@
     </header>
 
     <section id="hero" class="cinematic-hero relative h-screen flex items-center justify-center text-center overflow-hidden">
-        <video id="hero-video" class="hero-video" autoplay muted loop playsinline>
-            <!-- Source will be set by JS -->
-            <source src="background/your-hero-video1.mp4" type="video/mp4">
+        <video id="hero-video" class="hero-video" preload="none" poster="background/your-hero-video4.jpg" muted loop playsinline>
             您的瀏覽器不支援此影片格式。
         </video>
         <div class="hero-overlay"></div>
@@ -101,10 +101,13 @@
             <p class="hero-subtitle text-base sm:text-lg md:text-xl text-gray-200 mb-10 drop-shadow-lg hero-text-shadow">
                 從城市紋理、自然地貌到工程現場，記錄每一個值得被看見的瞬間。
             </p>
+            <div class="flex flex-wrap justify-center gap-4">
             <a href="#portfolio"
                 class="cinema-cta bg-gray-800 text-white font-semibold py-3 px-8 rounded-full text-lg shadow-xl hover:bg-gray-700 transition-colors duration-300">
                 探索我的作品集
             </a>
+            <a href="#digital-archive" class="cinema-cta bg-gray-800 text-white font-semibold py-3 px-8 rounded-full text-lg shadow-xl hover:bg-gray-700 transition-colors duration-300">查看 3D 數位典藏</a>
+            </div>
         </div>
         <div class="scroll-cue" aria-hidden="true">
             <span></span>
@@ -317,8 +320,7 @@
                     Immersive 3D Gallery
                 </p>
                 <br>
-                <button type="button" id="open-3d-gallery-btn"
-                    class="immersive-open-btn inline-flex items-center gap-3 px-8 py-4 text-lg" disabled>
+                <span class="inline-flex items-center gap-3 px-8 py-4 text-lg text-gray-400">
                     <span class="immersive-open-icon" aria-hidden="true"></span>
                     3D 玻璃展廳規劃中
                 </button>
@@ -466,7 +468,7 @@
                     <img src="public/photos/大地映像/新北市貢寮區龍洞岩場 (5).jpg" alt="龍洞岩場空拍影像">
                     <span aria-hidden="true">▶</span>
                     <strong>播放不同時期／格式比較</strong>
-                </button>
+                </span>
             </div>
             <div id="archive-feature-playlist" class="archive-feature-playlist" aria-label="數位典藏功能示範影片">
                 <button type="button" class="active" data-youtube-id="6Qb7HdAqiRA" data-title="不同時期/格式比較" aria-pressed="true"><small>01 / COMPARE</small><strong>不同時期/格式比較</strong></button>
@@ -609,6 +611,7 @@
                         class="w-full bg-gray-800 border border-gray-700 text-white rounded-lg py-3 px-4 focus:outline-none focus:border-blue-500 transition-colors"></textarea>
                 </div>
 
+                <p class="text-sm text-gray-400">送出的姓名、電子郵件與訊息將透過 Formspree 傳送給 LCT Studio，供回覆此次詢問及後續聯繫使用。請勿填寫與詢問無關的敏感資料。</p>
                 <div class="text-center pt-4">
                     <button type="submit"
                         class="w-full md:w-auto bg-blue-600 text-white font-semibold py-4 px-12 rounded-full text-lg hover:bg-blue-700 transition-colors duration-300 shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
@@ -715,12 +718,11 @@
     <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/MotionPathPlugin.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
     <script defer src="public/js/data_videos.js?v=2"></script>
     <script defer src="public/js/archive_showcase.js?v=4"></script>
     <script defer src="public/js/data_photos.js"></script>
     <script defer src="public/js/map_markers.js?v=4"></script>
-    <script defer src="public/js/main.js?v=70"></script>
+    <script defer src="public/js/main.js?v=71"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const video = document.getElementById('three-d-preview-video');

@@ -21,7 +21,7 @@ wrangler secret put SESSION_SECRET
 wrangler deploy
 ```
 
-目前固定讀取 `lct-3d-models/20260810/terra_b3dms/`。加入其他專案時應改成伺服器端 allowlist，不接受任意 Bucket key。
+目前由 `src/projects.mjs` 的伺服器端 allowlist 提供南雅奇岩與龍騰；網址只接受固定專案 ID，不接受任意 Bucket key。舊 `/tiles/` 路由繼續指向南雅以維持相容性。
 
 完整上傳流程、架構、Cesium ion 差異、限制、擴充功能與 Git 部署原則請見 [MODEL_OPERATIONS.md](./MODEL_OPERATIONS.md)。
 

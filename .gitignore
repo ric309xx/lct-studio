@@ -7,8 +7,11 @@ __pycache__/
 
 # Cloudflare Wrangler / package manager local state
 /.wrangler/
+**/.wrangler/
 /.pnpm-store/
 /.codex-tmp/
+/dist/
+/3d-r2-test/
 .dev.vars
 **/.dev.vars
 

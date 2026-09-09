@@ -232,7 +232,7 @@
     if (site.cesiumJsPath) {
       cesiumJsLink.href = site.cesiumJsPath;
       cesiumJsLink.hidden = false;
-      cesiumJsLink.setAttribute("aria-label", `開啟${site.name} CesiumJS 自架極致模型，需要輸入密碼`);
+      cesiumJsLink.setAttribute("aria-label", `瀏覽${site.name} CesiumJS 高精度三維模型，需要輸入密碼`);
     } else {
       cesiumJsLink.hidden = true;
       cesiumJsLink.removeAttribute("href");
