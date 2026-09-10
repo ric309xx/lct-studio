@@ -106,12 +106,12 @@
 
     const stylesheet = document.createElement("link");
     stylesheet.rel = "stylesheet";
-      stylesheet.href = "/3d-viewer/assets/viewer.css?v=20260909a";
+      stylesheet.href = "/3d-viewer/assets/viewer.css?v=20260910a";
     document.head.appendChild(stylesheet);
 
     const script = document.createElement("script");
     script.type = "module";
-      script.src = "/3d-viewer/assets/viewer.js?v=20260909a";
+      script.src = "/3d-viewer/assets/viewer.js?v=20260910a";
     script.dataset.viewerApp = "true";
     document.body.appendChild(script);
   };
