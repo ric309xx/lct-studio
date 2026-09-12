@@ -89,7 +89,7 @@
       films: [{
         id: "longteng-model",
         title: "龍騰斷橋模型飛行模擬",
-        youtubeId: "gBcufs_Y2Sw",
+        youtubeId: "MtW9TNcChTM",
         poster: `${PHOTO_BASE}苗栗縣三義鄉龍騰斷橋 (2).jpg`
       }],
       photos: selectedPhotos("苗栗縣三義鄉龍騰斷橋", [1, 2, 3])
