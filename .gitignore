@@ -15,5 +15,12 @@ __pycache__/
 .dev.vars
 **/.dev.vars
 
+# Local / legacy 3D Viewer build artifacts (production uses assets/viewer.js + viewer.css)
+/3d-viewer/viewer.js
+/3d-viewer/viewer.css
+/3d-viewer/assets/viewer-*.js
+/3d-viewer/assets/viewer-*.css
+/3d-viewer/p/*/index-*.html
+
 # (選擇性) 如果你最後都把東西複製到 publish，其實 public 也可以忽略
 # 但為了保險起見，我們先只忽略大圖就好
