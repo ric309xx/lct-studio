@@ -2,6 +2,7 @@ import { landmarksApi, landmarkClient } from './landmarks.mjs';
 import { DEFAULT_PROJECT, PROJECTS, getProject } from './projects.mjs';
 const COOKIE_NAME = "lct_3d_session";
 const SESSION_TTL_SECONDS = 12 * 60 * 60;
+const COVER_CSS = `.project-cover{width:116px;height:58px;object-fit:cover;border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.3)}@media(max-width:720px){.project-cover{display:none}}`;
 
 
 const SECURITY_HEADERS = {
@@ -32,6 +33,8 @@ async function routeRequest(request, env) {
   if (url.pathname === '/api/landmarks') {
     if (!session) return textResponse('Unauthorized', 401);
     if (!project) return textResponse('Unknown project', 404);
+    if (!canAccessProject(session, project)) return textResponse('Forbidden', 403);
+    if (project.landmarks === false) return textResponse('Landmarks disabled', 404);
     return landmarksApi(request, env, session, project);
   }
 
@@ -56,11 +59,11 @@ async function routeRequest(request, env) {
   }
 
   if (url.pathname === "/app.css" && request.method === "GET") {
-    return assetResponse(APP_CSS + NAV_CSS, "text/css; charset=utf-8");
+    return assetResponse(APP_CSS + NAV_CSS + COVER_CSS, "text/css; charset=utf-8");
   }
 
   if (url.pathname === "/app.js" && request.method === "GET") {
-    return assetResponse(APP_JS, "text/javascript; charset=utf-8");
+    return assetResponse(APP_JS, "text/javascript; charset=utf-8", "no-store");
   }
 
   if (url.pathname.startsWith("/tiles/")) {
@@ -68,7 +71,9 @@ async function routeRequest(request, env) {
       return textResponse("Unauthorized", 401);
     }
     // Preserve all legacy /tiles/... URLs for Nanya.
-    return servePrivateTile(request, env, url.pathname.slice('/tiles/'.length), getProject());
+    const legacyProject = getProject();
+    if (!canAccessProject(session, legacyProject)) return textResponse('Forbidden', 403);
+    return servePrivateTile(request, env, url.pathname.slice('/tiles/'.length), legacyProject);
   }
 
   const projectTile = url.pathname.match(/^\/projects\/([^/]+)\/tiles\/(.*)$/);
@@ -76,7 +81,17 @@ async function routeRequest(request, env) {
     if (!session) return textResponse('Unauthorized', 401);
     const tileProject = getProject(projectTile[1]);
     if (!tileProject) return textResponse('Unknown project', 404);
+    if (!canAccessProject(session, tileProject)) return textResponse('Forbidden', 403);
     return servePrivateTile(request, env, projectTile[2], tileProject);
+  }
+
+  const projectCover = url.pathname.match(/^\/projects\/([^/]+)\/cover$/);
+  if (projectCover) {
+    if (!session) return textResponse('Unauthorized', 401);
+    const coverProject = getProject(projectCover[1]);
+    if (!coverProject?.coverKey) return textResponse('Cover not found', 404);
+    if (!canAccessProject(session, coverProject)) return textResponse('Forbidden', 403);
+    return servePrivateObject(request, env, coverProject.coverKey, 'image/jpeg');
   }
 
   if (url.pathname === "/viewer") {
@@ -84,14 +99,16 @@ async function routeRequest(request, env) {
       return new Response(null, {status: 302, headers: withSecurityHeaders({Location: '/?project=' + encodeURIComponent(project?.id ?? DEFAULT_PROJECT)})});
     }
     if (!project) return textResponse('Unknown project', 404);
+    if (!canAccessProject(session, project)) return textResponse('Forbidden', 403);
     return htmlResponse(viewerHtml(session.role, project));
   }
 
   if (url.pathname === "/" && request.method === "GET") {
     if (session) {
+      const destination = session.role === 'admin' ? (project?.id ?? DEFAULT_PROJECT) : session.projectId;
       return new Response(null, {
         status: 302,
-        headers: withSecurityHeaders({ Location: "/viewer?project=" + encodeURIComponent(project?.id ?? DEFAULT_PROJECT) })
+        headers: withSecurityHeaders({ Location: "/viewer?project=" + encodeURIComponent(destination) })
       });
     }
     return htmlResponse(loginHtml(url.searchParams.get("error") === "1", project?.id ?? DEFAULT_PROJECT), true);
@@ -131,7 +148,7 @@ async function handleLogin(request, env) {
     return invalidLoginResponse();
   }
 
-  const token = await createSessionToken(role, env.SESSION_SECRET);
+  const token = await createSessionToken(role, env.SESSION_SECRET, project.id);
   return new Response(null, {
     status: 303,
     headers: withSecurityHeaders({
@@ -177,7 +194,7 @@ async function servePrivateTile(request, env, encodedRelative, project) {
     headers.set(name, value);
   }
 
-  const range = request.headers.has("range") && "range" in object ? object.range : null;
+  const range = request.method === "GET" && request.headers.has("range") && "range" in object ? object.range : null;
   if (range) {
     headers.set("Content-Range", `bytes ${range.offset}-${range.offset + range.length - 1}/${object.size}`);
   }
@@ -188,20 +205,41 @@ async function servePrivateTile(request, env, encodedRelative, project) {
   });
 }
 
+async function servePrivateObject(request, env, key, fallbackContentType) {
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return textResponse("Method not allowed", 405, { Allow: "GET, HEAD" });
+  }
+  const object = request.method === "HEAD" ? await env.MODELS.head(key) : await env.MODELS.get(key);
+  if (!object) return textResponse("Object not found", 404);
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  if (!headers.has("content-type")) headers.set("Content-Type", fallbackContentType);
+  headers.set("etag", object.httpEtag);
+  headers.set("Cache-Control", "private, max-age=3600");
+  headers.set("Vary", "Cookie");
+  for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
+  return new Response(request.method === "HEAD" ? null : object.body, { headers });
+}
+
 function hasRequiredSecrets(env) {
   return Boolean(env.PROJECT_PASSWORD_HASH && env.ADMIN_PASSWORD_HASH && env.SESSION_SECRET);
 }
 
-async function createSessionToken(role, secret) {
+async function createSessionToken(role, secret, projectId) {
   const now = Math.floor(Date.now() / 1000);
   const payload = base64UrlEncode(JSON.stringify({
     role,
     iat: now,
     exp: now + SESSION_TTL_SECONDS,
+    projectId: role === "viewer" ? projectId : null,
     nonce: crypto.randomUUID()
   }));
   const signature = await hmacHex(payload, secret);
   return `${payload}.${signature}`;
+}
+
+function canAccessProject(session, project) {
+  return session.role === "admin" || session.projectId === project.id;
 }
 
 async function readSession(request, env) {
@@ -308,9 +346,9 @@ function htmlResponse(html, isLogin = false) {
   return new Response(html, { headers });
 }
 
-function assetResponse(content, contentType) {
+function assetResponse(content, contentType, cacheControl = "public, max-age=300") {
   return new Response(content, {
-    headers: withSecurityHeaders({ "Content-Type": contentType, "Cache-Control": "public, max-age=300" })
+    headers: withSecurityHeaders({ "Content-Type": contentType, "Cache-Control": cacheControl })
   });
 }
 
@@ -336,15 +374,20 @@ function loginHtml(showError, projectId = DEFAULT_PROJECT) {
 function viewerHtml(role, project) {
   const roleLabel = role === "admin" ? "管理員模式" : "專案觀看";
   const options = Object.values(PROJECTS).map(p => '<option value="' + p.id + '"' + (p.id === project.id ? ' selected' : '') + '>' + p.name + '</option>').join('');
-return `<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><meta name="theme-color" content="#06111d"><title>${project.name}｜LCT Studio</title><link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.143/Build/Cesium/Widgets/widgets.css"><link rel="stylesheet" href="/app.css"><script defer src="https://cesium.com/downloads/cesiumjs/releases/1.143/Build/Cesium/Cesium.js"></script><script defer src="/app.js?v=longteng-20260906-v11"></script></head><body data-role="${role}" data-project="${project.id}"><main class="viewer-shell"><div id="cesium-container" aria-label="${project.name}"></div><header class="topbar"><div><p class="eyebrow">PRIVATE 3D ARCHIVE</p><h1>${project.name}</h1></div><div class="top-actions"><label class="project-picker">專案 <select id="project-select" aria-label="選擇專案">${options}</select></label><span class="role-badge">${roleLabel}</span><form action="/logout" method="post"><button class="logout" type="submit">登出</button></form></div></header><section class="tool-panel" aria-label="模型工具"><p class="panel-label">MODEL TOOLS</p><div class="tool-grid"><button id="distance-button" type="button">距離量測</button><button id="area-button" type="button">面積量測</button><button id="clear-button" type="button">清除量測</button><button id="sun-button" type="button" aria-pressed="false">日照模擬</button></div><label class="sun-time" for="sun-time" hidden><span>時間 <strong id="sun-time-label">09:00</strong></span><input id="sun-time" type="range" min="5" max="19" step="0.25" value="9"></label><button id="cadastral-button" class="cadastral-button" type="button" disabled>地籍圖套繪</button><p id="tool-hint" class="tool-hint">選擇工具後直接點選模型。</p><p class="cadastral-note">地籍資料尚未匯入，稍後可由 GeoJSON 掛載。</p></section><div id="load-status" class="status" role="status">正在以極致品質連接私人模型…</div><button id="home-button" class="home-button" type="button" disabled>回到模型</button></main></body></html>`;
+  const projectPicker = role === "admin" ? `<label class="project-picker">專案 <select id="project-select" aria-label="選擇專案">${options}</select></label>` : '';
+  const cover = project.coverKey ? `<img class="project-cover" src="/projects/${project.id}/cover" alt="${project.name}航拍封面">` : '';
+  const optionalTools = project.measurementOnly ? '' : '<button id="sun-button" type="button" aria-pressed="false">日照模擬</button>';
+  const optionalLayers = project.measurementOnly ? '' : '<label class="sun-time" for="sun-time" hidden><span>時間 <strong id="sun-time-label">09:00</strong></span><input id="sun-time" type="range" min="5" max="19" step="0.25" value="9"></label><button id="cadastral-button" class="cadastral-button" type="button" disabled>地籍圖套繪</button><p class="cadastral-note">地籍資料尚未匯入，稍後可由 GeoJSON 掛載。</p>';
+return `<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><meta name="theme-color" content="#06111d"><title>${project.name}｜LCT Studio</title><link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.143/Build/Cesium/Widgets/widgets.css"><link rel="stylesheet" href="/app.css"><script defer src="https://cesium.com/downloads/cesiumjs/releases/1.143/Build/Cesium/Cesium.js"></script><script defer src="/app.js?v=heping-seawall-20260922-v6"></script></head><body data-role="${role}" data-project="${project.id}"><main class="viewer-shell"><div id="cesium-container" aria-label="${project.name}"></div><header class="topbar">${cover}<div><p class="eyebrow">PRIVATE 3D ARCHIVE</p><h1>${project.name}</h1></div><div class="top-actions">${projectPicker}<span class="role-badge">${roleLabel}</span><form action="/logout" method="post"><button class="logout" type="submit">登出</button></form></div></header><section class="tool-panel" aria-label="量測工具"><p class="panel-label">MEASUREMENT TOOLS</p><div class="tool-grid"><button id="distance-button" type="button">距離量測</button><button id="area-button" type="button">面積量測</button><button id="clear-button" type="button">清除量測</button>${optionalTools}</div>${optionalLayers}<p id="tool-hint" class="tool-hint">選擇工具後直接點選模型。</p></section><div id="load-status" class="status" role="status">正在以極致品質連接私人模型…</div><button id="home-button" class="home-button" type="button" disabled>回到模型</button></main></body></html>`;
 }
 
 const APP_JS = `(() => {
   // Wrangler may add __name() calls while bundling the embedded function.
   const __name = (value) => value;
-  const projects = ${JSON.stringify(Object.fromEntries(Object.values(PROJECTS).map(({id,name,date,camera}) => [id,{id,name,date,camera}])))};
+  const projects = ${JSON.stringify(Object.fromEntries(Object.values(PROJECTS).map(({id,name,date,camera,landmarks = true,measurementOnly = false}) => [id,{id,name,date,camera,landmarks,measurementOnly}])))};
   const project = projects[document.body.dataset.project];
-  document.querySelector('#project-select').addEventListener('change', event => { location.href = '/viewer?project=' + encodeURIComponent(event.target.value); });
+  const projectSelect = document.querySelector('#project-select');
+  if (projectSelect) projectSelect.addEventListener('change', event => { location.href = '/viewer?project=' + encodeURIComponent(event.target.value); });
   const status = document.querySelector("#load-status");
   const homeButton = document.querySelector("#home-button");
   const distanceButton = document.querySelector("#distance-button");
@@ -358,8 +401,10 @@ const APP_JS = `(() => {
   const sunTimeRow = document.querySelector(".sun-time");
   const toolHint = document.querySelector("#tool-hint");
   const isMobile = window.matchMedia("(max-width: 920px)").matches;
-  sunTime.min = "6";
-  sunTime.max = "18";
+  if (sunTime) {
+    sunTime.min = "6";
+    sunTime.max = "18";
+  }
   const extremeSse = isMobile ? 2 : 1;
   const NANYA_VIEW = project.camera;
   const CADASTRAL_GEOJSON_URL = null;
@@ -371,13 +416,15 @@ const APP_JS = `(() => {
   let currentPointEntities = [];
   let cadastralDataSource;
 
-  const siteBack = document.createElement("a");
-  siteBack.className = "site-back";
-  siteBack.href = ["localhost", "127.0.0.1"].includes(location.hostname)
-    ? "http://127.0.0.1:5500/archive/"
-    : "https://lctstudio.tw/archive/";
-  siteBack.textContent = "← 返回數位典藏";
-  topActions.prepend(siteBack);
+  if (document.body.dataset.role === "admin") {
+    const siteBack = document.createElement("a");
+    siteBack.className = "site-back";
+    siteBack.href = ["localhost", "127.0.0.1"].includes(location.hostname)
+      ? "http://127.0.0.1:5500/archive/"
+      : "https://lctstudio.tw/archive/";
+    siteBack.textContent = "← 返回數位典藏";
+    topActions.prepend(siteBack);
+  }
 
   const measureActions = document.createElement("div");
   measureActions.className = "measure-actions";
@@ -395,10 +442,31 @@ const APP_JS = `(() => {
 
   function setNanyaView() {
     if (!viewer) return;
+    if (project.camera?.position && project.camera?.direction && project.camera?.up) {
+      viewer.camera.cancelFlight();
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromArray(project.camera.position),
+        orientation: {
+          direction: Cesium.Cartesian3.fromArray(project.camera.direction),
+          up: Cesium.Cartesian3.fromArray(project.camera.up)
+        }
+      });
+      viewer.scene.requestRender();
+      return;
+    }
     if (!project.camera || project.camera.rangeFactor) {
       if (activeTileset) {
         const relativeView = project.camera ?? { heading: 0, pitch: -34.379, rangeFactor: 2.5 };
-        void viewer.flyTo(activeTileset, { duration: 0.8, offset: new Cesium.HeadingPitchRange(Cesium.Math.toRadians(relativeView.heading), Cesium.Math.toRadians(relativeView.pitch), Math.max(activeTileset.boundingSphere.radius * relativeView.rangeFactor, 50)) });
+        if (relativeView.target) {
+          viewer.camera.lookAt(
+            Cesium.Cartesian3.fromArray(relativeView.target),
+            new Cesium.HeadingPitchRange(Cesium.Math.toRadians(relativeView.heading), Cesium.Math.toRadians(relativeView.pitch), relativeView.range)
+          );
+          viewer.camera.lookAtTransform(Cesium.Matrix4.IDENTITY);
+          viewer.scene.requestRender();
+          return;
+        }
+        void viewer.flyTo(activeTileset, { duration: 0.8, offset: new Cesium.HeadingPitchRange(Cesium.Math.toRadians(relativeView.heading), Cesium.Math.toRadians(relativeView.pitch), Math.max(activeTileset.boundingSphere.radius * relativeView.rangeFactor, relativeView.minRange ?? 50)) });
       }
       return;
     }
@@ -560,21 +628,21 @@ const APP_JS = `(() => {
       viewer.scene.requestRender();
     }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
     homeButton.disabled = false;
-    cadastralButton.disabled = !CADASTRAL_GEOJSON_URL;
+    if (cadastralButton) cadastralButton.disabled = !CADASTRAL_GEOJSON_URL;
   }
 
   homeButton.addEventListener("click", setNanyaView);
   distanceButton.addEventListener("click", () => setMeasureMode("distance"));
   areaButton.addEventListener("click", () => setMeasureMode("area"));
   clearButton.addEventListener("click", clearMeasurements);
-  sunButton.addEventListener("click", toggleSun);
-  sunTime.addEventListener("input", updateSun);
+  if (sunButton) sunButton.addEventListener("click", toggleSun);
+  if (sunTime) sunTime.addEventListener("input", updateSun);
   undoMeasureButton.addEventListener("click", undoMeasurePoint);
   finishAreaButton.addEventListener("click", finishArea);
   cancelMeasureButton.addEventListener("click", () => { setMeasureMode(null); });
-  cadastralButton.addEventListener("click", () => { void toggleCadastral(); });
+  if (cadastralButton) cadastralButton.addEventListener("click", () => { void toggleCadastral(); });
   window.addEventListener("unhandledrejection", (event) => { console.error(event.reason); setStatus("模型載入失敗，請重新整理或重新登入。", false); });
-  start().then(() => { (${landmarkClient.toString()})(viewer, Cesium, document.body.dataset.role, () => setMeasureMode(null), project); }).catch((error) => { console.error(error); setStatus(error && error.message ? error.message : "模型載入失敗", false); });
+  start().then(() => { if (project.landmarks) (${landmarkClient.toString()})(viewer, Cesium, document.body.dataset.role, () => setMeasureMode(null), project); }).catch((error) => { console.error(error); setStatus(error && error.message ? error.message : "模型載入失敗", false); });
 })();`;
 
 const APP_CSS = `:root{color-scheme:dark;--bg:#06111d;--panel:rgba(5,18,29,.86);--line:rgba(95,207,230,.35);--text:#f3f8fb;--muted:#9fb3c1;--cyan:#61d4ea;--gold:#d8b269}*{box-sizing:border-box}html,body,.viewer-shell,#cesium-container{width:100%;height:100%;margin:0;overflow:hidden}body{background:var(--bg);color:var(--text);font-family:"Noto Sans TC","Microsoft JhengHei",sans-serif}.topbar{position:fixed;z-index:5;top:18px;left:18px;right:18px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;border:1px solid var(--line);border-radius:8px;background:var(--panel);backdrop-filter:blur(16px);box-shadow:0 16px 50px rgba(0,0,0,.24)}.eyebrow{margin:0 0 4px;color:var(--gold);font-size:11px;font-weight:800;letter-spacing:.27em}.topbar h1{margin:0;font-size:clamp(18px,2.4vw,28px)}.top-actions{display:flex;align-items:center;gap:10px}.role-badge,.logout{border:1px solid var(--line);border-radius:999px;padding:8px 12px;background:rgba(3,13,22,.65);color:var(--text);font:700 13px inherit}.logout{cursor:pointer}.tool-panel{position:fixed;z-index:5;left:18px;bottom:18px;width:min(360px,calc(100vw - 36px));padding:15px;border:1px solid var(--line);border-radius:8px;background:var(--panel);backdrop-filter:blur(16px);box-shadow:0 16px 50px rgba(0,0,0,.24)}.panel-label{display:block;margin:0 0 10px;color:var(--gold);font-size:11px;font-weight:800;letter-spacing:.2em}.tool-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.tool-panel button,.home-button{min-height:40px;border:1px solid var(--line);border-radius:5px;background:rgba(4,17,28,.78);color:var(--text);font-weight:800;cursor:pointer}.tool-panel button.active,.tool-panel button[aria-pressed="true"]{border-color:var(--cyan);background:rgba(97,212,234,.18);box-shadow:0 0 24px rgba(97,212,234,.12)}.tool-panel button:disabled{cursor:not-allowed;opacity:.48}.cadastral-button{width:100%;margin-top:9px}.sun-time{display:grid;gap:7px;margin-top:11px;color:var(--muted);font-size:12px}.sun-time span{display:flex;justify-content:space-between}.sun-time input{width:100%;accent-color:var(--cyan)}.tool-hint,.cadastral-note{margin:9px 0 0;color:var(--muted);font-size:12px;line-height:1.5}.cadastral-note{color:#758d9a}.status{position:fixed;z-index:5;right:18px;bottom:18px;max-width:min(460px,calc(100vw - 36px));padding:11px 14px;border:1px solid var(--line);border-radius:999px;background:rgba(4,15,25,.85);color:var(--muted);font-size:13px}.status.ready{color:#9be7bc;border-color:rgba(83,211,143,.42)}.home-button{position:fixed;z-index:5;right:18px;bottom:72px;padding:0 16px}.home-button:disabled{opacity:.45;cursor:wait}.cesium-viewer-bottom{display:none}@media(max-width:720px){.topbar{align-items:flex-start;left:10px;right:10px;top:10px;padding:12px}.role-badge{display:none}.tool-panel{left:10px;bottom:62px;width:min(310px,calc(100vw - 20px));padding:11px}.status{left:10px;right:auto;bottom:10px;max-width:calc(100vw - 130px)}.home-button{right:10px;bottom:10px}.cadastral-note{display:none}}`;

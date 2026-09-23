@@ -14,6 +14,19 @@ export const PROJECTS = Object.freeze({
     // Relative to the transformed tileset bounding sphere, so the framing stays
     // stable if the source tileset is republished at the same site.
     camera: { heading: 90, pitch: -34.379, rangeFactor: 1.05 }
+  }),
+  'heping-seawall-20260922': Object.freeze({
+    id: 'heping-seawall-20260922', name: '和平海堤模型', date: '2026-09-22',
+    prefix: 'projects/heping-seawall/20260922-v1/terra_b3dms/',
+    coverKey: 'projects/heping-seawall/20260922-v1/media/cover.jpg',
+    landmarksKey: 'settings/heping-seawall-20260922/landmarks-v1.json',
+    landmarks: false,
+    measurementOnly: true,
+    camera: {
+      position: [-3062344.449672097, 4944636.656337088, 2609222.143359909],
+      direction: [0.3084858529252217, -0.6912913202779974, 0.6534162448648654],
+      up: [-0.386751771063612, 0.5364279311847955, 0.7501120864403932]
+    }
   })
 });
 
