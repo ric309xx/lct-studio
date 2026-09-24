@@ -132,7 +132,7 @@ async function handleLogin(request, env) {
   const project = getProject(String(form.get("project") || DEFAULT_PROJECT));
   if (!project) return textResponse("Unknown project", 404);
   if (password.length < 1 || password.length > 64) {
-    return invalidLoginResponse();
+    return invalidLoginResponse(project.id);
   }
 
   const suppliedHash = await sha256Hex(password);
@@ -145,7 +145,7 @@ async function handleLogin(request, env) {
 
   if (!role) {
     await delay(350);
-    return invalidLoginResponse();
+    return invalidLoginResponse(project.id);
   }
 
   const token = await createSessionToken(role, env.SESSION_SECRET, project.id);
@@ -321,8 +321,8 @@ function clearSessionCookie() {
   return `${COOKIE_NAME}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict`;
 }
 
-function invalidLoginResponse() {
-  return new Response(null, { status: 303, headers: withSecurityHeaders({ Location: "/?error=1" }) });
+function invalidLoginResponse(projectId = DEFAULT_PROJECT) {
+  return new Response(null, { status: 303, headers: withSecurityHeaders({ Location: "/?project=" + encodeURIComponent(projectId) + "&error=1" }) });
 }
 
 function redirectToLogin() {
@@ -368,13 +368,14 @@ function delay(milliseconds) {
 }
 
 function loginHtml(showError, projectId = DEFAULT_PROJECT) {
-  return `<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>私人三維模型｜LCT Studio</title><style>${LOGIN_CSS}</style></head><body><main class="gate"><section class="card" aria-labelledby="gate-title"><p class="eyebrow">PRIVATE 3D ARCHIVE</p><h1 id="gate-title">三維模型私人瀏覽</h1><p class="lead">模型存放於私人 R2，通過驗證後才會載入 CesiumJS 與 3D Tiles。</p><form action="/login" method="post"><input type="hidden" name="project" value="${projectId}"><label for="password">存取密碼</label><input id="password" name="password" type="password" inputmode="numeric" autocomplete="current-password" maxlength="64" required autofocus>${showError ? '<p class="error" role="alert">密碼不正確，請重新輸入。</p>' : ''}<button type="submit">進入模型</button></form><p class="note">授權工作階段將於 12 小時後自動失效。</p></section></main></body></html>`;
+  const project = getProject(projectId) ?? getProject();
+  return `<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>${project.name}入口｜LCT Studio</title><style>${LOGIN_CSS}</style></head><body><main class="gate"><section class="card" aria-labelledby="gate-title"><p class="eyebrow">PRIVATE 3D ARCHIVE</p><h1 id="gate-title">${project.name}</h1><p class="lead">這是「${project.name}」的專屬觀看入口，請輸入觀看密碼後進入模型。</p><form action="/login" method="post"><input type="hidden" name="project" value="${project.id}"><label for="password">觀看密碼</label><input id="password" name="password" type="password" inputmode="numeric" autocomplete="current-password" maxlength="64" required autofocus>${showError ? '<p class="error" role="alert">密碼不正確，請重新輸入。</p>' : ''}<button type="submit">進入專案</button></form><p class="note">授權工作階段將於 12 小時後自動失效。</p></section></main></body></html>`;
 }
 
 function viewerHtml(role, project) {
   const roleLabel = role === "admin" ? "管理員模式" : "專案觀看";
   const options = Object.values(PROJECTS).map(p => '<option value="' + p.id + '"' + (p.id === project.id ? ' selected' : '') + '>' + p.name + '</option>').join('');
-  const projectPicker = role === "admin" ? `<label class="project-picker">專案 <select id="project-select" aria-label="選擇專案">${options}</select></label>` : '';
+  const projectPicker = role === "admin" ? `<label class="project-picker">專案 <select id="project-select" aria-label="選擇專案">${options}</select></label><button id="share-project" class="logout" type="button">分享專案</button>` : '';
   const cover = project.coverKey ? `<img class="project-cover" src="/projects/${project.id}/cover" alt="${project.name}航拍封面">` : '';
   const optionalTools = project.measurementOnly ? '' : '<button id="sun-button" type="button" aria-pressed="false">日照模擬</button>';
   const optionalLayers = project.measurementOnly ? '' : '<label class="sun-time" for="sun-time" hidden><span>時間 <strong id="sun-time-label">09:00</strong></span><input id="sun-time" type="range" min="5" max="19" step="0.25" value="9"></label><button id="cadastral-button" class="cadastral-button" type="button" disabled>地籍圖套繪</button><p class="cadastral-note">地籍資料尚未匯入，稍後可由 GeoJSON 掛載。</p>';
@@ -388,6 +389,23 @@ const APP_JS = `(() => {
   const project = projects[document.body.dataset.project];
   const projectSelect = document.querySelector('#project-select');
   if (projectSelect) projectSelect.addEventListener('change', event => { location.href = '/viewer?project=' + encodeURIComponent(event.target.value); });
+  const shareProjectButton = document.querySelector('#share-project');
+  async function shareProject() {
+    const shareUrl = new URL('/', location.origin);
+    shareUrl.searchParams.set('project', project.id);
+    if (navigator.share) {
+      await navigator.share({ title: project.name, text: project.name + ' 專案觀看入口', url: shareUrl.href });
+      return;
+    }
+    await navigator.clipboard.writeText(shareUrl.href);
+    shareProjectButton.textContent = '連結已複製';
+    setTimeout(() => { shareProjectButton.textContent = '分享專案'; }, 1800);
+  }
+  if (shareProjectButton) shareProjectButton.addEventListener('click', () => {
+    void shareProject().catch(error => {
+      if (error?.name !== 'AbortError') shareProjectButton.textContent = '分享失敗';
+    });
+  });
   const status = document.querySelector("#load-status");
   const homeButton = document.querySelector("#home-button");
   const distanceButton = document.querySelector("#distance-button");

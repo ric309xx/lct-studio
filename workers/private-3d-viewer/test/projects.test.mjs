@@ -26,7 +26,11 @@ test('private routes reject unauthenticated requests before storage access',asyn
 test('deep link survives login redirect and form',async()=>{
   const r=await call('/viewer?project=longteng-20260906');
   assert.equal(r.headers.get('location'),'/?project=longteng-20260906');
-  assert.match(await (await call('/?project=longteng-20260906')).text(),/name="project" value="longteng-20260906"/);
+  const html=await (await call('/?project=longteng-20260906')).text();
+  assert.match(html,/name="project" value="longteng-20260906"/);
+  assert.match(html,/龍騰斷橋模型/);
+  const failed=await call('/login',{method:'POST',body:new URLSearchParams({password:'wrong',project:'longteng-20260906'})});
+  assert.equal(failed.headers.get('location'),'/?project=longteng-20260906&error=1');
 });
 test('both projects and legacy Nanya URLs resolve only fixed prefixes',async()=>{
   const cookie=await login('test-admin');
@@ -62,6 +66,7 @@ test('both roles get project selection and generated client JavaScript parses',a
       assert.ok(html.includes('<h1>'+p.name+'</h1>'));assert.match(html,/releases\/1\.143\//);
       assert.equal(html.includes('value="'+p.id+'" selected'),password==='test-admin');
       assert.equal(html.includes('id="project-select"'),password==='test-admin');
+      assert.equal(html.includes('id="share-project"'),password==='test-admin');
       if(p.measurementOnly){assert.ok(!html.includes('id="sun-button"'));assert.ok(!html.includes('id="cadastral-button"'));assert.ok(html.includes('/projects/'+p.id+'/cover'));}
       if(p.id === 'heping-seawall-20260922'){
         assert.deepEqual(p.camera.position, [-3062344.449672097, 4944636.656337088, 2609222.143359909]);
@@ -72,6 +77,7 @@ test('both roles get project selection and generated client JavaScript parses',a
   }
   const js=await (await call('/app.js')).text();new vm.Script(js);
   assert.match(js,/dataset\.role === "admin"/);
+  assert.match(js,/navigator\.share/);
   assert.ok(!js.includes(PROJECTS['longteng-20260906'].prefix));
 });
 test('viewer session is restricted to its login project',async()=>{
