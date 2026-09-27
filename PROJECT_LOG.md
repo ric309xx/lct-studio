@@ -3,6 +3,22 @@
 此文件用於記錄專案的每一次執行、變更與迭代。
 請 Agent 在每次任務結束時，將重要變更記錄於此。
 
+## [2026-09-27] 龍洞 9/26 TWD97 與延伸區模型比較
+- 合併專案左右語意修正為「左：09/26 延伸區、右：09/26 TWD97主區」。為補足延伸區有拍到但互補裁切挖掉的缺角，延伸區改為完整保留的底層，TWD97 主區僅保留右側自動裁切範圍並維持窄幅重疊；未被 TWD97 覆蓋的位置會自然顯示延伸區資料。
+- 自動分區接縫由精確貼齊改為窄幅重疊：依兩模型中心距離取 2–8 公尺重疊帶，兩側裁切面各跨過中心線一半，利用前方表面遮住因兩次重建高程／邊界差異露出的背景縫；頁面狀態會顯示實際重疊寬度。
+- 為降低自動接縫在遠距 LOD 的明顯程度，兩個 9/26 tileset 統一使用 SSE `0.5`、progressive resolution `0`、dynamic／foveated SSE 關閉，cache `1 GB`／overflow `512 MB`；仍由 Cesium 依距離使用 LOD，並非固定載入所有葉節點。
+- 「20260926 雙區合併檢視」新增自動世界座標分區：讀取兩個 tileset 的 bounding sphere，在局部橢球切平面上建立兩中心的垂直平分線，使用互補 clipping polygons 讓各模型只保留靠近自身中心的一側；建立失敗時安全退回完整重疊顯示。
+- 依需求將最高精度強制模式改為「保留 LOD、遠距較精細」：兩個 9/26 B3DMS 使用 SSE `2`、progressive resolution `0.15`、關閉 dynamic／foveated SSE，恢復移動請求裁切，cache `512 MB`／overflow `256 MB`；合併檢視仍以 `displayMode: "combined"` 同時完整顯示兩個模型，不呈現左右拉桿。
+- 依檢視需求將 9/26 兩個 B3DMS 切換為「最高精度優先」：SSE `0.5`、關閉 dynamic／foveated SSE、progressive resolution 與移動請求裁切，啟用 sibling／隱藏模型預載，cache 與 overflow 各放寬至 `2 GB`；此模式明確以畫質優先，可能大幅增加流量、記憶體與等待時間。
+- 修正本機重新建置漏帶 `VITE_BASE_PATH=/3d-viewer/`，導致 Cesium Workers／WASM 指向錯誤根目錄並出現 `Rendering has stopped`；以正確 base path 重建後，Viewer、Worker 與 terrain asset 本機 HTTP 均回應 `200`。
+- 將 9/26 兩個 B3DMS Asset `5943670`、`5943671` 納入安全的高精度遠距載入：比較模式的 SSE 由一般模型 `20` 降為 `4`，關閉 dynamic SSE，但保留移動請求裁切與原比較模式 `256 MB` cache／`128 MB` overflow，避免兩個模型同時細化造成 WebGL context 遺失。
+- Cesium ion Asset `5943670` 新增為「龍洞｜TWD97成果（20260926）」；Asset `5943671` 新增為「龍洞｜延伸區成果（20260926）」。
+- 原「龍洞｜三模型比較」更名為「龍洞｜歷次成果比較」，保留原入口並將兩個 9/26 成果加入左右模型選單。
+- 新增「龍洞｜20260926 雙區合併檢視」，兩個 tileset 都使用 `SplitDirection.NONE`，在同一畫面完整顯示，用於檢查接縫、重疊與定位差異。
+- 產生器新增 `displayMode: "combined"` 驗證及型別；分割比較仍維持既有左右滑桿行為。
+- 乾淨建置環境中 Vitest 6個測試檔、22項測試全部通過，TypeScript與Vite正式建置通過；ESLint仍有6個既有錯誤與2個既有Hook警告，集中在未使用參數及 `BuildingSectionTool.tsx`，非本次功能造成。
+- 已同步正式 Viewer bundle、既有龍洞比較入口與三個新入口；尚待正式網域確認 ion Token 對 Asset `5943670`、`5943671` 的讀取授權與實際模型定位。
+
 ## [2026-08-20] Viewer 比較模式效能與視角保留
 - 三模型與 OBJ／B3DMS 比較改為在既有 Cesium Viewer 中只替換被選取側的 tileset；底圖、地形、相機與另一側模型不重建，切換後維持原視角。
 - 左右交換改為直接交換既有 tileset 與 split direction，不重新載入地圖或模型。

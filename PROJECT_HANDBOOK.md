@@ -346,7 +346,7 @@ node --check public/js/main.js
 7. 目前角色密碼由前端檢查，僅能防止誤操作；若用於客戶機密資料，必須改成伺服器端登入、Session 與授權檢查。
 8. 公開文件不要記錄實際密碼；密碼調整後也應重新建置並清除瀏覽器 Session 測試。
 
-目前 Viewer 收錄 5 個單一專案：林口工廠、三峽太陽能板、三峽太陽能板2、三峽太陽能板 B3DMS，以及瑞芳邊坡測試 OBJ，另有 1 個 OBJ／B3DMS 對比項目。瑞芳專案使用 Cesium ion Asset `5107551` 與隱藏入口 `/3d-viewer/p/L5cT7iQ1nA9x/`；觀看密碼只保存在產生器資料與入口雜湊中，不在公開文件記錄明文。
+Viewer 專案清單以 `project-data/projects.json` 為準；其中包含單一模型、左右比較與雙模型合併檢視。瑞芳專案使用 Cesium ion Asset `5107551` 與隱藏入口 `/3d-viewer/p/L5cT7iQ1nA9x/`；觀看密碼只保存在產生器資料與入口雜湊中，不在公開文件記錄明文。
 
 目前 Viewer 固定使用 Cesium World Terrain，前台不提供平面地球切換。若真實地形無法載入，應先檢查 token 是否具有地形讀取權限及 Allowed URLs，而不是讓使用者改用平面模式。
 
@@ -386,6 +386,7 @@ node --check public/js/main.js
 3. 左右交換應直接互換兩側 tileset reference 與 `splitDirection`，不可重新建立 Viewer。
 4. 比較模式目前使用 SSE `20`、dynamic SSE、漸進解析度 `0.45`、移動時請求裁切、`256 MB` cache／`128 MB` overflow，並停用 tileset 陰影。這些設定優先確保雙模型操作流暢度；單模型專案不套用此降載設定。
 5. 若未來調整比較畫質，需同時用桌機與行動裝置驗證拖曳、縮放、模型切換、左右交換及量測，並確認切換前後 Cesium canvas 與相機位置沒有重設。
+6. `displayMode: "combined"` 會同時完整顯示左右兩個 tileset，不套用畫面分割或滑桿；適合檢查相鄰航測區的接縫與定位。一般時期比較省略此欄位，維持左右分割模式。
 
 ## 12. 數位地景典藏維護
 
