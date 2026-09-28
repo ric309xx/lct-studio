@@ -15,6 +15,15 @@ export const PROJECTS = Object.freeze({
     // stable if the source tileset is republished at the same site.
     camera: { heading: 90, pitch: -34.379, rangeFactor: 1.05 }
   }),
+  'longdong-pointcloud-20260805': Object.freeze({
+    id: 'longdong-pointcloud-20260805', name: '龍洞點雲｜2026-08-05', date: '2026-08-05',
+    prefix: 'projects/longdong/20260805-pointcloud-v1/',
+    landmarksKey: 'settings/longdong-pointcloud-20260805/landmarks-v1.json',
+    landmarks: false,
+    measurementOnly: true,
+    pointCloud: true,
+    camera: { heading: 0, pitch: -34.379, rangeFactor: 1.45, minRange: 120 }
+  }),
   'heping-seawall-20260922': Object.freeze({
     id: 'heping-seawall-20260922', name: '和平海堤模型', date: '2026-09-22',
     prefix: 'projects/heping-seawall/20260922-v1/terra_b3dms/',

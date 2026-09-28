@@ -32,9 +32,9 @@ test('deep link survives login redirect and form',async()=>{
   const failed=await call('/login',{method:'POST',body:new URLSearchParams({password:'wrong',project:'longteng-20260906'})});
   assert.equal(failed.headers.get('location'),'/?project=longteng-20260906&error=1');
 });
-test('both projects and legacy Nanya URLs resolve only fixed prefixes',async()=>{
+test('all projects and legacy Nanya URLs resolve only fixed prefixes',async()=>{
   const cookie=await login('test-admin');
-  for(const [url,key] of [['/tiles/tileset.json',PROJECTS.nanya.prefix+'tileset.json'],['/projects/nanya/tiles/Block/a.b3dm',PROJECTS.nanya.prefix+'Block/a.b3dm'],['/projects/longteng-20260906/tiles/Block/a.b3dm',PROJECTS['longteng-20260906'].prefix+'Block/a.b3dm'],['/projects/heping-seawall-20260922/tiles/Block/a.b3dm',PROJECTS['heping-seawall-20260922'].prefix+'Block/a.b3dm']]){
+  for(const [url,key] of [['/tiles/tileset.json',PROJECTS.nanya.prefix+'tileset.json'],['/projects/nanya/tiles/Block/a.b3dm',PROJECTS.nanya.prefix+'Block/a.b3dm'],['/projects/longteng-20260906/tiles/Block/a.b3dm',PROJECTS['longteng-20260906'].prefix+'Block/a.b3dm'],['/projects/longdong-pointcloud-20260805/tiles/points/r.pnts',PROJECTS['longdong-pointcloud-20260805'].prefix+'points/r.pnts'],['/projects/heping-seawall-20260922/tiles/Block/a.b3dm',PROJECTS['heping-seawall-20260922'].prefix+'Block/a.b3dm']]){
     const r=await call(url,{headers:{cookie}});assert.equal(r.status,200);assert.equal(keys.at(-1),key);
   }
 });
@@ -67,7 +67,8 @@ test('both roles get project selection and generated client JavaScript parses',a
       assert.equal(html.includes('value="'+p.id+'" selected'),password==='test-admin');
       assert.equal(html.includes('id="project-select"'),password==='test-admin');
       assert.equal(html.includes('id="share-project"'),password==='test-admin');
-      if(p.measurementOnly){assert.ok(!html.includes('id="sun-button"'));assert.ok(!html.includes('id="cadastral-button"'));assert.ok(html.includes('/projects/'+p.id+'/cover'));}
+      if(p.measurementOnly){assert.ok(!html.includes('id="sun-button"'));assert.ok(!html.includes('id="cadastral-button"'));}
+      if(p.coverKey) assert.ok(html.includes('/projects/'+p.id+'/cover'));
       if(p.id === 'heping-seawall-20260922'){
         assert.deepEqual(p.camera.position, [-3062344.449672097, 4944636.656337088, 2609222.143359909]);
         assert.equal(p.camera.direction.length, 3);
@@ -78,6 +79,10 @@ test('both roles get project selection and generated client JavaScript parses',a
   const js=await (await call('/app.js')).text();new vm.Script(js);
   assert.match(js,/dataset\.role === "admin"/);
   assert.match(js,/navigator\.share/);
+  assert.match(js,/PointCloudShading/);
+  assert.match(js,/pointCloudIntroPlayed/);
+  const css=await (await call('/app.css')).text();
+  assert.match(css,/point-cloud-bloom/);
   assert.ok(!js.includes(PROJECTS['longteng-20260906'].prefix));
 });
 test('viewer session is restricted to its login project',async()=>{
