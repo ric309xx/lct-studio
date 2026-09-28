@@ -59,7 +59,7 @@ async function routeRequest(request, env) {
   }
 
   if (url.pathname === "/app.css" && request.method === "GET") {
-    return assetResponse(APP_CSS + NAV_CSS + COVER_CSS, "text/css; charset=utf-8");
+    return assetResponse(APP_CSS + POINT_CLOUD_REVEAL_CSS + NAV_CSS + COVER_CSS, "text/css; charset=utf-8");
   }
 
   if (url.pathname === "/app.js" && request.method === "GET") {
@@ -621,8 +621,28 @@ const APP_JS = `(() => {
     viewer.scene.requestRender();
   }
 
+  let pointCloudRevealDone = false;
+  let pointCloudRevealTimer;
+  function revealPointCloud() {
+    if (!project.pointCloud || pointCloudRevealDone) return;
+    pointCloudRevealDone = true;
+    window.clearTimeout(pointCloudRevealTimer);
+    const container = document.getElementById("cesium-container");
+    container.classList.remove("point-cloud-preloading");
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      container.classList.add("point-cloud-reveal");
+      window.setTimeout(() => container.classList.remove("point-cloud-reveal"), 1500);
+    }
+    viewer.scene.requestRender();
+  }
+
   async function start() {
     viewer = new Cesium.Viewer("cesium-container", { animation: false, timeline: false, fullscreenButton: false, geocoder: false, homeButton: false, infoBox: false, selectionIndicator: false, sceneModePicker: false, baseLayerPicker: false, navigationHelpButton: false, baseLayer: false, terrainProvider: new Cesium.EllipsoidTerrainProvider(), requestRenderMode: true, maximumRenderTimeChange: Infinity });
+    if (project.pointCloud) {
+      document.getElementById("cesium-container").classList.add("point-cloud-preloading");
+      setStatus("正在準備目前視角的完整點雲…");
+      pointCloudRevealTimer = window.setTimeout(revealPointCloud, 12000);
+    }
     viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString("#10232d");
     viewer.scene.globe.depthTestAgainstTerrain = true;
     const startTime = performance.now();
@@ -639,7 +659,7 @@ const APP_JS = `(() => {
       if (project.camera) setNanyaView();
     });
     activeTileset.tileFailed.addEventListener(error => { console.error("Tile load failed", error.message); setStatus("部分模型載入失敗，請重新整理。", false); });
-    activeTileset.allTilesLoaded.addEventListener(() => { setStatus("模型已完成載入", true); });
+    activeTileset.allTilesLoaded.addEventListener(() => { revealPointCloud(); setStatus("模型已完成載入", true); });
     const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
     handler.setInputAction((event) => {
       if (!measureMode) return;
@@ -668,6 +688,8 @@ const APP_JS = `(() => {
   window.addEventListener("unhandledrejection", (event) => { console.error(event.reason); setStatus("模型載入失敗，請重新整理或重新登入。", false); });
   start().then(() => { if (project.landmarks) (${landmarkClient.toString()})(viewer, Cesium, document.body.dataset.role, () => setMeasureMode(null), project); }).catch((error) => { console.error(error); setStatus(error && error.message ? error.message : "模型載入失敗", false); });
 })();`;
+
+const POINT_CLOUD_REVEAL_CSS = `#cesium-container.point-cloud-preloading canvas{opacity:0}#cesium-container.point-cloud-reveal canvas{animation:point-cloud-reveal 1.4s cubic-bezier(.16,.72,.24,1) both;will-change:opacity}@keyframes point-cloud-reveal{0%{opacity:0}38%{opacity:.18}72%{opacity:.72}100%{opacity:1}}@media(prefers-reduced-motion:reduce){#cesium-container.point-cloud-reveal canvas{animation:none}}`;
 
 const APP_CSS = `:root{color-scheme:dark;--bg:#06111d;--panel:rgba(5,18,29,.86);--line:rgba(95,207,230,.35);--text:#f3f8fb;--muted:#9fb3c1;--cyan:#61d4ea;--gold:#d8b269}*{box-sizing:border-box}html,body,.viewer-shell,#cesium-container{width:100%;height:100%;margin:0;overflow:hidden}body{background:var(--bg);color:var(--text);font-family:"Noto Sans TC","Microsoft JhengHei",sans-serif}.topbar{position:fixed;z-index:5;top:18px;left:18px;right:18px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;border:1px solid var(--line);border-radius:8px;background:var(--panel);backdrop-filter:blur(16px);box-shadow:0 16px 50px rgba(0,0,0,.24)}.eyebrow{margin:0 0 4px;color:var(--gold);font-size:11px;font-weight:800;letter-spacing:.27em}.topbar h1{margin:0;font-size:clamp(18px,2.4vw,28px)}.top-actions{display:flex;align-items:center;gap:10px}.role-badge,.logout{border:1px solid var(--line);border-radius:999px;padding:8px 12px;background:rgba(3,13,22,.65);color:var(--text);font:700 13px inherit}.logout{cursor:pointer}.tool-panel{position:fixed;z-index:5;left:18px;bottom:18px;width:min(360px,calc(100vw - 36px));padding:15px;border:1px solid var(--line);border-radius:8px;background:var(--panel);backdrop-filter:blur(16px);box-shadow:0 16px 50px rgba(0,0,0,.24)}.panel-label{display:block;margin:0 0 10px;color:var(--gold);font-size:11px;font-weight:800;letter-spacing:.2em}.tool-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.tool-panel button,.home-button{min-height:40px;border:1px solid var(--line);border-radius:5px;background:rgba(4,17,28,.78);color:var(--text);font-weight:800;cursor:pointer}.tool-panel button.active,.tool-panel button[aria-pressed="true"]{border-color:var(--cyan);background:rgba(97,212,234,.18);box-shadow:0 0 24px rgba(97,212,234,.12)}.tool-panel button:disabled{cursor:not-allowed;opacity:.48}.cadastral-button{width:100%;margin-top:9px}.sun-time{display:grid;gap:7px;margin-top:11px;color:var(--muted);font-size:12px}.sun-time span{display:flex;justify-content:space-between}.sun-time input{width:100%;accent-color:var(--cyan)}.tool-hint,.cadastral-note{margin:9px 0 0;color:var(--muted);font-size:12px;line-height:1.5}.cadastral-note{color:#758d9a}.status{position:fixed;z-index:5;right:18px;bottom:18px;max-width:min(460px,calc(100vw - 36px));padding:11px 14px;border:1px solid var(--line);border-radius:999px;background:rgba(4,15,25,.85);color:var(--muted);font-size:13px}.status.ready{color:#9be7bc;border-color:rgba(83,211,143,.42)}.home-button{position:fixed;z-index:5;right:18px;bottom:72px;padding:0 16px}.home-button:disabled{opacity:.45;cursor:wait}.cesium-viewer-bottom{display:none}@media(max-width:720px){.topbar{align-items:flex-start;left:10px;right:10px;top:10px;padding:12px}.role-badge{display:none}.tool-panel{left:10px;bottom:62px;width:min(310px,calc(100vw - 20px));padding:11px}.status{left:10px;right:auto;bottom:10px;max-width:calc(100vw - 130px)}.home-button{right:10px;bottom:10px}.cadastral-note{display:none}}`;
 

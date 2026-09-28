@@ -83,6 +83,11 @@ test('both roles get project selection and generated client JavaScript parses',a
   assert.match(js,/pointCloudSse = isMobile \? 16 : 8/);
   assert.match(js,/eyeDomeLighting: false/);
   assert.doesNotMatch(js,/pointCloudIntroPlayed/);
+  assert.match(js,/pointCloudRevealDone/);
+  assert.match(js,/allTilesLoaded\.addEventListener\(\(\) => \{ revealPointCloud\(\)/);
+  const css=await (await call('/app.css')).text();
+  assert.match(css,/point-cloud-preloading/);
+  assert.match(css,/@keyframes point-cloud-reveal/);
   assert.ok(!js.includes(PROJECTS['longteng-20260906'].prefix));
 });
 test('viewer session is restricted to its login project',async()=>{
