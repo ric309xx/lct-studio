@@ -80,9 +80,9 @@ test('both roles get project selection and generated client JavaScript parses',a
   assert.match(js,/dataset\.role === "admin"/);
   assert.match(js,/navigator\.share/);
   assert.match(js,/PointCloudShading/);
-  assert.match(js,/pointCloudIntroPlayed/);
-  const css=await (await call('/app.css')).text();
-  assert.match(css,/point-cloud-bloom/);
+  assert.match(js,/pointCloudSse = isMobile \? 16 : 8/);
+  assert.match(js,/eyeDomeLighting: false/);
+  assert.doesNotMatch(js,/pointCloudIntroPlayed/);
   assert.ok(!js.includes(PROJECTS['longteng-20260906'].prefix));
 });
 test('viewer session is restricted to its login project',async()=>{
