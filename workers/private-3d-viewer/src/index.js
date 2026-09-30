@@ -621,42 +621,13 @@ const APP_JS = `(() => {
     viewer.scene.requestRender();
   }
 
-  let pointCloudFormationPlayed = false;
-  function playPointCloudFormation() {
-    if (!project.pointCloud || pointCloudFormationPlayed) return;
-    pointCloudFormationPlayed = true;
-    const finalSse = isMobile ? 16 : 8;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      activeTileset.maximumScreenSpaceError = finalSse;
-      activeTileset.pointCloudShading.maximumAttenuation = 4;
-      activeTileset.pointCloudShading.geometricErrorScale = 1.1;
-      return;
-    }
-    const initialSse = isMobile ? 96 : 128;
-    const initialPointSize = isMobile ? 10 : 14;
-    const duration = 2800;
-    const startedAt = performance.now();
-    setStatus("點雲正在由粗到細凝聚成形…");
-    function frame(now) {
-      const progress = Math.min(1, (now - startedAt) / duration);
-      const eased = progress * progress * (3 - 2 * progress);
-      activeTileset.maximumScreenSpaceError = initialSse * Math.pow(finalSse / initialSse, eased);
-      activeTileset.pointCloudShading.maximumAttenuation = initialPointSize + (4 - initialPointSize) * eased;
-      activeTileset.pointCloudShading.geometricErrorScale = 2.2 + (1.1 - 2.2) * eased;
-      viewer.scene.requestRender();
-      if (progress < 1) window.requestAnimationFrame(frame);
-      else setStatus("點雲細節持續補齊中…");
-    }
-    window.requestAnimationFrame(frame);
-  }
-
   async function start() {
     viewer = new Cesium.Viewer("cesium-container", { animation: false, timeline: false, fullscreenButton: false, geocoder: false, homeButton: false, infoBox: false, selectionIndicator: false, sceneModePicker: false, baseLayerPicker: false, navigationHelpButton: false, baseLayer: false, terrainProvider: new Cesium.EllipsoidTerrainProvider(), requestRenderMode: true, maximumRenderTimeChange: Infinity });
     viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString("#10232d");
     viewer.scene.globe.depthTestAgainstTerrain = true;
     const startTime = performance.now();
-    const pointCloudInitialSse = isMobile ? 96 : 128;
-    activeTileset = await Cesium.Cesium3DTileset.fromUrl("/projects/" + project.id + "/tiles/tileset.json", { maximumScreenSpaceError: project.pointCloud ? pointCloudInitialSse : extremeSse, dynamicScreenSpaceError: project.pointCloud, dynamicScreenSpaceErrorFactor: project.pointCloud ? 8 : 24, foveatedScreenSpaceError: project.pointCloud, foveatedTimeDelay: .2, progressiveResolutionHeightFraction: project.pointCloud ? .3 : 0, skipLevelOfDetail: project.pointCloud, preloadFlightDestinations: true, cacheBytes: isMobile ? 268435456 : 536870912, maximumCacheOverflowBytes: isMobile ? 134217728 : 268435456 });
+    const pointCloudSse = isMobile ? 16 : 8;
+    activeTileset = await Cesium.Cesium3DTileset.fromUrl("/projects/" + project.id + "/tiles/tileset.json", { maximumScreenSpaceError: project.pointCloud ? pointCloudSse : extremeSse, dynamicScreenSpaceError: project.pointCloud, dynamicScreenSpaceErrorFactor: project.pointCloud ? 8 : 24, foveatedScreenSpaceError: project.pointCloud, foveatedTimeDelay: .2, progressiveResolutionHeightFraction: project.pointCloud ? .3 : 0, skipLevelOfDetail: project.pointCloud, preloadFlightDestinations: true, cacheBytes: isMobile ? 268435456 : 536870912, maximumCacheOverflowBytes: isMobile ? 134217728 : 268435456 });
     if (project.pointCloud) {
       activeTileset.pointCloudShading = new Cesium.PointCloudShading({ attenuation: true, geometricErrorScale: 1.1, maximumAttenuation: 4, eyeDomeLighting: false });
     }
@@ -666,7 +637,6 @@ const APP_JS = `(() => {
     activeTileset.loadProgress.addEventListener((pending, processing) => { if (pending + processing > 0) setStatus("細節載入中… " + (pending + processing)); });
     activeTileset.initialTilesLoaded.addEventListener(() => {
       if (project.camera) setNanyaView();
-      playPointCloudFormation();
     });
     activeTileset.tileFailed.addEventListener(error => { console.error("Tile load failed", error.message); setStatus("部分模型載入失敗，請重新整理。", false); });
     activeTileset.allTilesLoaded.addEventListener(() => { setStatus("模型已完成載入", true); });

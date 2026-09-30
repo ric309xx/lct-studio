@@ -80,13 +80,11 @@ test('both roles get project selection and generated client JavaScript parses',a
   assert.match(js,/dataset\.role === "admin"/);
   assert.match(js,/navigator\.share/);
   assert.match(js,/PointCloudShading/);
-  assert.match(js,/pointCloudInitialSse = isMobile \? 96 : 128/);
+  assert.match(js,/pointCloudSse = isMobile \? 16 : 8/);
   assert.match(js,/eyeDomeLighting: false/);
   assert.doesNotMatch(js,/pointCloudIntroPlayed/);
-  assert.match(js,/pointCloudFormationPlayed/);
-  assert.match(js,/playPointCloudFormation\(\)/);
-  assert.match(js,/maximumScreenSpaceError = initialSse \* Math\.pow/);
-  assert.match(js,/maximumAttenuation = initialPointSize/);
+  assert.doesNotMatch(js,/pointCloudFormationPlayed/);
+  assert.doesNotMatch(js,/playPointCloudFormation\(\)/);
   const css=await (await call('/app.css')).text();
   assert.doesNotMatch(css,/point-cloud-preloading/);
   assert.doesNotMatch(css,/@keyframes point-cloud-reveal/);
