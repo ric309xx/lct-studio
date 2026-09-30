@@ -14,21 +14,21 @@
         const embedHost = button?.dataset.embedHost || "www.youtube-nocookie.com";
         if (!youtubeId || !videoTitle) return;
 
-        player.src = `https://${embedHost}/embed/${youtubeId}?autoplay=1&rel=0&modestbranding=1&controls=0&disablekb=1&iv_load_policy=3`;
+        player.src = `https://${embedHost}/embed/${youtubeId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&controls=0&disablekb=1&iv_load_policy=3`;
         player.title = videoTitle;
         if (poster) poster.hidden = true;
         showcase?.classList.add("is-playing");
     };
 
-    playlist.addEventListener("click", (event) => {
-        const button = event.target.closest("button[data-youtube-id]");
-        if (!button || !playlist.contains(button)) return;
-
-        playFeature(button);
-        playlist.querySelectorAll("button[data-youtube-id]").forEach((item) => {
-            const selected = item === button;
-            item.classList.toggle("active", selected);
-            item.setAttribute("aria-pressed", String(selected));
+    const featureButtons = [...playlist.querySelectorAll("button[data-youtube-id]")];
+    featureButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+            playFeature(button);
+            featureButtons.forEach((item) => {
+                const selected = item === button;
+                item.classList.toggle("active", selected);
+                item.setAttribute("aria-pressed", String(selected));
+            });
         });
     });
 

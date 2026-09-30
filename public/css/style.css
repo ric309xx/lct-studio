@@ -2533,6 +2533,9 @@ body::before {
 }
 .archive-showcase-media iframe { position: relative; z-index: 1; }
 .archive-showcase.is-playing .archive-showcase-media iframe { pointer-events: none; }
+@media (hover: none), (pointer: coarse) {
+    .archive-showcase.is-playing .archive-showcase-media iframe { pointer-events: auto; }
+}
 .archive-feature-poster { z-index: 1; }
 .archive-feature-poster::after {
     background:
