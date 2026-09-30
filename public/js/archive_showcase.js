@@ -4,6 +4,8 @@
     const player = document.getElementById("archive-feature-video");
     const playlist = document.getElementById("archive-feature-playlist");
     const poster = document.getElementById("archive-feature-poster");
+    const showcase = player?.closest(".archive-showcase");
+    const fullscreenButton = document.getElementById("archive-feature-fullscreen");
     if (!player || !playlist) return;
 
     const playFeature = (button) => {
@@ -15,6 +17,7 @@
         player.src = `https://${embedHost}/embed/${youtubeId}?autoplay=1&rel=0&modestbranding=1`;
         player.title = videoTitle;
         if (poster) poster.hidden = true;
+        showcase?.classList.add("is-playing");
     };
 
     playlist.addEventListener("click", (event) => {
@@ -31,5 +34,21 @@
 
     poster?.addEventListener("click", () => {
         playFeature(playlist.querySelector("button.active[data-youtube-id]"));
+    });
+
+    fullscreenButton?.addEventListener("click", async () => {
+        if (!showcase) return;
+        if (document.fullscreenElement) {
+            await document.exitFullscreen?.();
+            return;
+        }
+        await showcase.requestFullscreen?.();
+    });
+
+    document.addEventListener("fullscreenchange", () => {
+        const active = document.fullscreenElement === showcase;
+        fullscreenButton?.classList.toggle("is-active", active);
+        const label = fullscreenButton?.querySelector("span:first-child");
+        if (label) label.textContent = active ? "退出全螢幕" : "全螢幕觀看";
     });
 })();
