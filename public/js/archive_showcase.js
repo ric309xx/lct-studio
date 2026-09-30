@@ -14,7 +14,7 @@
         const embedHost = button?.dataset.embedHost || "www.youtube-nocookie.com";
         if (!youtubeId || !videoTitle) return;
 
-        player.src = `https://${embedHost}/embed/${youtubeId}?autoplay=1&rel=0&modestbranding=1`;
+        player.src = `https://${embedHost}/embed/${youtubeId}?autoplay=1&rel=0&modestbranding=1&controls=0&disablekb=1&iv_load_policy=3`;
         player.title = videoTitle;
         if (poster) poster.hidden = true;
         showcase?.classList.add("is-playing");

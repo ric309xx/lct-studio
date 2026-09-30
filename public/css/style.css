@@ -2525,8 +2525,14 @@ body::before {
     background:
         linear-gradient(90deg, rgba(1,7,11,.78) 0%, rgba(1,7,11,.2) 48%, rgba(1,7,11,.12) 100%),
         linear-gradient(180deg, rgba(1,7,11,.35) 0%, transparent 43%, rgba(1,7,11,.82) 100%);
+    transition: opacity .3s ease, visibility .3s ease;
+}
+.archive-showcase.is-playing .archive-showcase-media::after {
+    opacity: 0;
+    visibility: hidden;
 }
 .archive-showcase-media iframe { position: relative; z-index: 1; }
+.archive-showcase.is-playing .archive-showcase-media iframe { pointer-events: none; }
 .archive-feature-poster { z-index: 1; }
 .archive-feature-poster::after {
     background:
