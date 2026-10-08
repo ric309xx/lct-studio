@@ -1,0 +1,537 @@
+{
+  "status": "LAS DSM minus DEM DTM preliminary estimate",
+  "crs": "EPSG:3826+8904",
+  "resolution_m": 0.1,
+  "ground_plane": {
+    "source": "DEM GeoTIFF",
+    "path": "D:\\DATA\\WORK\\20261006桃園三維地籍\\02成果\\terra_dem\\dem.tif",
+    "resolution_m": [
+      0.5,
+      0.5
+    ],
+    "las_class_2_validation_points": 653514,
+    "las_minus_dem_median_m": -0.0012,
+    "las_minus_dem_mad_m": 0.0061
+  },
+  "mesh": [
+    {
+      "name": "BlockRA.obj",
+      "vertices": 254326,
+      "triangles": 502556,
+      "bounds": {
+        "min": [
+          271915.81008282374,
+          2761488.502342465,
+          127.31865200030279
+        ],
+        "max": [
+          272025.21555482375,
+          2761674.143791465,
+          173.0113850003028
+        ]
+      }
+    },
+    {
+      "name": "BlockRX.obj",
+      "vertices": 184592,
+      "triangles": 365421,
+      "bounds": {
+        "min": [
+          271820.7297608238,
+          2761487.800743465,
+          127.77356200030279
+        ],
+        "max": [
+          271916.4910828238,
+          2761657.500968465,
+          146.16527000030277
+        ]
+      }
+    }
+  ],
+  "las": [
+    {
+      "name": "cloudRA.las",
+      "version": "1.4",
+      "point_format": 7,
+      "points": 11655228,
+      "classes": {
+        "1": 7873199,
+        "2": 3782029
+      },
+      "roi_points": 222809,
+      "roi_classes": {
+        "1": 190216,
+        "2": 32593
+      }
+    },
+    {
+      "name": "cloudRX.las",
+      "version": "1.4",
+      "point_format": 7,
+      "points": 8632153,
+      "classes": {
+        "1": 4442593,
+        "2": 4189560
+      },
+      "roi_points": 976614,
+      "roi_classes": {
+        "1": 355693,
+        "2": 620921
+      }
+    }
+  ],
+  "parcel_total_area_m2": 498.8,
+  "confirmed_selection": {
+    "parcel_id": "parcel-2",
+    "parcel_label": "三座屋段舊社小段 102-45地號",
+    "selection_rule": "largest connected elevated component inside parcel",
+    "height_threshold_m": 2.0,
+    "cadastral_area_m2": 268.762,
+    "occupied_area_m2": 36.67,
+    "occupancy_percent": 13.64,
+    "review_status": "user-confirmed target component"
+  },
+  "sensitivity": [
+    {
+      "threshold_m": 1.5,
+      "parcels": [
+        {
+          "parcel_id": "parcel-1",
+          "cadastral_area_m2": 230.038,
+          "occupied_area_m2": 7.19,
+          "occupancy_percent": 3.13,
+          "components": [
+            {
+              "area_m2": 5.82,
+              "centroid_twd97": [
+                271888.044,
+                2761566.954
+              ],
+              "bounds_twd97": [
+                271884.236,
+                2761564.84,
+                271896.336,
+                2761569.94
+              ]
+            },
+            {
+              "area_m2": 1.37,
+              "centroid_twd97": [
+                271894.803,
+                2761565.62
+              ],
+              "bounds_twd97": [
+                271891.536,
+                2761565.24,
+                271896.436,
+                2761566.24
+              ]
+            }
+          ]
+        },
+        {
+          "parcel_id": "parcel-2",
+          "cadastral_area_m2": 268.762,
+          "occupied_area_m2": 51.58,
+          "occupancy_percent": 19.19,
+          "components": [
+            {
+              "area_m2": 36.73,
+              "centroid_twd97": [
+                271914.105,
+                2761564.732
+              ],
+              "bounds_twd97": [
+                271910.636,
+                2761558.94,
+                271917.836,
+                2761571.74
+              ]
+            },
+            {
+              "area_m2": 9.64,
+              "centroid_twd97": [
+                271903.573,
+                2761560.341
+              ],
+              "bounds_twd97": [
+                271900.936,
+                2761556.74,
+                271905.436,
+                2761563.44
+              ]
+            },
+            {
+              "area_m2": 5.04,
+              "centroid_twd97": [
+                271901.091,
+                2761567.663
+              ],
+              "bounds_twd97": [
+                271896.936,
+                2761565.64,
+                271905.136,
+                2761569.44
+              ]
+            },
+            {
+              "area_m2": 0.16,
+              "centroid_twd97": [
+                271918.105,
+                2761558.683
+              ],
+              "bounds_twd97": [
+                271917.636,
+                2761558.54,
+                271918.536,
+                2761558.84
+              ]
+            },
+            {
+              "area_m2": 0.01,
+              "centroid_twd97": [
+                271917.386,
+                2761558.49
+              ],
+              "bounds_twd97": [
+                271917.336,
+                2761558.44,
+                271917.436,
+                2761558.54
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "threshold_m": 2.0,
+      "parcels": [
+        {
+          "parcel_id": "parcel-1",
+          "cadastral_area_m2": 230.038,
+          "occupied_area_m2": 7.19,
+          "occupancy_percent": 3.13,
+          "components": [
+            {
+              "area_m2": 5.82,
+              "centroid_twd97": [
+                271888.044,
+                2761566.954
+              ],
+              "bounds_twd97": [
+                271884.236,
+                2761564.84,
+                271896.336,
+                2761569.94
+              ]
+            },
+            {
+              "area_m2": 1.37,
+              "centroid_twd97": [
+                271894.803,
+                2761565.62
+              ],
+              "bounds_twd97": [
+                271891.536,
+                2761565.24,
+                271896.436,
+                2761566.24
+              ]
+            }
+          ]
+        },
+        {
+          "parcel_id": "parcel-2",
+          "cadastral_area_m2": 268.762,
+          "occupied_area_m2": 50.96,
+          "occupancy_percent": 18.96,
+          "components": [
+            {
+              "area_m2": 36.67,
+              "centroid_twd97": [
+                271914.107,
+                2761564.724
+              ],
+              "bounds_twd97": [
+                271910.636,
+                2761558.94,
+                271917.836,
+                2761571.74
+              ]
+            },
+            {
+              "area_m2": 9.08,
+              "centroid_twd97": [
+                271903.498,
+                2761560.517
+              ],
+              "bounds_twd97": [
+                271900.936,
+                2761557.24,
+                271905.036,
+                2761563.44
+              ]
+            },
+            {
+              "area_m2": 5.04,
+              "centroid_twd97": [
+                271901.091,
+                2761567.663
+              ],
+              "bounds_twd97": [
+                271896.936,
+                2761565.64,
+                271905.136,
+                2761569.44
+              ]
+            },
+            {
+              "area_m2": 0.16,
+              "centroid_twd97": [
+                271918.105,
+                2761558.683
+              ],
+              "bounds_twd97": [
+                271917.636,
+                2761558.54,
+                271918.536,
+                2761558.84
+              ]
+            },
+            {
+              "area_m2": 0.01,
+              "centroid_twd97": [
+                271917.386,
+                2761558.49
+              ],
+              "bounds_twd97": [
+                271917.336,
+                2761558.44,
+                271917.436,
+                2761558.54
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "threshold_m": 2.5,
+      "parcels": [
+        {
+          "parcel_id": "parcel-1",
+          "cadastral_area_m2": 230.038,
+          "occupied_area_m2": 6.84,
+          "occupancy_percent": 2.97,
+          "components": [
+            {
+              "area_m2": 5.47,
+              "centroid_twd97": [
+                271888.034,
+                2761566.999
+              ],
+              "bounds_twd97": [
+                271884.236,
+                2761564.84,
+                271896.336,
+                2761569.94
+              ]
+            },
+            {
+              "area_m2": 1.37,
+              "centroid_twd97": [
+                271894.803,
+                2761565.62
+              ],
+              "bounds_twd97": [
+                271891.536,
+                2761565.24,
+                271896.436,
+                2761566.24
+              ]
+            }
+          ]
+        },
+        {
+          "parcel_id": "parcel-2",
+          "cadastral_area_m2": 268.762,
+          "occupied_area_m2": 48.12,
+          "occupancy_percent": 17.9,
+          "components": [
+            {
+              "area_m2": 34.33,
+              "centroid_twd97": [
+                271914.011,
+                2761564.796
+              ],
+              "bounds_twd97": [
+                271910.936,
+                2761558.94,
+                271917.836,
+                2761571.74
+              ]
+            },
+            {
+              "area_m2": 8.58,
+              "centroid_twd97": [
+                271903.441,
+                2761560.679
+              ],
+              "bounds_twd97": [
+                271900.936,
+                2761557.74,
+                271905.036,
+                2761563.44
+              ]
+            },
+            {
+              "area_m2": 5.04,
+              "centroid_twd97": [
+                271901.091,
+                2761567.663
+              ],
+              "bounds_twd97": [
+                271896.936,
+                2761565.64,
+                271905.136,
+                2761569.44
+              ]
+            },
+            {
+              "area_m2": 0.16,
+              "centroid_twd97": [
+                271918.105,
+                2761558.683
+              ],
+              "bounds_twd97": [
+                271917.636,
+                2761558.54,
+                271918.536,
+                2761558.84
+              ]
+            },
+            {
+              "area_m2": 0.01,
+              "centroid_twd97": [
+                271917.386,
+                2761558.49
+              ],
+              "bounds_twd97": [
+                271917.336,
+                2761558.44,
+                271917.436,
+                2761558.54
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "threshold_m": 3.0,
+      "parcels": [
+        {
+          "parcel_id": "parcel-1",
+          "cadastral_area_m2": 230.038,
+          "occupied_area_m2": 6.84,
+          "occupancy_percent": 2.97,
+          "components": [
+            {
+              "area_m2": 5.47,
+              "centroid_twd97": [
+                271888.034,
+                2761566.999
+              ],
+              "bounds_twd97": [
+                271884.236,
+                2761564.84,
+                271896.336,
+                2761569.94
+              ]
+            },
+            {
+              "area_m2": 1.37,
+              "centroid_twd97": [
+                271894.803,
+                2761565.62
+              ],
+              "bounds_twd97": [
+                271891.536,
+                2761565.24,
+                271896.436,
+                2761566.24
+              ]
+            }
+          ]
+        },
+        {
+          "parcel_id": "parcel-2",
+          "cadastral_area_m2": 268.762,
+          "occupied_area_m2": 28.2,
+          "occupancy_percent": 10.49,
+          "components": [
+            {
+              "area_m2": 14.51,
+              "centroid_twd97": [
+                271913.634,
+                2761564.862
+              ],
+              "bounds_twd97": [
+                271912.136,
+                2761559.44,
+                271915.536,
+                2761570.84
+              ]
+            },
+            {
+              "area_m2": 8.5,
+              "centroid_twd97": [
+                271903.44,
+                2761560.684
+              ],
+              "bounds_twd97": [
+                271900.936,
+                2761557.74,
+                271905.036,
+                2761563.44
+              ]
+            },
+            {
+              "area_m2": 5.04,
+              "centroid_twd97": [
+                271901.091,
+                2761567.663
+              ],
+              "bounds_twd97": [
+                271896.936,
+                2761565.64,
+                271905.136,
+                2761569.44
+              ]
+            },
+            {
+              "area_m2": 0.15,
+              "centroid_twd97": [
+                271918.133,
+                2761558.69
+              ],
+              "bounds_twd97": [
+                271917.736,
+                2761558.54,
+                271918.536,
+                2761558.84
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "The supplied DEM is treated as the bare-earth terrain model and cross-checked against LAS Class 2 points.",
+    "Height and LAS classification alone cannot distinguish buildings from trees, vehicles, or other elevated objects.",
+    "Results require orthophoto review and manual footprint confirmation before engineering use."
+  ]
+}
