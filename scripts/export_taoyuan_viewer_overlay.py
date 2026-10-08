@@ -166,10 +166,14 @@ def main() -> None:
     confirmed = occupancy.largest_component_mask(structure & target_mask)
     building_ring = mask_outer_ring(confirmed, min_x, min_y, resolution)
 
-    parcel_ring = target["points"].tolist()
-    if parcel_ring[0] != parcel_ring[-1]:
-        parcel_ring.append(parcel_ring[0])
-    parcel_wgs84 = [twd97_to_wgs84(x, y) for x, y in parcel_ring]
+    parcel_rings_wgs84 = []
+    for index, parcel in enumerate(parcels, start=1):
+        parcel_ring = parcel["points"].tolist()
+        if parcel_ring[0] != parcel_ring[-1]:
+            parcel_ring.append(parcel_ring[0])
+        parcel_rings_wgs84.append(
+            (index, [twd97_to_wgs84(x, y) for x, y in parcel_ring])
+        )
     building_wgs84 = [twd97_to_wgs84(x, y) for x, y in building_ring]
     common = {
         "parcelKey": "sanzuwu-jiushe-102-45",
@@ -177,26 +181,47 @@ def main() -> None:
         "county": "桃園市",
         "sectionName": "三座屋段舊社小段",
         "crs": "TWD97 二度 TM（EPSG:3826）",
-        "cadastralAreaM2": 268.762,
+        "cadastralAreaM2": 500.0,
         "occupiedAreaM2": 36.67,
-        "occupancyPercent": 13.64,
+        "occupancyPercent": 7.33,
+        "cadPieceCount": len(parcel_rings_wgs84),
+        "cadPieceNote": "同一地號因分圖線拆成兩個 CAD 閉合圖形",
     }
     data = {
         "type": "FeatureCollection",
         "name": "taoyuan-building-overlay",
         "features": [
-            feature(
-                "parcel-102-45-fill",
-                "cadastral-fill",
-                parcel_wgs84,
-                {**common, "fill": "#ef626c", "fill-opacity": 0.25, "stroke": "#ffbf47", "stroke-width": 3},
-            ),
-            {
-                "type": "Feature",
-                "id": "parcel-102-45-boundary",
-                "properties": {**common, "kind": "cadastral-boundary", "stroke": "#ffbf47", "stroke-width": 3},
-                "geometry": {"type": "LineString", "coordinates": parcel_wgs84},
-            },
+            *[
+                feature(
+                    f"parcel-102-45-fill-{index}",
+                    "cadastral-fill",
+                    ring,
+                    {
+                        **common,
+                        "cadPiece": index,
+                        "fill": "#ef626c",
+                        "fill-opacity": 0.25,
+                        "stroke": "#ffbf47",
+                        "stroke-width": 3,
+                    },
+                )
+                for index, ring in parcel_rings_wgs84
+            ],
+            *[
+                {
+                    "type": "Feature",
+                    "id": f"parcel-102-45-boundary-{index}",
+                    "properties": {
+                        **common,
+                        "kind": "cadastral-boundary",
+                        "cadPiece": index,
+                        "stroke": "#ffbf47",
+                        "stroke-width": 3,
+                    },
+                    "geometry": {"type": "LineString", "coordinates": ring},
+                }
+                for index, ring in parcel_rings_wgs84
+            ],
             feature(
                 "parcel-102-45-building",
                 "occupancy-building",

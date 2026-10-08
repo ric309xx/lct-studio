@@ -82,14 +82,16 @@
     }
   ],
   "parcel_total_area_m2": 498.8,
+  "registered_cadastral_area_m2": 500.0,
+  "cad_piece_interpretation": "Parcel 1 and Parcel 2 are two CAD closures of the same 102-45 parcel separated by a map-sheet seam",
   "confirmed_selection": {
-    "parcel_id": "parcel-2",
+    "parcel_id": "parcel-1+parcel-2",
     "parcel_label": "三座屋段舊社小段 102-45地號",
-    "selection_rule": "largest connected elevated component inside parcel",
+    "selection_rule": "right-side confirmed building component inside the combined two-piece parcel",
     "height_threshold_m": 2.0,
-    "cadastral_area_m2": 268.762,
+    "cadastral_area_m2": 500.0,
     "occupied_area_m2": 36.67,
-    "occupancy_percent": 13.64,
+    "occupancy_percent": 7.33,
     "review_status": "user-confirmed target component"
   },
   "sensitivity": [

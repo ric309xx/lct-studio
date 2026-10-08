@@ -4,7 +4,7 @@
   "features": [
     {
       "type": "Feature",
-      "id": "parcel-102-45-fill",
+      "id": "parcel-102-45-fill-1",
       "properties": {
         "kind": "cadastral-fill",
         "parcelKey": "sanzuwu-jiushe-102-45",
@@ -12,9 +12,69 @@
         "county": "桃園市",
         "sectionName": "三座屋段舊社小段",
         "crs": "TWD97 二度 TM（EPSG:3826）",
-        "cadastralAreaM2": 268.762,
+        "cadastralAreaM2": 500.0,
         "occupiedAreaM2": 36.67,
-        "occupancyPercent": 13.64,
+        "occupancyPercent": 7.33,
+        "cadPieceCount": 2,
+        "cadPieceNote": "同一地號因分圖線拆成兩個 CAD 閉合圖形",
+        "cadPiece": 1,
+        "fill": "#ef626c",
+        "fill-opacity": 0.25,
+        "stroke": "#ffbf47",
+        "stroke-width": 3
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.216857039,
+              24.961725027
+            ],
+            [
+              121.216857811,
+              24.961861017
+            ],
+            [
+              121.216666878,
+              24.961848405
+            ],
+            [
+              121.216684495,
+              24.961766857
+            ],
+            [
+              121.216730299,
+              24.961786308
+            ],
+            [
+              121.216765151,
+              24.961713271
+            ],
+            [
+              121.216857039,
+              24.961725027
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "parcel-102-45-fill-2",
+      "properties": {
+        "kind": "cadastral-fill",
+        "parcelKey": "sanzuwu-jiushe-102-45",
+        "parcelNo": "102-45",
+        "county": "桃園市",
+        "sectionName": "三座屋段舊社小段",
+        "crs": "TWD97 二度 TM（EPSG:3826）",
+        "cadastralAreaM2": 500.0,
+        "occupiedAreaM2": 36.67,
+        "occupancyPercent": 7.33,
+        "cadPieceCount": 2,
+        "cadPieceNote": "同一地號因分圖線拆成兩個 CAD 閉合圖形",
+        "cadPiece": 2,
         "fill": "#ef626c",
         "fill-opacity": 0.25,
         "stroke": "#ffbf47",
@@ -50,17 +110,73 @@
     },
     {
       "type": "Feature",
-      "id": "parcel-102-45-boundary",
+      "id": "parcel-102-45-boundary-1",
       "properties": {
         "parcelKey": "sanzuwu-jiushe-102-45",
         "parcelNo": "102-45",
         "county": "桃園市",
         "sectionName": "三座屋段舊社小段",
         "crs": "TWD97 二度 TM（EPSG:3826）",
-        "cadastralAreaM2": 268.762,
+        "cadastralAreaM2": 500.0,
         "occupiedAreaM2": 36.67,
-        "occupancyPercent": 13.64,
+        "occupancyPercent": 7.33,
+        "cadPieceCount": 2,
+        "cadPieceNote": "同一地號因分圖線拆成兩個 CAD 閉合圖形",
         "kind": "cadastral-boundary",
+        "cadPiece": 1,
+        "stroke": "#ffbf47",
+        "stroke-width": 3
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.216857039,
+            24.961725027
+          ],
+          [
+            121.216857811,
+            24.961861017
+          ],
+          [
+            121.216666878,
+            24.961848405
+          ],
+          [
+            121.216684495,
+            24.961766857
+          ],
+          [
+            121.216730299,
+            24.961786308
+          ],
+          [
+            121.216765151,
+            24.961713271
+          ],
+          [
+            121.216857039,
+            24.961725027
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "parcel-102-45-boundary-2",
+      "properties": {
+        "parcelKey": "sanzuwu-jiushe-102-45",
+        "parcelNo": "102-45",
+        "county": "桃園市",
+        "sectionName": "三座屋段舊社小段",
+        "crs": "TWD97 二度 TM（EPSG:3826）",
+        "cadastralAreaM2": 500.0,
+        "occupiedAreaM2": 36.67,
+        "occupancyPercent": 7.33,
+        "cadPieceCount": 2,
+        "cadPieceNote": "同一地號因分圖線拆成兩個 CAD 閉合圖形",
+        "kind": "cadastral-boundary",
+        "cadPiece": 2,
         "stroke": "#ffbf47",
         "stroke-width": 3
       },
@@ -100,9 +216,11 @@
         "county": "桃園市",
         "sectionName": "三座屋段舊社小段",
         "crs": "TWD97 二度 TM（EPSG:3826）",
-        "cadastralAreaM2": 268.762,
+        "cadastralAreaM2": 500.0,
         "occupiedAreaM2": 36.67,
-        "occupancyPercent": 13.64,
+        "occupancyPercent": 7.33,
+        "cadPieceCount": 2,
+        "cadPieceNote": "同一地號因分圖線拆成兩個 CAD 閉合圖形",
         "fill": "#30e67e",
         "fill-opacity": 0.55,
         "stroke": "#b9ffd4",
