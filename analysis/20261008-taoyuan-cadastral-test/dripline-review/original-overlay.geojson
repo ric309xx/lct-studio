@@ -12,18 +12,16 @@
         "county": "桃園市",
         "sectionName": "三座屋段舊社小段",
         "crs": "TWD97 二度 TM（EPSG:3826）",
-        "cadastralAreaM2": 500,
-        "occupiedAreaM2": 36.27,
-        "occupancyPercent": 7.25,
+        "cadastralAreaM2": 500.0,
+        "occupiedAreaM2": 36.67,
+        "occupancyPercent": 7.33,
         "cadPieceCount": 2,
         "cadPieceNote": "同一地號因分圖線拆成兩個 CAD 閉合圖形",
         "cadPiece": 1,
         "fill": "#ef626c",
         "fill-opacity": 0.25,
         "stroke": "#ffbf47",
-        "stroke-width": 3,
-        "areaMethod": "EPSG:3826 vector dripline polygon intersected with the complete parcel",
-        "reviewStatus": "local roof-edge interpretation; inspect the southeast corner in 3D"
+        "stroke-width": 3
       },
       "geometry": {
         "type": "Polygon",
@@ -71,18 +69,16 @@
         "county": "桃園市",
         "sectionName": "三座屋段舊社小段",
         "crs": "TWD97 二度 TM（EPSG:3826）",
-        "cadastralAreaM2": 500,
-        "occupiedAreaM2": 36.27,
-        "occupancyPercent": 7.25,
+        "cadastralAreaM2": 500.0,
+        "occupiedAreaM2": 36.67,
+        "occupancyPercent": 7.33,
         "cadPieceCount": 2,
         "cadPieceNote": "同一地號因分圖線拆成兩個 CAD 閉合圖形",
         "cadPiece": 2,
         "fill": "#ef626c",
         "fill-opacity": 0.25,
         "stroke": "#ffbf47",
-        "stroke-width": 3,
-        "areaMethod": "EPSG:3826 vector dripline polygon intersected with the complete parcel",
-        "reviewStatus": "local roof-edge interpretation; inspect the southeast corner in 3D"
+        "stroke-width": 3
       },
       "geometry": {
         "type": "Polygon",
@@ -121,17 +117,15 @@
         "county": "桃園市",
         "sectionName": "三座屋段舊社小段",
         "crs": "TWD97 二度 TM（EPSG:3826）",
-        "cadastralAreaM2": 500,
-        "occupiedAreaM2": 36.27,
-        "occupancyPercent": 7.25,
+        "cadastralAreaM2": 500.0,
+        "occupiedAreaM2": 36.67,
+        "occupancyPercent": 7.33,
         "cadPieceCount": 2,
         "cadPieceNote": "同一地號因分圖線拆成兩個 CAD 閉合圖形",
         "kind": "cadastral-boundary",
         "cadPiece": 1,
         "stroke": "#ffbf47",
-        "stroke-width": 3,
-        "areaMethod": "EPSG:3826 vector dripline polygon intersected with the complete parcel",
-        "reviewStatus": "local roof-edge interpretation; inspect the southeast corner in 3D"
+        "stroke-width": 3
       },
       "geometry": {
         "type": "LineString",
@@ -176,17 +170,15 @@
         "county": "桃園市",
         "sectionName": "三座屋段舊社小段",
         "crs": "TWD97 二度 TM（EPSG:3826）",
-        "cadastralAreaM2": 500,
-        "occupiedAreaM2": 36.27,
-        "occupancyPercent": 7.25,
+        "cadastralAreaM2": 500.0,
+        "occupiedAreaM2": 36.67,
+        "occupancyPercent": 7.33,
         "cadPieceCount": 2,
         "cadPieceNote": "同一地號因分圖線拆成兩個 CAD 閉合圖形",
         "kind": "cadastral-boundary",
         "cadPiece": 2,
         "stroke": "#ffbf47",
-        "stroke-width": 3,
-        "areaMethod": "EPSG:3826 vector dripline polygon intersected with the complete parcel",
-        "reviewStatus": "local roof-edge interpretation; inspect the southeast corner in 3D"
+        "stroke-width": 3
       },
       "geometry": {
         "type": "LineString",
@@ -224,105 +216,135 @@
         "county": "桃園市",
         "sectionName": "三座屋段舊社小段",
         "crs": "TWD97 二度 TM（EPSG:3826）",
-        "cadastralAreaM2": 500,
-        "occupiedAreaM2": 36.27,
-        "occupancyPercent": 7.25,
+        "cadastralAreaM2": 500.0,
+        "occupiedAreaM2": 36.67,
+        "occupancyPercent": 7.33,
         "cadPieceCount": 2,
         "cadPieceNote": "同一地號因分圖線拆成兩個 CAD 閉合圖形",
         "fill": "#30e67e",
         "fill-opacity": 0.55,
         "stroke": "#b9ffd4",
-        "stroke-width": 2,
-        "areaMethod": "EPSG:3826 vector dripline polygon intersected with the complete parcel",
-        "reviewStatus": "local roof-edge interpretation; inspect the southeast corner in 3D"
+        "stroke-width": 2
       },
       "geometry": {
         "type": "Polygon",
         "coordinates": [
           [
             [
-              121.21706685,
-              24.961767905
+              121.216998666,
+              24.961854677
             ],
             [
-              121.21705693599999,
-              24.961762503
-            ],
-            [
-              121.21703118000002,
-              24.961758929
-            ],
-            [
-              121.21702626999999,
-              24.961782409999998
-            ],
-            [
-              121.217025279,
-              24.961782411
-            ],
-            [
-              121.21702428899998,
-              24.961782413000005
-            ],
-            [
-              121.217024309,
-              24.961794149999992
-            ],
-            [
-              121.21701044700002,
-              24.961795975000005
-            ],
-            [
-              121.21700748100001,
-              24.961798687999995
-            ],
-            [
-              121.21700852,
-              24.961826675
-            ],
-            [
-              121.217011496,
-              24.961829379
-            ],
-            [
-              121.21701248000001,
-              24.961825766000004
-            ],
-            [
-              121.217019413,
-              24.961825755999993
+              121.21702243,
+              24.961851934
             ],
             [
               121.217018445,
               24.961838397
             ],
             [
-              121.21702243,
-              24.96185193399999
+              121.217019413,
+              24.961825756
             ],
             [
-              121.21699866599998,
-              24.961854677
+              121.21701248,
+              24.961825766
             ],
             [
-              121.21699965668725,
-              24.96186876114074
+              121.217011496,
+              24.961829379
             ],
             [
-              121.21701960387985,
-              24.96186995718454
+              121.21700852,
+              24.961826675
             ],
             [
-              121.21701990351158,
-              24.961869969761008
+              121.217007481,
+              24.961798688
             ],
             [
-              121.21706466423575,
-              24.961776601394007
+              121.217010447,
+              24.961795975
+            ],
+            [
+              121.217024309,
+              24.96179415
+            ],
+            [
+              121.217024289,
+              24.961782413
+            ],
+            [
+              121.217025279,
+              24.961782411
+            ],
+            [
+              121.21702627,
+              24.96178241
+            ],
+            [
+              121.21703118,
+              24.961758929
+            ],
+            [
+              121.217056936,
+              24.961762503
+            ],
+            [
+              121.217055937,
+              24.961757087
+            ],
+            [
+              121.217058914,
+              24.961760694
+            ],
+            [
+              121.217062875,
+              24.961760688
+            ],
+            [
+              121.217064845,
+              24.961754366
+            ],
+            [
+              121.217065836,
+              24.961754364
+            ],
+            [
+              121.217066826,
+              24.961754363
+            ],
+            [
+              121.217066831,
+              24.961757071
+            ],
+            [
+              121.217069803,
+              24.96175797
+            ],
+            [
+              121.217065848,
+              24.961761587
             ],
             [
               121.21706685,
               24.961767905
+            ],
+            [
+              121.217063899,
+              24.961779646
+            ],
+            [
+              121.217020481,
+              24.961869994
+            ],
+            [
+              121.216999682,
+              24.961869121
+            ],
+            [
+              121.216998666,
+              24.961854677
             ]
           ]
         ]
