@@ -50,7 +50,7 @@ export async function recordDocx(doc:RecordDocument){
  zip.file('word/document.xml',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="907" w:right="907" w:bottom="907" w:left="907"/></w:sectPr></w:body></w:document>`);
  return zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',compression:'DEFLATE'});
 }
-export async function recordPdf(doc:RecordDocument){
+export async function recordPdfPages(doc:RecordDocument){
  const width=1400,height=1980,margin=104,content=width-2*margin,pages:HTMLCanvasElement[]=[];let canvas!:HTMLCanvasElement,ctx!:CanvasRenderingContext2D,y=0;
  function page(title:string){canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;ctx=canvas.getContext('2d')!;ctx.fillStyle='#fff';ctx.fillRect(0,0,width,height);ctx.fillStyle='#193f35';ctx.font='bold 38px "Microsoft JhengHei",sans-serif';ctx.fillText(title,margin,110);ctx.strokeStyle='#315a48';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(margin,132);ctx.lineTo(width-margin,132);ctx.stroke();y=175;pages.push(canvas);}
  function lines(text:string,maxWidth:number,font='23px "Microsoft JhengHei",sans-serif'){ctx.font=font;const result:string[]=[];for(const paragraph of String(text).split('\n')){let line='';for(const char of paragraph){if(line&&ctx.measureText(line+char).width>maxWidth){result.push(line);line='';}line+=char;}result.push(line);}return result;}
@@ -66,7 +66,10 @@ export async function recordPdf(doc:RecordDocument){
  if(doc.attributes.length){page(`${doc.point.code} · 來源屬性`);rows(doc.attributes);}
  for(const [i,c]of pages.entries()){ctx=c.getContext('2d')!;ctx.strokeStyle='#c9d3c7';ctx.beginPath();ctx.moveTo(margin,height-125);ctx.lineTo(width-margin,height-125);ctx.stroke();text(`產製：${doc.generated}（台灣時間） · ${i+1} / ${pages.length}`,margin,height-88,content,'19px "Microsoft JhengHei",sans-serif');text('位置圖僅供找點參考',margin,height-55,content,'18px "Microsoft JhengHei",sans-serif');}
  const encoded=await Promise.all(pages.map(async c=>{const blob=await new Promise<Blob>((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(new Error('PDF 產生失敗')),'image/jpeg',.94));return {width:c.width,height:c.height,bytes:new Uint8Array(await blob.arrayBuffer())};}));
- return new Blob([new Uint8Array(jpegPagesPdf(encoded))],{type:'application/pdf'});
+ return encoded;
+}
+export async function recordPdf(doc:RecordDocument){
+ return new Blob([new Uint8Array(jpegPagesPdf(await recordPdfPages(doc)))],{type:'application/pdf'});
 }
 export async function buildRecordFile(doc:RecordDocument,format:string){
  const filename=recordFilename(doc.point.code);
