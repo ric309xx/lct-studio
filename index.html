@@ -48,26 +48,34 @@
                     class="text-xl md:text-2xl font-bold tracking-tight text-white group-hover:text-gray-300 transition-colors">LCT
                     Studio</span>
             </a>
-            <div class="hidden md:flex space-x-8">
+            <div class="hidden lg:flex items-center space-x-6 xl:space-x-8">
                 <a href="#portfolio" class="text-white hover:text-gray-300 transition-colors text-lg">精選照片</a>
                 <a href="#videos" class="text-white hover:text-gray-300 transition-colors text-lg">精選影片</a>
                 <a href="#services" class="text-white hover:text-gray-300 transition-colors text-lg">服務項目</a>
                 <a href="#digital-archive" class="text-white hover:text-gray-300 transition-colors text-lg">數位典藏</a>
                 <a href="#about" class="text-white hover:text-gray-300 transition-colors text-lg">關於我</a>
                 <a href="#contact" class="text-white hover:text-gray-300 transition-colors text-lg">聯絡我</a>
+                <a href="https://lct-control-points.private-3d-viewer.workers.dev/"
+                    class="text-xs text-gray-400 hover:text-gray-200 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
+                    rel="nofollow" aria-label="控制點系統（需密碼登入）">控制點</a>
             </div>
 
-            <button id="mobile-menu-button" type="button" aria-label="開啟選單" aria-controls="mobile-menu" aria-expanded="false" class="md:hidden text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 z-20">
+            <div class="flex lg:hidden items-center gap-4 z-20">
+            <a href="https://lct-control-points.private-3d-viewer.workers.dev/"
+                class="text-xs text-gray-400 hover:text-gray-200 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
+                rel="nofollow" aria-label="控制點系統（需密碼登入）">控制點</a>
+            <button id="mobile-menu-button" type="button" aria-label="開啟選單" aria-controls="mobile-menu" aria-expanded="false" class="lg:hidden text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 z-20">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                     xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7">
                     </path>
                 </svg>
             </button>
+            </div>
         </nav>
 
         <div id="mobile-menu"
-            class="hidden md:hidden absolute top-0 left-0 w-full bg-gray-900 bg-opacity-95 backdrop-blur-sm">
+            class="hidden lg:hidden absolute top-0 left-0 w-full bg-gray-900 bg-opacity-95 backdrop-blur-sm">
             <div class="flex flex-col items-center space-y-6 py-24">
                 <a href="#portfolio"
                     class="text-white hover:text-gray-300 transition-colors text-2xl mobile-menu-link">精選照片</a>
@@ -629,9 +637,6 @@
 
     <footer class="bg-gray-800 text-center py-6 text-sm text-gray-500">
         &copy; 2026 LCT Studio . All Rights Reserved.
-        <a href="https://lct-control-points.private-3d-viewer.workers.dev/"
-            class="inline-block ml-3 text-xs text-gray-400 hover:text-gray-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
-            rel="nofollow" aria-label="控制點系統（需密碼登入）">控制點</a>
     </footer>
 
     <div id="photo-modal"

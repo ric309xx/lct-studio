@@ -6,7 +6,7 @@ import {defaults as defaultControls} from 'ol/control';import type {Point,Positi
 import 'ol/ol.css';
 type Props={points:Point[];selected:Point|null;position:Position|null;basemap:string;overlay:any;overlayVisible:boolean;focus:number;onSelect:(p:Point)=>void;onMapReady:()=>void};
 export default function PointMap({points,selected,position,basemap,overlay,overlayVisible,focus,onSelect,onMapReady}:Props){
-  const el=useRef<HTMLDivElement>(null),mapRef=useRef<Map|null>(null),sourceRef=useRef(new VectorSource()),selectedSource=useRef(new VectorSource()),locationSource=useRef(new VectorSource()),overlaySource=useRef(new VectorSource()),baseSource=useRef<XYZ|null>(null),onSelectRef=useRef(onSelect);onSelectRef.current=onSelect;
+  const el=useRef<HTMLDivElement>(null),mapRef=useRef<Map|null>(null),sourceRef=useRef(new VectorSource()),selectedSource=useRef(new VectorSource()),locationSource=useRef(new VectorSource()),overlaySource=useRef(new VectorSource()),baseSource=useRef<XYZ|null>(null),onSelectRef=useRef(onSelect),initialFit=useRef(false);onSelectRef.current=onSelect;
   useEffect(()=>{
     const source=new XYZ({url:'https://wmts.nlsc.gov.tw/wmts/EMAP/default/EPSG:3857/{z}/{y}/{x}',crossOrigin:'anonymous',attributions:'© 內政部國土測繪中心',maxZoom:20});baseSource.current=source;
     const clusterSource=new Cluster({distance:36,minDistance:16,source:sourceRef.current});
@@ -20,7 +20,7 @@ export default function PointMap({points,selected,position,basemap,overlay,overl
     map.once('rendercomplete',onMapReady);const observer=new ResizeObserver(()=>map.updateSize());observer.observe(el.current!);
     return()=>{observer.disconnect();map.setTarget(undefined);mapRef.current=null;};
   },[]);
-  useEffect(()=>{sourceRef.current.clear();sourceRef.current.addFeatures(points.map(p=>new Feature({geometry:new PointGeometry(fromLonLat([p.lon,p.lat])),point:p})));},[points]);
+  useEffect(()=>{sourceRef.current.clear();sourceRef.current.addFeatures(points.map(p=>new Feature({geometry:new PointGeometry(fromLonLat([p.lon,p.lat])),point:p})));if(points.length&&!initialFit.current){const extent=sourceRef.current.getExtent();if(extent){initialFit.current=true;mapRef.current?.getView().fit(extent,{padding:[60,40,60,40],maxZoom:15});}}},[points]);
   useEffect(()=>{selectedSource.current.clear();if(selected){selectedSource.current.addFeature(new Feature({geometry:new PointGeometry(fromLonLat([selected.lon,selected.lat]))}));mapRef.current?.getView().animate({center:fromLonLat([selected.lon,selected.lat]),zoom:17,duration:450});}},[selected?.id]);
   useEffect(()=>{locationSource.current.clear();if(position)locationSource.current.addFeature(new Feature({geometry:new PointGeometry(fromLonLat([position.lon,position.lat]))}));},[position]);
   useEffect(()=>{baseSource.current?.setUrl(`https://wmts.nlsc.gov.tw/wmts/${basemap==='aerial'?'PHOTO2':'EMAP'}/default/EPSG:3857/{z}/{y}/{x}`);},[basemap]);

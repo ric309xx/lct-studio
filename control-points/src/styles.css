@@ -11,6 +11,26 @@
 @media print{body{background:#fff}.app-header,.sidebar,.map-canvas,.map-top,.map-controls,.map-bottom,.mobile-nav,.detail-tabs,.detail-footer,.toast,.detail-body button,.detail-body a,.detail-heading button,.map-tools-panel,.modal-backdrop{display:none!important}.app-shell,.workspace,.map-area{position:static!important;display:block!important;height:auto!important;overflow:visible!important;visibility:visible!important}.detail-panel{position:static;width:100%;border:0;box-shadow:none;max-height:none;overflow:visible}.detail-body{overflow:visible}.detail-heading{padding-top:0}.detail-body:after{content:'控制點點之記 · 坐標與高度基準依來源成果保存';display:block;margin-top:30px;color:#888;font-size:10px}.coordinate-card,.info-list,.source-note{break-inside:avoid}@page{size:A4;margin:18mm}}
 
 /* The entry screen intentionally contains only the access form. */
+.photo-viewer{position:fixed;inset:0;width:100%;max-width:none;height:100dvh;max-height:none;margin:0;padding:0;border:0;background:#101713;color:#fff;overflow:hidden;overscroll-behavior:contain}
+.photo-viewer[open]{display:flex;flex-direction:column}
+.photo-viewer::backdrop{background:#101713}
+.photo-viewer-header{display:flex;align-items:center;gap:8px;padding:calc(12px + env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 12px max(16px,env(safe-area-inset-left));flex-shrink:0;background:#19251e}
+.photo-viewer-header>div{flex:1;min-width:0}
+.photo-viewer-header h2{font-size:16px;color:#fff;margin:0 0 4px}
+.photo-viewer-header p{font-size:12px;color:#bfcfc4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
+.photo-viewer-button{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:8px;border:1px solid #526459;border-radius:8px;background:#24392e;color:#fff;text-decoration:none;touch-action:manipulation;flex-shrink:0}
+.photo-viewer-button:focus-visible{outline:2px solid #c4dd95;outline-offset:2px}
+.photo-viewer-button:disabled{opacity:.4}
+.photo-viewer-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.photo-viewer-stage img{display:block;width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain;flex-shrink:0}
+.photo-viewer-stage.zoomed{display:block}
+.photo-viewer-stage.zoomed img{max-width:none;max-height:none}
+.photo-viewer-stage>p{padding:24px;font-size:14px}
+.photo-viewer-footer{display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:#19251e;flex-shrink:0}
+.photo-viewer-status{font-size:12px;color:#bfcfc4;text-align:center;line-height:1.5}
+.photo-viewer-zoom{display:flex;gap:10px}
+.photo-viewer-fit{min-width:70px;font-size:14px}
+@media print{.photo-viewer{display:none!important}}
 .login-page{display:flex;align-items:center;justify-content:center;min-height:100dvh;padding:28px 20px;background:#f5f6f1}
 .login-form-section{width:100%;max-width:380px;padding:34px 30px;background:#fff;border:1px solid #e1e6dd;border-radius:12px}
 .login-form-section h1{font-size:26px;letter-spacing:.4px;font-weight:600;margin:0 0 10px}
