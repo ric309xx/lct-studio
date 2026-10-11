@@ -1,6 +1,6 @@
 export type ModelSource =
   | { type: "cesium-ion"; assetId: number }
-  | { type: "tileset-url"; tilesetUrl: string };
+  | { type: "tileset-url"; tilesetUrl: string; privateProjectId?: string };
 
 export type ViewerPhase =
   | "initializing"

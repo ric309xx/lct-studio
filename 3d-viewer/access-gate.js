@@ -17,6 +17,17 @@
   const error = document.querySelector("#access-error");
   const toggle = document.querySelector("#toggle-password");
   let passwordEntryStarted = false;
+  const unifiedLogin = config.role === "admin" ||
+    config.projectId === "taoyuan-building-overlay" ||
+    config.projectIds?.includes("taoyuan-building-overlay");
+  const authReady = unifiedLogin ? new Promise((resolve, reject) => {
+    if (window.LCT_SITE_AUTH) return resolve(window.LCT_SITE_AUTH);
+    const script = document.createElement("script");
+    script.src = "/3d-viewer/site-auth.js?v=20261010c";
+    script.onload = () => window.LCT_SITE_AUTH ? resolve(window.LCT_SITE_AUTH) : reject(Error("登入服務無法載入。"));
+    script.onerror = () => reject(Error("登入服務無法載入，請重新整理。"));
+    document.head.appendChild(script);
+  }) : null;
 
   // 避免瀏覽器密碼管理員把上一次內容帶入分享頁；使用者開始輸入後不再干預。
   input.setAttribute("autocomplete", "new-password");
@@ -48,7 +59,7 @@
 
   const applyAccess = () => {
     const hasElevatedAdminSession =
-      config.role !== "admin" && sessionStorage.getItem(ROLE_KEY) === "admin";
+      !unifiedLogin && config.role !== "admin" && sessionStorage.getItem(ROLE_KEY) === "admin";
     if (hasElevatedAdminSession) return;
 
     sessionStorage.setItem(ROLE_KEY, config.role);
@@ -86,7 +97,7 @@
   const applyViewerRouteContext = () => {
     if (
       config.role === "admin" ||
-      sessionStorage.getItem(ROLE_KEY) === "admin"
+      (!unifiedLogin && sessionStorage.getItem(ROLE_KEY) === "admin")
     ) return;
 
     const projectId =
@@ -106,12 +117,12 @@
 
     const stylesheet = document.createElement("link");
     stylesheet.rel = "stylesheet";
-      stylesheet.href = "/3d-viewer/assets/viewer.css?v=20261009a";
+    stylesheet.href = "/3d-viewer/assets/viewer.css?v=20261010c";
     document.head.appendChild(stylesheet);
 
     const script = document.createElement("script");
     script.type = "module";
-      script.src = "/3d-viewer/assets/viewer.js?v=20261009a";
+    script.src = "/3d-viewer/assets/viewer.js?v=20261010d";
     script.dataset.viewerApp = "true";
     document.body.appendChild(script);
   };
@@ -127,15 +138,31 @@
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     error.textContent = "";
-    const submittedHash = await sha256(input.value);
-
-    if (submittedHash !== config.passwordHash) {
-      error.textContent = "密碼不正確，請重新輸入。";
+    const submit = form.querySelector('[type="submit"]');
+    if (submit?.disabled) return;
+    if (submit) submit.disabled = true;
+    try {
+      if (unifiedLogin) {
+        const auth = await authReady;
+        const session = await auth.login(input.value, config.role);
+        if (session.role !== config.role) throw Error("登入身分不符，請重新登入。");
+      } else if (await sha256(input.value) !== config.passwordHash) {
+        throw Error("密碼不正確，請重新輸入。");
+      }
+      input.value = "";
+      sessionStorage.removeItem(sessionKey);
+      loadViewer();
+    } catch (reason) {
+      error.textContent = reason instanceof Error ? reason.message : "登入失敗，請重試。";
       input.select();
-      return;
+    } finally {
+      if (submit) submit.disabled = false;
     }
-
-    sessionStorage.removeItem(sessionKey);
-    loadViewer();
   });
+  // Storage is only a hint: the server verifies the saved session before opening.
+  if (authReady) void authReady.then(async auth => {
+    if (!auth.hasSavedSession(config.role)) return;
+    const session = await auth.restore();
+    if (session.role === config.role) loadViewer();
+  }).catch(reason => { error.textContent = reason.message || "請重新登入網站。"; });
 })();

@@ -1,5 +1,7 @@
 import { landmarksApi, landmarkClient } from './landmarks.mjs';
 import { DEFAULT_PROJECT, PROJECTS, getProject } from './projects.mjs';
+import { siteAccess } from './site-access.mjs';
+import { CADASTRAL_ORIGINS, validConnectUrl, corsResponse, createCadastralToken, readCadastralToken, CONNECT_HTML, CONNECT_JS } from './cadastral-access.mjs';
 const COOKIE_NAME = "lct_3d_session";
 const SESSION_TTL_SECONDS = 12 * 60 * 60;
 const COVER_CSS = `.project-cover{width:116px;height:58px;object-fit:cover;border:1px solid var(--line);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.3)}@media(max-width:720px){.project-cover{display:none}}`;
@@ -28,8 +30,36 @@ export default {
 
 async function routeRequest(request, env) {
   const url = new URL(request.url);
+  if (url.pathname === '/api/site-access/login' || url.pathname === '/api/site-access/refresh') {
+    return siteAccess(request, env, url.pathname);
+  }
   const session = await readSession(request, env);
   const project = getProject(url.searchParams.get('project') ?? DEFAULT_PROJECT);
+  if (url.pathname === '/cadastral-connect.js' && request.method === 'GET') {
+    return assetResponse(CONNECT_JS, 'text/javascript; charset=utf-8', 'no-store');
+  }
+  if (url.pathname === '/connect' && request.method === 'GET') {
+    const returnTo = validConnectUrl(url.pathname + url.search, url.origin, project?.id);
+    if (!returnTo || !project?.cadastral) return textResponse('Invalid connection request', 400);
+    if (!session || !canAccessProject(session, project)) {
+      // A cross-site popup navigation omits SameSite=Strict cookies. Load our
+      // own document first; its same-origin API request can reuse a valid login.
+      if (url.searchParams.get('login') !== '1') return htmlResponse(CONNECT_HTML);
+      // Encode URL separators for the HTML attribute, never include credentials.
+      const field = returnTo.replaceAll('&', '&amp;').replaceAll('"', '&quot;');
+      return htmlResponse(loginHtml(url.searchParams.get('error') === '1', project.id).replace(
+        '<form action="/login" method="post">',
+        '<form action="/login" method="post"><input type="hidden" name="returnTo" value="'+field+'">'), true);
+    }
+    return htmlResponse(CONNECT_HTML);
+  }
+  if (url.pathname === '/api/cadastral-access' && request.method === 'GET') {
+    if (!session) return textResponse('Unauthorized', 401);
+    if (!project?.cadastral || !canAccessProject(session, project)) return textResponse('Forbidden', 403);
+    return Response.json(await createCadastralToken(project.id, env.SESSION_SECRET), {
+      headers: withSecurityHeaders({'Cache-Control':'no-store'})
+    });
+  }
   if (url.pathname === '/api/landmarks') {
     if (!session) return textResponse('Unauthorized', 401);
     if (!project) return textResponse('Unknown project', 404);
@@ -78,11 +108,18 @@ async function routeRequest(request, env) {
 
   const projectTile = url.pathname.match(/^\/projects\/([^/]+)\/tiles\/(.*)$/);
   if (projectTile) {
-    if (!session) return textResponse('Unauthorized', 401);
     const tileProject = getProject(projectTile[1]);
+    const respond = response => tileProject?.cadastral ? corsResponse(request, response) : response;
+    if (request.method === 'OPTIONS' && tileProject?.cadastral) {
+      return CADASTRAL_ORIGINS.has(request.headers.get('origin'))
+        ? respond(new Response(null,{status:204,headers:{'Access-Control-Max-Age':'600'}}))
+        : textResponse('Origin not allowed',403);
+    }
+    const access = session ?? (tileProject?.cadastral ? await readCadastralToken(request, env.SESSION_SECRET) : null);
+    if (!access) return respond(textResponse('Unauthorized', 401));
     if (!tileProject) return textResponse('Unknown project', 404);
-    if (!canAccessProject(session, tileProject)) return textResponse('Forbidden', 403);
-    return servePrivateTile(request, env, projectTile[2], tileProject);
+    if (!canAccessProject(access, tileProject)) return respond(textResponse('Forbidden', 403));
+    return respond(await servePrivateTile(request, env, projectTile[2], tileProject));
   }
 
   const projectCover = url.pathname.match(/^\/projects\/([^/]+)\/cover$/);
@@ -131,6 +168,7 @@ async function handleLogin(request, env) {
   const password = String(form.get("password") || "");
   const project = getProject(String(form.get("project") || DEFAULT_PROJECT));
   if (!project) return textResponse("Unknown project", 404);
+  const returnTo = project.cadastral ? validConnectUrl(String(form.get('returnTo') || ''), new URL(request.url).origin, project.id) : null;
   if (password.length < 1 || password.length > 64) {
     return invalidLoginResponse(project.id);
   }
@@ -145,6 +183,7 @@ async function handleLogin(request, env) {
 
   if (!role) {
     await delay(350);
+    if (returnTo) return new Response(null, { status:303, headers:withSecurityHeaders({Location:returnTo+'&error=1'}) });
     return invalidLoginResponse(project.id);
   }
 
@@ -152,7 +191,7 @@ async function handleLogin(request, env) {
   return new Response(null, {
     status: 303,
     headers: withSecurityHeaders({
-      Location: "/viewer?project=" + encodeURIComponent(project.id),
+      Location: returnTo ?? "/viewer?project=" + encodeURIComponent(project.id),
       "Set-Cookie": sessionCookie(token)
     })
   });

@@ -1,0 +1,76 @@
+{
+  "status": "passed",
+  "parcels": [
+    {
+      "parcelNo": "471-7",
+      "areaM2": 17.898161,
+      "overlapDeduplicatedM2": 0.0,
+      "insideParcel": true,
+      "projectedRoundTrip": true,
+      "sourceAndPreviewMatch": true,
+      "analysisStatus": "interpreted-draft",
+      "groundSampleCount": 10320
+    },
+    {
+      "parcelNo": "99-1",
+      "areaM2": 30.317155,
+      "overlapDeduplicatedM2": 0.0,
+      "insideParcel": true,
+      "projectedRoundTrip": true,
+      "sourceAndPreviewMatch": true,
+      "analysisStatus": "interpreted-draft",
+      "groundSampleCount": 9054
+    },
+    {
+      "parcelNo": "221",
+      "areaM2": 5.424573,
+      "overlapDeduplicatedM2": 0.0,
+      "insideParcel": true,
+      "projectedRoundTrip": true,
+      "sourceAndPreviewMatch": true,
+      "analysisStatus": "interpreted-draft",
+      "groundSampleCount": 17169
+    },
+    {
+      "parcelNo": "239-1",
+      "areaM2": 18.226481,
+      "overlapDeduplicatedM2": 0.0,
+      "insideParcel": true,
+      "projectedRoundTrip": true,
+      "sourceAndPreviewMatch": true,
+      "analysisStatus": "interpreted-draft",
+      "groundSampleCount": 20632
+    },
+    {
+      "parcelNo": "646-2",
+      "areaM2": 6.83027,
+      "overlapDeduplicatedM2": -0.0,
+      "insideParcel": true,
+      "projectedRoundTrip": true,
+      "sourceAndPreviewMatch": true,
+      "analysisStatus": "interpreted-draft",
+      "groundSampleCount": 21096
+    },
+    {
+      "parcelNo": "1051-1",
+      "areaM2": 2.493093,
+      "overlapDeduplicatedM2": 0.0,
+      "insideParcel": true,
+      "projectedRoundTrip": true,
+      "sourceAndPreviewMatch": true,
+      "analysisStatus": "interpreted-draft",
+      "groundSampleCount": 18416
+    }
+  ],
+  "syntheticCases": [
+    "partial-outside",
+    "overlap-union",
+    "holes",
+    "registered-denominator"
+  ],
+  "limitations": [
+    "Tests validate computation, not building semantics, roof completeness or cadastral/model alignment accuracy.",
+    "5 cm raster sampling is not a 5 cm accuracy claim.",
+    "Height below 2.2 m and occluded structures may be absent."
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "sourceCrs": "EPSG:3826",
+  "modelCrs": "EPSG:3826+8904",
+  "sectionName": "三座屋段三座屋小段",
+  "sectionCode": "0204",
+  "screenshotDate": "2026-10-09",
+  "parcels": [
+    {"parcelNo":"471-7","dxfHandle":"333","referencePointTwd97":[270877.646,2761458.072],"registeredAreaM2":102,"registrationDate":"民國084年08月22日","announcedLandValue":"83,920 元／平方公尺","rightsCategory":"省市・100.00%","village":"五權里"},
+    {"parcelNo":"99-1","dxfHandle":"33E","referencePointTwd97":[270980.790,2761672.059],"registeredAreaM2":180,"registrationDate":"民國066年12月10日","announcedLandValue":"49,800 元／平方公尺","rightsCategory":"省市・100.00%","village":"三民里"},
+    {"parcelNo":"221","dxfHandle":"2FB","referencePointTwd97":[271090.338,2761518.408],"registeredAreaM2":127,"registrationDate":"民國099年10月26日","announcedLandValue":"60,713 元／平方公尺","rightsCategory":"本國人・75.00%；省市・25.00%","village":"三民里"},
+    {"parcelNo":"239-1","dxfHandle":"306","referencePointTwd97":[271143.754,2761521.722],"registeredAreaM2":228,"registrationDate":"民國066年11月30日","announcedLandValue":"53,900 元／平方公尺","rightsCategory":"本國人・87.50%；省市・12.50%","village":"三民里"},
+    {"parcelNo":"646-2","dxfHandle":"312","referencePointTwd97":[271167.571,2761253.136],"registeredAreaM2":221,"registrationDate":"民國066年10月20日","announcedLandValue":"61,300 元／平方公尺","rightsCategory":"鄉鎮市・100.00%","village":"五福里"},
+    {"parcelNo":"1051-1","dxfHandle":"328","referencePointTwd97":[271254.982,2761042.526],"registeredAreaM2":84,"registrationDate":"民國109年09月04日","announcedLandValue":"63,940 元／平方公尺","rightsCategory":"本國人・25.00%；省市・54.17%；鄉鎮市・20.83%","village":"五福里"}
+  ],
+  "sectionMetadata": {"county":"桃園市","landOffice":"中壢","sectionExtensionCode":"0","townCode":"03","surveyMethod":"數化整合","integrationDate":"2013-12","integrationCoordinateSystem":"TWD97 二度 TM 坐標","surveyType":"地籍圖重測","mapDate":"1977-06","coordinateSystem":"TWD67 二度 TM 坐標（原始成圖）","scale":"1:500","digitizedDate":"2002-07","useZone":"—","landUseCategory":"—"},
+  "note":"人工依使用者提供截圖逐欄轉錄；截圖中的查詢點僅用來驗證地號與 DXF 多邊形配對，不作為界址控制點。登記面積與 CAD 幾何面積分開保存。20261010-draft-v1 另依使用者授權自主判讀建物、棚架及雨遮；初估數字與範圍尚待複核，不是經確認滴水線或正式占用認定。"
+}

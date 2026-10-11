@@ -1,0 +1,38 @@
+{
+  "project": "taoyuan-20261006",
+  "checkedAt": "2026-10-09T19:55:07.045Z",
+  "checks": [
+    {
+      "name": "health",
+      "ok": true
+    },
+    {
+      "name": "private-anonymous-denied",
+      "ok": true
+    },
+    {
+      "name": "legacy-private-nanya",
+      "ok": true
+    },
+    {
+      "name": "legacy-private-longteng-20260906",
+      "ok": true
+    },
+    {
+      "name": "legacy-private-longdong-pointcloud-20260805",
+      "ok": true
+    },
+    {
+      "name": "legacy-private-heping-seawall-20260922",
+      "ok": true
+    },
+    {
+      "name": "preflight",
+      "ok": true
+    },
+    {
+      "name": "unknown-origin-blocked",
+      "ok": true
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "analysisVersion": "20261010-draft-v2-user-review",
+  "status": "interpreted-draft",
+  "reviewer": "AI image interpretation; user review pending",
+  "method": "LAS Class 2 local ground plane + 2.2 m height candidates, visually selected against colour LAS crops. Selection masks only restrict candidates; they are not new surveyed roof edges.",
+  "pixelReference": "review/manifest.json; native north-up pixel edges, EPSG:3826",
+  "parcels": [
+    {
+      "parcelNo": "471-7",
+      "targets": [{"id":"471-7-west-roof","category":"建物／屋簷","candidateId":1,"confidence":"medium","displayWallContinuity":true,"clipPixelRings":[[[0,70],[344,223],[216,491],[0,410]]],"note":"西側平屋頂建物臨巷屋簷；以屋頂側輪廓限制範圍，排除牆外冷氣設備及停車。依使用者回饋補強牆面顯示，不擴大水平投影輪廓。"}],
+      "excluded": "巷道停放汽車、機車，路燈與空中電線不計入；使用者辨識北端白色直立物應為招牌，暫排除，不列入建物投影。",
+      "pending": "地籍線沿建物邊緣通過，窄長交集對界線及重建誤差敏感；屋頂側檐口需現地或原始影像複核。"
+    },
+    {
+      "parcelNo": "99-1",
+      "targets": [{"id":"99-1-west-frontage","category":"建物／棚架／雨遮","candidateId":1,"confidence":"medium","displayWallContinuity":true,"note":"西側連續建物前緣、綠色伸縮雨遮及鐵皮屋簷；以影像可辨識的連續屋頂候選區納入。依使用者回饋補強上下層與牆面連續著色，同一水平投影不重複加總。"}],
+      "excluded": "車輛、東側零散樹冠及電線不計入。",
+      "pending": "東南側綠色窄條與植栽重疊，暫不加入面積；西側雨遮伸縮狀態依本次拍攝時點。",
+      "uncertainPixelRings": [[[298,645],[355,575],[385,590],[328,663]]]
+    },
+    {
+      "parcelNo": "221",
+      "targets": [{"id":"221-west-eaves","category":"建物／雨遮","candidateId":1,"confidence":"low","clipPixelRings":[[[530,220],[580,235],[305,605],[260,605],[260,555],[500,250]]],"note":"西側建物前緣及窄雨遮；僅保留有高度與屋頂影像依據的部分。"}],
+      "excluded": "南端白色車輛及與建物候選區相連的細長電線已以限制範圍排除。",
+      "pending": "西側大多貼近地籍線，窄檐與外牆邊緣難以分離；南端遮棚是否跨界仍需複核。",
+      "uncertainPixelRings": [[[228,605],[270,625],[224,675],[186,651]]]
+    },
+    {
+      "parcelNo": "239-1",
+      "targets": [
+        {"id":"239-1-west-canopy","category":"棚架／雨遮","candidateId":1,"confidence":"medium","clipPixelRings":[[[174,230],[202,230],[320,302],[307,326]]],"note":"西北側綠色連續遮棚，排除北端樹冠。"},
+        {"id":"239-1-south-roof","category":"建物／屋簷","candidateId":1,"confidence":"medium","clipPixelRings":[[[335,330],[480,406],[466,435],[326,359]]],"note":"南側大型鐵皮屋頂北緣跨入地籍的部分。"},
+        {"id":"239-1-southeast-roof","category":"建物／屋簷","candidateId":1,"confidence":"medium","clipPixelRings":[[[605,525],[730,608],[671,652],[585,583]]],"note":"東南側相接鐵皮屋頂前緣。"}
+      ],
+      "excluded": "北側貨車、零散設備及樹冠不計入。",
+      "pending": "西北棚架靠近樹木，已保守限制北端；三處屋頂邊緣仍待使用者複核。"
+    },
+    {
+      "parcelNo": "646-2",
+      "targets": [
+        {"id":"646-2-east-canopy","category":"棚架／雨遮","candidateId":2,"confidence":"medium","note":"東側大片淺綠色遮棚的臨路前緣。"},
+        {"id":"646-2-northwest-awning","category":"雨遮","candidateId":4,"confidence":"medium","clipPixelRings":[[[169,257],[250,283],[233,307],[165,279]]],"note":"西北角低矮鐵皮雨遮。"}
+      ],
+      "excluded": "北側樹冠、中央交通號誌及其斜跨電線、車輛均不計入。",
+      "pending": "西側白色屋簷多沿界線外側，未將電線造成的零散高點併入；需以原始影像確認極窄的檐口交集。"
+    },
+    {
+      "parcelNo": "1051-1",
+      "targets": [{"id":"1051-1-north-roof","category":"建物／屋簷","candidateId":1,"confidence":"low","excludeHeightAboveGroundM":9.0,"exclusionBufferM":0.15,"clipPixelRings":[[[310,135],[500,205],[475,228],[330,174]]],"note":"北側淺綠色屋頂及檐口。依使用者要求排除電線桿：局部 LAS 屋頂約離地 8.3–8.6 m，桿件／橫臂約 9.6–9.8 m；9 m 以上高點投影外擴 15 cm 作排除遮罩，仍待影像與現地複核。"}],
+      "excluded": "電線桿及橫臂高點投影、中央交通號誌、斜跨電線、車輛及西側樹木不計入。",
+      "pending": "北側屋檐與號誌、車輛重疊；西南側小型棚架邊界不清，暫不加入面積。這筆優先複核，不宜直接作為正式占用數字。",
+      "uncertainPixelRings": [[[190,292],[261,315],[245,342],[180,323]]]
+    }
+  ]
+}

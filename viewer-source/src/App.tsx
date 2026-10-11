@@ -1,4 +1,6 @@
 import driplineMetrics from "./taoyuanDriplineMetrics.json";
+import taoyuan1006Parcels from "./taoyuan1006Parcels.json";
+import { PRIVATE_R2_ORIGIN, TAOYUAN_R2_PROJECT, R2AuthorizationRequired, ensureR2Access, hasR2Access, privateR2Resource } from "./r2Access";
 import { CadastralInfoPanel } from "./CadastralInfoPanel";
 import { focusParcelOrbit, tuneParcelNavigation } from "./parcelNavigation";
 import { createOccupancyUnderlay } from "./occupancyUnderlay";
@@ -223,6 +225,9 @@ type CadastralInfo = {
   mapDate: string;
   crs: string;
   coordinateSystem?: string;
+  integrationDate?: string;
+  integrationCoordinateSystem?: string;
+  geometryAreaM2?: number;
   scale: string;
   digitizedDate?: string;
   registrationDate?: string;
@@ -234,6 +239,11 @@ type CadastralInfo = {
   occupiedAreaM2?: number;
   occupancyPercent?: number;
   analysisNote?: string;
+  analysisStatus?: string;
+  analysisVersion?: string;
+  targetSummary?: string;
+  reviewImageUrl?: string;
+  analysisReviewNote?: string;
 };
 
 type CadastralParcel = {
@@ -242,6 +252,7 @@ type CadastralParcel = {
   fillEntityId: string;
   info: CadastralInfo;
   focus?: CameraPreset;
+  overlayUrl?: string;
 };
 
 type CadastralProject = {
@@ -314,9 +325,17 @@ const CADASTRAL_PROJECTS: Record<string, CadastralProject> = {
         pitchDegrees: -90,
         rollDegrees: 0
       }
-    }]
+    }, ...taoyuan1006Parcels]
   }
 };
+
+function activeCadastralConfig(projectId: string): CadastralProject | undefined {
+  const config = CADASTRAL_PROJECTS[projectId];
+  if (!config || projectId !== "taoyuan-building-overlay") return config;
+  const key = new URLSearchParams(window.location.search).get("parcel");
+  const parcel = config.parcels.find(item => item.key === key) ?? config.parcels[0];
+  return { url: parcel.overlayUrl ?? config.url, parcels: [parcel] };
+}
 
 function applyCadastralDisplayMode(
   dataSource: GeoJsonDataSource,
@@ -476,7 +495,9 @@ async function loadModel(
             : 512 * 1024 * 1024
     });
   }
-  return Cesium3DTileset.fromUrl(source.tilesetUrl, comparisonMode
+  if (source.privateProjectId) await ensureR2Access(source.privateProjectId);
+  const resource = source.privateProjectId ? privateR2Resource(source.tilesetUrl, source.privateProjectId) : source.tilesetUrl;
+  return Cesium3DTileset.fromUrl(resource, comparisonMode
     ? {
         maximumScreenSpaceError: 20,
         dynamicScreenSpaceError: true,
@@ -485,7 +506,12 @@ async function loadModel(
         cacheBytes: 256 * 1024 * 1024,
         maximumCacheOverflowBytes: 128 * 1024 * 1024
       }
-    : undefined);
+    : source.privateProjectId ? {
+        maximumScreenSpaceError: 4,
+        dynamicScreenSpaceError: false,
+        cacheBytes: 512 * 1024 * 1024,
+        maximumCacheOverflowBytes: 256 * 1024 * 1024
+      } : undefined);
 }
 
 export function App() {
@@ -534,6 +560,7 @@ export function App() {
   );
   const [status, setStatus] = useState<ViewerStatus>(INITIAL_STATUS);
   const [reloadKey, setReloadKey] = useState(0);
+  const [r2Connecting, setR2Connecting] = useState(false);
   const [basemap, setBasemap] = useState<"aerial" | "road">("aerial");
   const [overlayVisible, setOverlayVisible] = useState(true);
   const [overlayXray, setOverlayXray] = useState(false);
@@ -639,12 +666,22 @@ export function App() {
                   rightProjectId: comparison.rightProjectId
                 }
               : null;
-        const project = comparison
+        const catalogProject = comparison
           ? allProjects.find(
               (item) => item.id === selectedComparison?.leftProjectId
             )
           : projects.find((item) => item.id === projectId) ?? projects[0];
-        if (!project) throw new Error("找不到對比使用的左側專案。");
+        if (!catalogProject) throw new Error("找不到對比使用的左側專案。");
+        const activeParcel = !comparison ? activeCadastralConfig(catalogProject.id)?.parcels[0] : undefined;
+        const project = activeParcel?.overlayUrl ? {
+          ...catalogProject,
+          camera: activeParcel.focus,
+          modelSource: {
+            type: "tileset-url" as const,
+            tilesetUrl: `${PRIVATE_R2_ORIGIN}/projects/${TAOYUAN_R2_PROJECT}/tiles/tileset.json`,
+            privateProjectId: TAOYUAN_R2_PROJECT
+          }
+        } : catalogProject;
         const rightProject = comparison
           ? allProjects.find(
               (item) => item.id === selectedComparison?.rightProjectId
@@ -686,7 +723,7 @@ export function App() {
         setSplitPosition(initialSplit);
         setProjectName(comparison?.name ?? project.name);
         setProjectHasOverlay(Boolean(!comparison && project.overlayUrl));
-        const cadastralConfig = !comparison ? CADASTRAL_PROJECTS[project.id] : undefined;
+        const cadastralConfig = !comparison ? activeCadastralConfig(project.id) : undefined;
         const hasCadastral = Boolean(cadastralConfig);
         setProjectHasCadastral(hasCadastral);
         setModelGroundAvailable(false);
@@ -980,7 +1017,11 @@ export function App() {
                   const buildings = cadastral.entities.values.filter(entity =>
                     entity.polygon && entity.properties?.kind?.getValue() === "occupancy-building");
                   for (const building of buildings) {
-                    const surface = await createOccupancyUnderlay(viewer, building, groundHeight, () => cancelled);
+                    const surface = await createOccupancyUnderlay(viewer, building, groundHeight, () => cancelled, {
+                      // 99-1 has low awnings directly below set-back upper walls.
+                      // Neighbouring roof rays repair display height only; XY and area stay unchanged.
+                      nearbyRoofProbeMeters: building.properties?.parcelKey?.getValue() === "sanzuwu-sanzuwu-99-1" ? 2 : 0
+                    });
                     if (cancelled || viewer.isDestroyed()) return;
                     if (!surface.length) continue;
                     for (const entity of surface) {
@@ -1276,7 +1317,13 @@ export function App() {
         }
       } catch (error) {
         if (!cancelled) {
-          setStatus({ phase: "error", message: toViewerError(error) });
+          const isR2 = Boolean(activeCadastralConfig(projectId)?.parcels[0]?.overlayUrl);
+          const message = error instanceof Error ? error.message : String(error);
+          setStatus({ phase: "error", message: error instanceof R2AuthorizationRequired ? error.message : isR2
+            ? /401|403/.test(message) ? "網站登入已失效，請重新登入網站。"
+              : /404/.test(message) ? "R2 模型檔案尚未就緒，請待上傳完成後重新載入。"
+                : /登入|網路/.test(message) ? message : "私人模型載入失敗，請檢查網路後重試。"
+            : toViewerError(error) });
         }
       }
     }
@@ -1674,12 +1721,26 @@ export function App() {
     viewerRef.current?.scene.requestRender();
   };
 
-  const selectCadastralParcel = useCallback((parcelKey: string) => {
+  const selectCadastralParcel = useCallback(async (parcelKey: string) => {
     const config = CADASTRAL_PROJECTS[projectId];
     const parcel = config?.parcels.find((item) => item.key === parcelKey);
     if (!parcel) return;
+    if (parcel.overlayUrl && !hasR2Access(TAOYUAN_R2_PROJECT)) {
+      setR2Connecting(true);
+      try { await ensureR2Access(); }
+      catch (error) { setMapNotice(error instanceof Error ? error.message : "網站登入已過期，請重新登入網站。"); return; }
+      finally { setR2Connecting(false); }
+    }
+    const previous = new URLSearchParams(window.location.search).get("parcel") ?? config.parcels[0].key;
+    const url = new URL(window.location.href);
+    url.searchParams.set("parcel", parcel.key);
+    window.history.replaceState({}, "", url);
     setSelectedCadastralParcelKey(parcel.key);
     setSelectedCadastral(parcel.info);
+    if (projectId === "taoyuan-building-overlay" && previous !== parcel.key) {
+      setReloadKey(key => key + 1);
+      return;
+    }
     const viewer = viewerRef.current;
     const entity = cadastralDataSourceRef.current?.entities.values.find(
       (candidate) =>
@@ -1700,9 +1761,6 @@ export function App() {
         )
       });
     }
-    const url = new URL(window.location.href);
-    url.searchParams.set("parcel", parcel.key);
-    window.history.replaceState({}, "", url);
   }, [projectId]);
 
 
@@ -2245,6 +2303,7 @@ export function App() {
         : getProjectSharePath(projects, projectId),
       window.location.origin
     );
+    if (projectId === "taoyuan-building-overlay" && selectedCadastralParcelKey) shareUrl.searchParams.set("parcel", selectedCadastralParcelKey);
     try {
       await navigator.clipboard.writeText(shareUrl.toString());
       setCameraNotice(
@@ -2253,7 +2312,12 @@ export function App() {
     } catch {
       setCameraNotice(`分享網址：${shareUrl.toString()}`);
     }
-  }, [activeComparison, projectId]);
+  }, [activeComparison, projectId, selectedCadastralParcelKey]);
+
+  const currentParcel = CADASTRAL_PROJECTS[projectId]?.parcels.find(parcel => parcel.key === selectedCadastralParcelKey);
+  const currentParcelInfo = currentParcel?.info;
+  const hasOccupancyAnalysis = currentParcelInfo?.occupiedAreaM2 !== undefined;
+  const isDraftOccupancy = currentParcelInfo?.analysisStatus === "interpreted-draft";
 
   return (
     <main
@@ -2630,6 +2694,7 @@ export function App() {
                   <select
                     aria-label="選擇地段地號"
                     value={selectedCadastralParcelKey}
+                    disabled={r2Connecting}
                     onChange={(event) => selectCadastralParcel(event.currentTarget.value)}
                   >
                     {CADASTRAL_PROJECTS[projectId].parcels.map((parcel) => (
@@ -2637,6 +2702,9 @@ export function App() {
                     ))}
                   </select>
                 </label>
+              )}
+              {currentParcel?.overlayUrl && (
+                <p className="overlay-hint">私人共用模型・隨網站登入自動載入與更新授權。</p>
               )}
               <label className="overlay-toggle cadastral-toggle">
                 <input
@@ -2672,7 +2740,7 @@ export function App() {
                     ))}
                   </div>
                   <label className="overlay-toggle overlay-toggle-secondary">
-                    <input type="checkbox" checked={occupancyVisible}
+                    <input type="checkbox" checked={hasOccupancyAnalysis && occupancyVisible} disabled={!hasOccupancyAnalysis}
                       onChange={event => changeOccupancyVisibility(event.currentTarget.checked)} />
                     <span>顯示占用範圍</span>
                   </label>
@@ -2681,7 +2749,7 @@ export function App() {
                   </p>
                   {cadastralDisplayMode === "model-ground" && (
                     <p className="overlay-hint cadastral-terrain-notice">
-                      地籍面位於估算地面；綠色為建物滴水線投影範圍，模型缺口保留補洞面。
+                      {isDraftOccupancy ? "綠色為 AI 初步判讀之建物／棚架／雨遮投影，尚待複核；地籍面為模型估算地面。" : hasOccupancyAnalysis ? "地籍面位於估算地面；綠色為建物滴水線投影範圍，模型缺口保留補洞面。" : "地籍面位於模型估算地面；本地號占用範圍尚待圈選確認。"}
                     </p>
                   )}
                   {!modelGroundAvailable && (
@@ -2705,10 +2773,11 @@ export function App() {
               </button>
               {projectId === "taoyuan-building-overlay" && (
                 <div className="occupancy-summary" aria-label="建物占用分析">
-                  <div><span>地籍面積</span><strong>500 m²</strong></div>
-                  <div><span>建物占用投影面積</span><strong>{TAOYUAN_102_45_INFO.occupiedAreaM2!.toFixed(2)} m²</strong></div>
-                  <div className="emphasis"><span>占用比例</span><strong>{TAOYUAN_102_45_INFO.occupancyPercent!.toFixed(2)}%</strong></div>
-                  <p>依滴水線垂直投影與地籍範圍交集重算，已修除右端非屋頂尖角。</p>
+                  <div><span>登記面積</span><strong>{currentParcelInfo?.cadastralAreaM2 ?? "—"} m²</strong></div>
+                  <div><span>{isDraftOccupancy ? "已判讀投影面積（初估）" : "建物占用投影面積"}</span><strong>{currentParcelInfo?.occupiedAreaM2 === undefined ? "待確認" : `${isDraftOccupancy ? "約 " : ""}${currentParcelInfo.occupiedAreaM2.toFixed(isDraftOccupancy ? 1 : 2)} m²`}</strong></div>
+                  <div className="emphasis"><span>{isDraftOccupancy ? "占用比例（初估）" : "占用比例"}</span><strong>{currentParcelInfo?.occupancyPercent === undefined ? "待確認" : `${isDraftOccupancy ? "約 " : ""}${currentParcelInfo.occupancyPercent.toFixed(isDraftOccupancy ? 1 : 2)}%`}</strong></div>
+                  <p>{isDraftOccupancy ? "AI 初步判讀／待複核。僅計入已判讀範圍，未納入不確定區，不代表完整占用或正式鑑界。" : hasOccupancyAnalysis ? "依滴水線垂直投影與地籍範圍交集重算，已修除右端非屋頂尖角。" : "尚未指定本地號要分析的建物；未分析不代表占用為零。"}</p>
+                  {currentParcelInfo?.reviewImageUrl && <p><a href={import.meta.env.BASE_URL + currentParcelInfo.reviewImageUrl} target="_blank" rel="noopener noreferrer">查看初判圈選圖（含待釐清區）</a></p>}
                 </div>
               )}
               <p className="overlay-hint">點選紅色範圍可查看土地與地籍資料</p>
@@ -2988,7 +3057,9 @@ export function App() {
             </div>
           )}
           </div>
-          {mapNotice && <p className="map-notice">{mapNotice}</p>}
+          {mapNotice && <p className="map-notice">{mapNotice}
+            {mapNotice.includes("登入") && <button type="button" onClick={() => { window.LCT_SITE_AUTH?.clear(); window.location.reload(); }}>重新登入網站</button>}
+          </p>}
         </div>
       </aside>
 
@@ -3003,6 +3074,11 @@ export function App() {
             <RefreshCw size={16} />
             重新嘗試
           </button>
+          {currentParcel?.overlayUrl && (
+            <button type="button" onClick={() => { window.LCT_SITE_AUTH?.clear(); window.location.reload(); }}>
+              重新登入網站
+            </button>
+          )}
         </section>
       )}
 
@@ -3040,6 +3116,7 @@ export function App() {
           <p className="landmark-card-kicker">CADASTRAL INFO</p>
           <h2>{selectedCadastral.sectionName}</h2>
           <span className="landmark-card-category">地號 {selectedCadastral.parcelNo}</span>
+          {selectedCadastral.analysisStatus === "interpreted-draft" && <p className="cadastral-draft-badge">待複核</p>}
           <dl className="cadastral-details">
             <div><dt>縣市</dt><dd>{selectedCadastral.county}</dd></div>
             <div><dt>地政事務所</dt><dd>{selectedCadastral.landOffice}</dd></div>
@@ -3053,8 +3130,12 @@ export function App() {
             <div><dt>成圖年月</dt><dd>{selectedCadastral.mapDate}</dd></div>
             <div><dt>比例尺</dt><dd>{selectedCadastral.scale}</dd></div>
             {selectedCadastral.coordinateSystem && (
-              <div><dt>坐標系統</dt><dd>{selectedCadastral.coordinateSystem}</dd></div>
+              <div><dt>{selectedCadastral.integrationCoordinateSystem ? "原始成圖坐標" : "坐標系統"}</dt><dd>{selectedCadastral.coordinateSystem}</dd></div>
             )}
+            {selectedCadastral.integrationCoordinateSystem && (
+              <div className="wide"><dt>整合坐標系統（套繪依據）</dt><dd>{selectedCadastral.integrationCoordinateSystem}</dd></div>
+            )}
+            {selectedCadastral.integrationDate && <div><dt>數化整合年月</dt><dd>{selectedCadastral.integrationDate}</dd></div>}
             {selectedCadastral.digitizedDate && (
               <div><dt>數化年月</dt><dd>{selectedCadastral.digitizedDate}</dd></div>
             )}
@@ -3073,23 +3154,17 @@ export function App() {
             {selectedCadastral.landUseCategory && (
               <div><dt>使用地類別</dt><dd>{selectedCadastral.landUseCategory}</dd></div>
             )}
-            <div className="wide"><dt>原始座標</dt><dd>{selectedCadastral.crs}</dd></div>
+            <div className="wide"><dt>套繪資料座標</dt><dd>{selectedCadastral.crs}</dd></div>
             {selectedCadastral.cadastralAreaM2 !== undefined && (
               <div><dt>地籍面積</dt><dd>{Number.isInteger(selectedCadastral.cadastralAreaM2) ? selectedCadastral.cadastralAreaM2.toFixed(0) : selectedCadastral.cadastralAreaM2.toFixed(3)} m²</dd></div>
             )}
             {selectedCadastral.occupiedAreaM2 !== undefined && (
-              <div><dt>建物占用投影面積</dt><dd>{selectedCadastral.occupiedAreaM2.toFixed(2)} m²</dd></div>
+              <div><dt>{selectedCadastral.analysisStatus === "interpreted-draft" ? "已判讀投影面積（初估）" : "建物占用投影面積"}</dt><dd>{selectedCadastral.analysisStatus === "interpreted-draft" ? "約 " : ""}{selectedCadastral.occupiedAreaM2.toFixed(selectedCadastral.analysisStatus === "interpreted-draft" ? 1 : 2)} m²</dd></div>
             )}
             {selectedCadastral.occupancyPercent !== undefined && (
-              <div className="wide occupancy-card-result"><dt>占用比例</dt><dd>{selectedCadastral.occupancyPercent.toFixed(2)}%</dd></div>
-            )}
-            {selectedCadastral.occupiedAreaM2 !== undefined && (
-              <div className="wide"><dt>計算方式</dt><dd>滴水線垂直投影輪廓與完整地號相交，以 TWD97 平面座標計算。</dd></div>
+              <div className="wide occupancy-card-result"><dt>{selectedCadastral.analysisStatus === "interpreted-draft" ? "占用比例（初估）" : "占用比例"}</dt><dd>{selectedCadastral.analysisStatus === "interpreted-draft" ? "約 " : ""}{selectedCadastral.occupancyPercent.toFixed(selectedCadastral.analysisStatus === "interpreted-draft" ? 1 : 2)}%</dd></div>
             )}
           </dl>
-          {selectedCadastral.analysisNote && (
-            <p className="cadastral-analysis-note">{selectedCadastral.analysisNote}</p>
-          )}
         </CadastralInfoPanel>
       )}
 
@@ -3098,8 +3173,22 @@ export function App() {
           <form
             className="role-login-dialog"
             aria-label="管理員登入"
-            onSubmit={(event) => {
+            onSubmit={async (event) => {
               event.preventDefault();
+              if (window.LCT_SITE_AUTH) {
+                try {
+                  await window.LCT_SITE_AUTH.login(adminPassword, "admin");
+                  setAdminPassword("");
+                  const url = new URL("/3d-viewer/", window.location.origin);
+                  url.searchParams.set("project", projectId);
+                  const parcel = new URLSearchParams(window.location.search).get("parcel");
+                  if (parcel) url.searchParams.set("parcel", parcel);
+                  window.location.assign(url);
+                } catch (error) {
+                  setAdminLoginError(error instanceof Error ? error.message : "登入失敗");
+                }
+                return;
+              }
               if (adminPassword !== "1111") {
                 setAdminLoginError("管理員密碼不正確");
                 return;

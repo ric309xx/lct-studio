@@ -1,0 +1,87 @@
+{
+  "sourceDxf": "D:\\DATA\\WORK\\20261006桃園三維地籍\\地籍資料\\01_1006\\1006.dxf",
+  "sourceSha256": "517b53c3fe74f0629e966a66a2bfb7bf64764d1ac02baa05a0375319c4fb7459",
+  "sourceCrs": "EPSG:3826",
+  "parcelCount": 6,
+  "parcels": [
+    {
+      "parcelNo": "471-7",
+      "dxfHandle": "333",
+      "registeredAreaM2": 102,
+      "geometryAreaM2": 106.917,
+      "referencePointInside": true,
+      "anchorTwd97": [
+        270875.7775498446,
+        2761456.0568890003
+      ],
+      "demOrthometricHeight": 127.89037322998047,
+      "occupancyStatus": "interpreted-draft"
+    },
+    {
+      "parcelNo": "99-1",
+      "dxfHandle": "33E",
+      "registeredAreaM2": 180,
+      "geometryAreaM2": 180.693,
+      "referencePointInside": true,
+      "anchorTwd97": [
+        270985.00248278654,
+        2761678.064388993
+      ],
+      "demOrthometricHeight": 128.559326171875,
+      "occupancyStatus": "interpreted-draft"
+    },
+    {
+      "parcelNo": "221",
+      "dxfHandle": "2FB",
+      "registeredAreaM2": 127,
+      "geometryAreaM2": 134.396,
+      "referencePointInside": true,
+      "anchorTwd97": [
+        271080.45959450724,
+        2761508.514388998
+      ],
+      "demOrthometricHeight": 128.16580200195312,
+      "occupancyStatus": "interpreted-draft"
+    },
+    {
+      "parcelNo": "239-1",
+      "dxfHandle": "306",
+      "registeredAreaM2": 228,
+      "geometryAreaM2": 227.399,
+      "referencePointInside": true,
+      "anchorTwd97": [
+        271146.58586042316,
+        2761518.2673889967
+      ],
+      "demOrthometricHeight": 128.39976501464844,
+      "occupancyStatus": "interpreted-draft"
+    },
+    {
+      "parcelNo": "646-2",
+      "dxfHandle": "312",
+      "registeredAreaM2": 221,
+      "geometryAreaM2": 223.081,
+      "referencePointInside": true,
+      "anchorTwd97": [
+        271167.69184778543,
+        2761250.0173890064
+      ],
+      "demOrthometricHeight": 129.47288513183594,
+      "occupancyStatus": "interpreted-draft"
+    },
+    {
+      "parcelNo": "1051-1",
+      "dxfHandle": "328",
+      "registeredAreaM2": 84,
+      "geometryAreaM2": 84.426,
+      "referencePointInside": true,
+      "anchorTwd97": [
+        271257.4423371257,
+        2761039.1338890158
+      ],
+      "demOrthometricHeight": 130.59535217285156,
+      "occupancyStatus": "interpreted-draft"
+    }
+  ],
+  "note": "人工依使用者提供截圖逐欄轉錄；截圖中的查詢點僅用來驗證地號與 DXF 多邊形配對，不作為界址控制點。登記面積與 CAD 幾何面積分開保存。20261010-draft-v1 另依使用者授權自主判讀建物、棚架及雨遮；初估數字與範圍尚待複核，不是經確認滴水線或正式占用認定。"
+}

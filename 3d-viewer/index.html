@@ -14,7 +14,7 @@
         <a class="access-back" href="/">← 返回 LCT Studio</a>
         <p class="access-kicker">PRIVATE 3D VIEWER</p>
         <h1 id="access-title">3D 專案管理</h1>
-        <p class="access-copy">此入口僅供管理員使用。客戶請使用收到的專案分享網址。</p>
+        <p class="access-copy">使用私人模型管理員密碼登入，模型將自動載入。客戶請使用專案分享網址。</p>
         <form id="access-form" class="access-form">
           <label for="access-password">管理員密碼</label>
           <div class="access-input-row">
@@ -26,7 +26,7 @@
           <p id="access-error" class="access-error" role="alert" aria-live="polite"></p>
           <button class="access-submit" type="submit">進入管理模式</button>
         </form>
-        <p class="access-note">分享專案時只傳送專案網址，密碼請使用其他方式提供。</p>
+        <p class="access-note">本分頁登入有效 12 小時，切換地號或重新整理免再次登入；密碼不會儲存。</p>
       </section>
     </main>
     <div id="root"></div>
@@ -37,6 +37,6 @@
         passwordHash: "0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c"
       };
     </script>
-    <script src="/3d-viewer/access-gate.js"></script>
+    <script src="/3d-viewer/access-gate.js?v=20261010d"></script>
   </body>
 </html>

@@ -420,6 +420,20 @@ button {
   font-size: 0.68rem;
 }
 
+.r2-connect-button {
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 10px;
+  border: 1px solid rgba(138, 230, 212, 0.4);
+  border-radius: 8px;
+  background: rgba(138, 230, 212, 0.08);
+  color: #c8f4eb;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.r2-connect-button:disabled { opacity: 0.55; cursor: wait; }
+
 .cadastral-parcel-picker select {
   width: 100%;
   min-width: 0;
@@ -1371,6 +1385,9 @@ button {
 .map-settings :is(p, span, strong, label, button, select, input) {
   font-size: 14px;
 }
+.occupancy-summary a, .cadastral-details a { color: #86e5d1; text-decoration: underline; text-underline-offset: 3px; }
+.occupancy-summary a:focus-visible, .cadastral-details a:focus-visible { outline: 2px solid #86e5d1; outline-offset: 4px; }
+.cadastral-draft-badge { padding: 8px 10px; border: 1px solid #c89544; border-radius: 7px; color: #ffe0a4; background: #4c381c66; font-size: 14px; line-height: 1.5; }
 @media (max-width: 700px) {
   .section-editor-backdrop { padding: 8px; }
   .section-editor { width: calc(100vw - 16px); max-height: calc(100vh - 16px); border-radius: 12px; }

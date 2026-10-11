@@ -1,6 +1,12 @@
 export const DEFAULT_PROJECT = 'nanya';
 // Server-owned allowlist: never accept a bucket key or prefix from the client.
 export const PROJECTS = Object.freeze({
+  'taoyuan-20261006': Object.freeze({
+    id: 'taoyuan-20261006', name: '桃園地籍｜三座屋小段六地號', date: '2026-10-06',
+    prefix: 'projects/taoyuan/20261006-v1/terra_b3dms/',
+    landmarks: false, measurementOnly: true, cadastral: true,
+    camera: { heading: 0, pitch: -55, rangeFactor: 1.5 }
+  }),
   nanya: Object.freeze({
     id: 'nanya', name: '南雅奇岩模型', date: '2026-08-10',
     prefix: '20260810/terra_b3dms/',
