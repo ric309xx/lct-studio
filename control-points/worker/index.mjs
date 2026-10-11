@@ -170,7 +170,7 @@ async function route(req,env){
       const key=`points/${id}/${attachmentId}/original`,thumbKey=`points/${id}/${attachmentId}/thumbnail.jpg`,hash=await digest(bytes);let savedThumb=null;
       await env.FILES.put(key,bytes,{httpMetadata:{contentType:mime}});
       if(thumbnail&&typeof thumbnail.arrayBuffer==='function'&&thumbnail.size<=1024*1024){const thumb=await thumbnail.arrayBuffer(),h=new Uint8Array(thumb);if(h[0]===255&&h[1]===216){await env.FILES.put(thumbKey,thumb,{httpMetadata:{contentType:'image/jpeg'}});savedThumb=thumbKey;}}
-      try{await env.DB.prepare('INSERT INTO attachments VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)').bind(attachmentId,id,visitId,key,savedThumb,safeName(file.name),mime,file.size,String(form.get('category')||'其他').slice(0,40),String(form.get('captured_at')||now()),String(form.get('position')||'')||null,'ready',hash,now()).run();}
+      try{await env.DB.prepare('INSERT INTO attachments VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)').bind(attachmentId,id,visitId,key,savedThumb,safeName(file.name),mime,file.size,String(form.get('category')||'其他').slice(0,40),form.get('captured_at')?String(form.get('captured_at')):null,String(form.get('position')||'')||null,'ready',hash,now()).run();}
       catch(e){const duplicate=await env.DB.prepare('SELECT * FROM attachments WHERE id=?').bind(attachmentId).first();if(duplicate&&duplicate.point_id===id)return json(duplicate);throw e;}
       return json({ok:true,id:attachmentId,sha256:hash});
     }

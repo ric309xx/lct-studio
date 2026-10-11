@@ -37,6 +37,7 @@ test('獨立本機環境：登入、匯入、照片重試、巡查、回收與�
       assert.equal((await request(`/api/points/${p.id}/attachments`,{method:'POST',body})).status,200);
     }
     const allPhotos=await(await request(`/api/points/${p.id}/attachments`)).json();
+    assert.equal(allPhotos.find(a=>a.id===photoId).captured_at,null,'未提供拍攝時間時保留未知，不將上傳時間當成拍攝時間');
     assert.equal(allPhotos.length,10);for(const category of ['遠照','環境'])assert.equal(allPhotos.filter(a=>a.category===category).length,3);
     for(const id of newIds){const a=allPhotos.find(a=>a.id===id);assert.equal(a.captured_at,capturedAt);assert.ok(Date.parse(a.created_at)>Date.parse('2000-01-02'));assert.equal(a.filename,'photo.png');}
     const originalUpload=allPhotos.find(a=>a.id===photoId).created_at;await request(`/api/points/${p.id}/attachments`,{method:'POST',body:photo()});
