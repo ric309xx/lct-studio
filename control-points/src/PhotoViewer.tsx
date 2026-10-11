@@ -3,6 +3,7 @@ import {createPortal} from 'react-dom';
 import {Download,Minus,Plus,X} from 'lucide-react';
 import {readStored} from './storage';
 import type {Attachment} from './types';
+import {photoCategory,UploadTime} from './photos';
 
 export default function PhotoViewer({attachment,preview,onClose}:{attachment:Attachment;preview:string;onClose:()=>void}){
   const dialog=useRef<HTMLDialogElement>(null),titleId=useId();
@@ -22,7 +23,7 @@ export default function PhotoViewer({attachment,preview,onClose}:{attachment:Att
   },[attachment.id,preview]);
   function imageError(){if(src!==preview&&preview){setSrc(preview);setMessage('原始格式無法預覽，目前顯示預覽圖；仍可下載原檔。');}else{setFailed(true);setMessage('此照片無法預覽，請下載原檔查看。');}}
   return createPortal(<dialog ref={dialog} className="photo-viewer" aria-labelledby={titleId} onCancel={event=>{event.preventDefault();onClose();}} onClick={event=>{if(event.target===event.currentTarget)onClose();}}>
-    <header className="photo-viewer-header"><div><h2 id={titleId}>{attachment.category}</h2><p>{attachment.filename}</p></div><a className="photo-viewer-button" href={original||`/files/${attachment.id}`} download={attachment.filename} aria-label="下載照片原檔"><Download size={20}/></a><button className="photo-viewer-button" onClick={onClose} aria-label="關閉照片" autoFocus><X size={24}/></button></header>
+    <header className="photo-viewer-header"><div><h2 id={titleId}>{photoCategory(attachment.category)}</h2><p>{attachment.filename}</p><UploadTime value={attachment.created_at} className="photo-viewer-upload-time"/></div><a className="photo-viewer-button" href={original||`/files/${attachment.id}`} download={attachment.filename} aria-label="下載照片原檔"><Download size={20}/></a><button className="photo-viewer-button" onClick={onClose} aria-label="關閉照片" autoFocus><X size={24}/></button></header>
     <div className={'photo-viewer-stage'+(zoom>1?' zoomed':'')}>
       {src&&!failed?<img src={src} alt={`${attachment.category} ${attachment.filename}`} onError={imageError} style={zoom>1?{width:`${zoom*100}%`}:undefined}/>:!loading&&<p>無法顯示照片</p>}
     </div>

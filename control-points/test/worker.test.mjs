@@ -29,6 +29,17 @@ test('獨立本機環境：登入、匯入、照片重試、巡查、回收與�
     await request(`/api/points/${p.id}`,{method:'DELETE'});assert.equal((await request('/files/'+photoId)).status,404);assert.equal((await request('/api/backup-files/'+photoId)).status,200);assert.equal((await(await request('/api/points?trash=1')).json()).length,1);await request(`/api/points/${p.id}/restore`,j({}));assert.equal((await request('/files/'+photoId)).status,200);
     const invalidOverlay=await request('/api/overlay',j({type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Point',coordinates:[278000,2763000]}}]}));assert.equal(invalidOverlay.status,400);
     const offline=await(await request('/api/offline?dataset=qa')).json();assert.equal(offline.points.length,2);assert.equal(offline.visits.length,2);assert.equal(offline.attachments.length,1);
+    // Same category and filename must permit multiple photos; upload time is server-owned.
+    const capturedAt='2000-01-01T00:00:00Z',newIds=[];
+    for(const category of ['近照','遠照','環境'])for(let i=0;i<3;i++){
+      const body=photo(),id=crypto.randomUUID();newIds.push(id);body.set('id',id);body.set('category',category);body.set('captured_at',capturedAt);body.set('created_at','1990-01-01T00:00:00Z');
+      assert.equal((await request(`/api/points/${p.id}/attachments`,{method:'POST',body})).status,200);
+    }
+    const allPhotos=await(await request(`/api/points/${p.id}/attachments`)).json();
+    assert.equal(allPhotos.length,10);for(const category of ['遠照','環境'])assert.equal(allPhotos.filter(a=>a.category===category).length,3);
+    for(const id of newIds){const a=allPhotos.find(a=>a.id===id);assert.equal(a.captured_at,capturedAt);assert.ok(Date.parse(a.created_at)>Date.parse('2000-01-02'));assert.equal(a.filename,'photo.png');}
+    const originalUpload=allPhotos.find(a=>a.id===photoId).created_at;await request(`/api/points/${p.id}/attachments`,{method:'POST',body:photo()});
+    assert.equal((await(await request(`/api/points/${p.id}/attachments`)).json()).find(a=>a.id===photoId).created_at,originalUpload);
     await request('/api/logout',{method:'POST'});assert.equal((await request('/files/'+photoId)).status,401);assert.equal((await request('/api/backup')).status,401);
   }finally{await mf.dispose();}
 });
