@@ -1,0 +1,11 @@
+{
+  "name": "lct-control-points",
+  "main": "worker/index.mjs",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {"directory":"./dist", "binding":"ASSETS", "run_worker_first":true, "not_found_handling":"single-page-application"},
+  "d1_databases": [{"binding":"DB", "database_name":"lct-control-points", "database_id":"27104b0d-aca5-4d59-b260-abf5b7647a84"}],
+  "r2_buckets": [{"binding":"FILES", "bucket_name":"lct-control-points"}],
+  "vars": {"APP_ENV":"production"}
+}

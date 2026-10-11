@@ -1,0 +1,11 @@
+PRAGMA foreign_keys=ON;
+CREATE TABLE IF NOT EXISTS datasets(id TEXT PRIMARY KEY, name TEXT NOT NULL, crs TEXT NOT NULL, epsg INTEGER, height_type TEXT NOT NULL, height_datum TEXT, source_name TEXT, source_hash TEXT, source_key TEXT, imported_at TEXT NOT NULL, metadata TEXT NOT NULL DEFAULT '{}');
+CREATE TABLE IF NOT EXISTS points(id TEXT PRIMARY KEY, dataset_id TEXT NOT NULL REFERENCES datasets(id), code TEXT NOT NULL, original_code TEXT NOT NULL, name TEXT NOT NULL DEFAULT '', north REAL NOT NULL, east REAL NOT NULL, height REAL, lon REAL NOT NULL, lat REAL NOT NULL, crs TEXT NOT NULL, epsg INTEGER NOT NULL, height_type TEXT NOT NULL, height_datum TEXT, category TEXT NOT NULL DEFAULT '', description TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '', source_row INTEGER, source_sheet TEXT, raw TEXT NOT NULL DEFAULT '{}', status TEXT NOT NULL DEFAULT '未巡查', favorite INTEGER NOT NULL DEFAULT 0, version INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL, deleted_at TEXT, UNIQUE(dataset_id,code));
+CREATE INDEX IF NOT EXISTS points_dataset ON points(dataset_id);
+CREATE TABLE IF NOT EXISTS visits(id TEXT PRIMARY KEY, point_id TEXT NOT NULL REFERENCES points(id), status TEXT NOT NULL, note TEXT NOT NULL DEFAULT '', visited_at TEXT NOT NULL, position TEXT, created_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS visits_point ON visits(point_id);
+CREATE TABLE IF NOT EXISTS attachments(id TEXT PRIMARY KEY, point_id TEXT REFERENCES points(id), visit_id TEXT REFERENCES visits(id), object_key TEXT NOT NULL, thumb_key TEXT, filename TEXT NOT NULL, mime TEXT NOT NULL, size INTEGER NOT NULL, category TEXT NOT NULL DEFAULT '其他', captured_at TEXT, position TEXT, state TEXT NOT NULL DEFAULT 'ready', sha256 TEXT, created_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS attachments_point ON attachments(point_id);
+CREATE TABLE IF NOT EXISTS audits(id TEXT PRIMARY KEY, point_id TEXT, action TEXT NOT NULL, before_json TEXT, after_json TEXT, created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS sessions(token_hash TEXT PRIMARY KEY, expires INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS login_attempts(ip_hash TEXT PRIMARY KEY, attempts INTEGER NOT NULL, reset_at INTEGER NOT NULL);
