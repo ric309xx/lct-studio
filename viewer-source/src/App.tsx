@@ -1,4 +1,5 @@
 import driplineMetrics from "./taoyuanDriplineMetrics.json";
+import { isSharedViewerEntry } from "./accessPolicy";
 import taoyuan1006Parcels from "./taoyuan1006Parcels.json";
 import { PRIVATE_R2_ORIGIN, TAOYUAN_R2_PROJECT, R2AuthorizationRequired, ensureR2Access, hasR2Access, privateR2Resource } from "./r2Access";
 import { CadastralInfoPanel } from "./CadastralInfoPanel";
@@ -90,6 +91,7 @@ const INITIAL_STATUS: ViewerStatus = {
 };
 
 const STORED_ROLE = sessionStorage.getItem("lct-3d-viewer-role");
+const IS_SHARE_ENTRY = isSharedViewerEntry(window.location.pathname, window.LCT_VIEWER_ACCESS?.role);
 const REQUESTED_PROJECT_ID = new URLSearchParams(window.location.search).get(
   "project"
 );
@@ -97,9 +99,9 @@ const IS_LOCAL_DIRECT_ENTRY =
   ["127.0.0.1", "localhost"].includes(window.location.hostname) &&
   REQUESTED_PROJECT_ID === null;
 const IS_ADMIN =
-  IS_LOCAL_DIRECT_ENTRY ||
+  !IS_SHARE_ENTRY && (IS_LOCAL_DIRECT_ENTRY ||
   STORED_ROLE === "admin" ||
-  (import.meta.env.MODE !== "production" && STORED_ROLE !== "viewer");
+  (import.meta.env.MODE !== "production" && STORED_ROLE !== "viewer"));
 const ALLOWED_PROJECT_IDS = (() => {
   try {
     const stored = sessionStorage.getItem("lct-3d-viewer-projects");
@@ -2476,10 +2478,10 @@ export function App() {
         </div>
       </header>
 
-      <a className="site-back-link" href="/" aria-label="返回 LCT Studio 首頁">
+      {!IS_SHARE_ENTRY && <a className="site-back-link" href="/" aria-label="返回 LCT Studio 首頁">
         <ArrowLeft size={17} aria-hidden="true" />
         <span>返回 LCT Studio</span>
-      </a>
+      </a>}
 
       <div className={`status-pill status-${status.phase}`} role="status">
         {status.phase === "error" ? (
@@ -2539,7 +2541,7 @@ export function App() {
             <p className="project-name">
               {projectName} · {IS_ADMIN ? "管理員模式" : "一般觀看"}
             </p>
-            <button
+            {!IS_SHARE_ENTRY && <button
               type="button"
               className="switch-role"
               onClick={() => {
@@ -2561,7 +2563,7 @@ export function App() {
               }}
             >
               切換身分
-            </button>
+            </button>}
           </div>
           </div>
           <div className="setting-group">

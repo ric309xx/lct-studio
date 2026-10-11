@@ -41,7 +41,10 @@ export async function siteAccess(request,env,path) {
   if(!CADASTRAL_ORIGINS.has(request.headers.get('origin')))return response(request,{error:'來源不允許'},403);
   if(request.method==='OPTIONS')return response(request,null,204);
   if(request.method!=='POST')return response(request,{error:'Method not allowed'},405);
-  if(!env.ADMIN_PASSWORD_HASH||!env.PROJECT_PASSWORD_HASH||!env.SESSION_SECRET)return response(request,{error:'登入服務尚未設定'},503);
+  // Website credentials are independent of legacy private-Worker passwords.
+  const adminHash=env.SITE_ADMIN_PASSWORD_HASH || env.ADMIN_PASSWORD_HASH;
+  const viewerHash=env.SITE_VIEWER_PASSWORD_HASH || env.PROJECT_PASSWORD_HASH;
+  if(!adminHash||!viewerHash||!env.SESSION_SECRET)return response(request,{error:'登入服務尚未設定'},503);
   if(Number(request.headers.get('content-length')||0)>4096)return response(request,{error:'Request too large'},413);
   const raw=await request.text();if(raw.length>4096)return response(request,{error:'Request too large'},413);
   let input;try{input=JSON.parse(raw);}catch{return response(request,{error:'Invalid request'},400);}
@@ -50,10 +53,10 @@ export async function siteAccess(request,env,path) {
   if(path==='/api/site-access/login') {
     if(typeof input.password!=='string'||input.password.length<1||input.password.length>64||!['admin','viewer'].includes(input.role))return response(request,{error:'登入資料不正確'},400);
     const hash=await digest(input.password);
-    const admin=equal(hash,env.ADMIN_PASSWORD_HASH),viewer=equal(hash,env.PROJECT_PASSWORD_HASH);
+    const admin=equal(hash,adminHash),viewer=equal(hash,viewerHash);
     if(!admin&&(input.role==='admin'||!viewer)) {
       await new Promise(resolve=>setTimeout(resolve,350));
-      return response(request,{error:'密碼不正確，請使用私人模型的管理員／觀看密碼。'},401);
+      return response(request,{error:'密碼不正確，請輸入此網站的管理員／觀看密碼。'},401);
     }
     const now=Math.floor(Date.now()/1000);
     session={role:'viewer',uiRole:input.role,projectId:SITE_PROJECT,aud:audience,iat:now,exp:now+TTL,nonce:crypto.randomUUID()};

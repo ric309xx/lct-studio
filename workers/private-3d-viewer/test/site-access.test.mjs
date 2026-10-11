@@ -56,3 +56,19 @@ test('invalid and oversized requests are rejected',async()=>{
   assert.equal((await call(base+'login',{method:'POST',headers:{origin},body:'not json'})).status,400);
   assert.equal((await post('login',{project,role:'admin',password:''})).status,400);
 });
+
+test('website-specific passwords override legacy credentials without changing Worker login',async()=>{
+  const configured={...env,SITE_ADMIN_PASSWORD_HASH:hash('website-admin'),SITE_VIEWER_PASSWORD_HASH:hash('website-viewer')};
+  const website=(role,password)=>worker.fetch(new Request('https://worker.test'+base+'login',{
+    method:'POST',headers:{origin,'Content-Type':'application/json'},body:JSON.stringify({project,role,password})
+  }),configured);
+  for(const [role,password] of [['viewer','synthetic-viewer'],['admin','synthetic-admin'],['admin','website-viewer']]) {
+    assert.equal((await website(role,password)).status,401);
+  }
+  const viewer=await website('viewer','website-viewer');assert.equal(viewer.status,200);assert.equal((await viewer.json()).role,'viewer');
+  const admin=await website('admin','website-admin');assert.equal(admin.status,200);assert.equal((await admin.json()).role,'admin');
+  const legacy=await worker.fetch(new Request('https://worker.test/login',{
+    method:'POST',body:new URLSearchParams({project,password:'synthetic-admin'})
+  }),configured);
+  assert.equal(legacy.status,303);assert.ok(legacy.headers.get('set-cookie'));
+});

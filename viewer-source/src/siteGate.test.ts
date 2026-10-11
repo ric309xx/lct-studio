@@ -37,3 +37,16 @@ it("unrelated project shares retain their existing local gate",async()=>{
   window.eval(script);await tick();
   expect(document.querySelector('script[src*="site-auth"]')).toBeNull();
 });
+it("a shared entry hides homepage navigation and cannot inherit admin UI permissions",async()=>{
+  (window as any).LCT_VIEWER_ACCESS=config("viewer");
+  document.querySelector("#access-gate")!.insertAdjacentHTML("afterbegin",'<a class="access-back" href="/">返回 LCT Studio</a>');
+  sessionStorage.setItem("lct-3d-viewer-role","admin");
+  const login=vi.fn().mockResolvedValue({role:"viewer"});
+  (window as any).LCT_SITE_AUTH={login,hasSavedSession:()=>false};window.eval(script);
+  expect(document.querySelector(".access-back")).toBeNull();
+  document.querySelector<HTMLInputElement>("input")!.value="synthetic-viewer";
+  document.querySelector("form")!.dispatchEvent(new Event("submit",{cancelable:true}));await tick();
+  expect(login).toHaveBeenCalledWith("synthetic-viewer","viewer");
+  expect(sessionStorage.getItem("lct-3d-viewer-role")).toBe("viewer");
+  expect(JSON.parse(sessionStorage.getItem("lct-3d-viewer-projects")!)).toEqual(["taoyuan-building-overlay"]);
+});

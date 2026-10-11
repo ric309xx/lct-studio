@@ -16,6 +16,8 @@
   const input = document.querySelector("#access-password");
   const error = document.querySelector("#access-error");
   const toggle = document.querySelector("#toggle-password");
+  // Shared entries always open as viewers, even in a previously admin tab.
+  if (config.role === "viewer") document.querySelector(".access-back")?.remove();
   let passwordEntryStarted = false;
   const unifiedLogin = config.role === "admin" ||
     config.projectId === "taoyuan-building-overlay" ||
@@ -58,10 +60,6 @@
   };
 
   const applyAccess = () => {
-    const hasElevatedAdminSession =
-      !unifiedLogin && config.role !== "admin" && sessionStorage.getItem(ROLE_KEY) === "admin";
-    if (hasElevatedAdminSession) return;
-
     sessionStorage.setItem(ROLE_KEY, config.role);
     sessionStorage.setItem(ACCESS_SESSION_POINTER, sessionKey);
 
@@ -96,8 +94,7 @@
 
   const applyViewerRouteContext = () => {
     if (
-      config.role === "admin" ||
-      (!unifiedLogin && sessionStorage.getItem(ROLE_KEY) === "admin")
+      config.role === "admin"
     ) return;
 
     const projectId =
@@ -122,7 +119,7 @@
 
     const script = document.createElement("script");
     script.type = "module";
-    script.src = "/3d-viewer/assets/viewer.js?v=20261010d";
+    script.src = "/3d-viewer/assets/viewer.js?v=20261011a";
     script.dataset.viewerApp = "true";
     document.body.appendChild(script);
   };
