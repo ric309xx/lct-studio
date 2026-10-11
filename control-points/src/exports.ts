@@ -1,11 +1,14 @@
+import {sourceAttributes} from '../shared/attributes.mjs';
 import JSZip from 'jszip';import type {Point,Dataset,Attachment} from './types';import {api} from './api';
 export function download(blob:Blob,filename:string){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 const safe=(v:unknown)=>{let s=String(v??'');if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"';};
 export function exportPoints(points:Point[],datasets:Dataset[],format:'csv'|'geojson'){
   const names=Object.fromEntries(datasets.map(d=>[d.id,d.name]));
   if(format==='csv'){
-    const headers=['資料集','點號','原點號','點名','坐標系統','EPSG','N','E','高度','高度類型','高程基準','WGS84經度','WGS84緯度','分類','說明','備註','巡查狀態'];
-    const rows=points.map(p=>[names[p.dataset_id],p.code,p.original_code,p.name,p.crs,p.epsg,p.north,p.east,p.height,p.height_type,p.height_datum||'未註明',p.lon,p.lat,p.category,p.description,p.notes,p.status]);
+    const attributes=points.map(p=>Object.fromEntries(sourceAttributes(p.raw).map(a=>[a.label,a.value])));
+    const attributeNames=[...new Set(attributes.flatMap(a=>Object.keys(a)))];
+    const headers=['資料集','點號','原點號','點名','坐標系統','EPSG','N','E','高度','高度類型','高程基準','WGS84經度','WGS84緯度','分類','說明','備註','巡查狀態',...attributeNames.map(k=>'原始屬性：'+k)];
+    const rows=points.map((p,i)=>[names[p.dataset_id],p.code,p.original_code,p.name,p.crs,p.epsg,p.north,p.east,p.height,p.height_type,p.height_datum||'未註明',p.lon,p.lat,p.category,p.description,p.notes,p.status,...attributeNames.map(k=>attributes[i][k]??'')]);
     download(new Blob(['\ufeff'+[headers,...rows].map(r=>r.map(safe).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),'控制點資料.csv');
   }else download(new Blob([JSON.stringify({type:'FeatureCollection',features:points.map(p=>({type:'Feature',id:p.id,geometry:{type:'Point',coordinates:[p.lon,p.lat]},properties:{...p,dataset_name:names[p.dataset_id],geometry_crs:'WGS84 EPSG:4326',source_crs:p.crs}}))},null,2)],{type:'application/geo+json'}),'控制點資料.geojson');
 }

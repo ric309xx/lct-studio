@@ -1,0 +1,14 @@
+import {useRef,useState} from 'react';import {Search,MapPin,X,LoaderCircle} from 'lucide-react';import {api} from './api';
+export type Place={id:string;name:string;address:string;lon:number;lat:number};
+export default function PlaceSearch({online,onSelect,onClear}:{online:boolean;onSelect:(place:Place)=>void;onClear:()=>void}) {
+  const [query,setQuery]=useState(''),[results,setResults]=useState<Place[]>([]),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[chosen,setChosen]=useState<Place|null>(null),[open,setOpen]=useState(false);
+  const request=useRef(0);
+  function clear(){request.current++;setQuery('');setResults([]);setChosen(null);setMessage('');setOpen(false);setBusy(false);onClear();}
+  async function search(){
+    if(busy)return;const q=query.trim();if(q.length<2){setMessage('請輸入至少 2 個字');setOpen(true);return;}
+    const id=++request.current;setBusy(true);setOpen(true);setMessage('');setResults([]);
+    try{const data=await api<Place[]>(`/api/places?q=${encodeURIComponent(q)}`);if(request.current===id){setResults(data);if(!data.length)setMessage('找不到地點，試著加上縣市或行政區。');}}
+    catch(e){if(request.current===id)setMessage((e as Error).message);}finally{if(request.current===id)setBusy(false);}
+  }
+  return <section className="place-search" aria-label="地點搜尋"><form onSubmit={e=>{e.preventDefault();search();}}><Search size={17}/><input aria-label="搜尋地標、路名或地址" placeholder="搜尋地標、路名或地址" maxLength={120} value={query} onChange={e=>{request.current++;setBusy(false);setQuery(e.target.value);setResults([]);setMessage('');setOpen(false);}} onFocus={()=>{if(results.length||message)setOpen(true);}}/>{query&&<button type="button" className="place-clear" aria-label="清除地點搜尋" onClick={clear}><X size={16}/></button>}<button className="place-submit" disabled={busy||!online} type="submit" aria-label="搜尋地點">{busy?<LoaderCircle size={17} className="spin"/>:'搜尋'}</button></form>{!online&&<p className="place-hint">地點搜尋需要網路連線</p>}{open&&<div className="place-results" role="region" aria-label="地點搜尋結果"><div className="place-results-heading"><span>{busy?'正在搜尋…':'選擇地點定位'}</span><button aria-label="收起地點搜尋結果" onClick={()=>setOpen(false)}><X size={16}/></button></div>{message&&<p role="status">{message}</p>}{results.map(p=><button className="place-result" key={p.id} onClick={()=>{setChosen(p);setOpen(false);onSelect(p);}}><MapPin size={17}/><span><strong>{p.name}</strong><small>{p.address||'臺灣'}</small></span></button>)}<p className="place-attribution">地點資料：<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap</a> · <a href="https://photon.komoot.io/" target="_blank" rel="noreferrer">Photon</a></p></div>}{chosen&&!open&&<div className="place-chosen"><MapPin size={14}/><span>搜尋位置：{chosen.name}</span><button aria-label="清除搜尋位置" onClick={clear}><X size={15}/></button></div>}</section>;
+}

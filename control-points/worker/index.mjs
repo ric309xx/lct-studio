@@ -1,4 +1,6 @@
 import {normalizeRecords} from '../shared/coordinates.mjs';
+import {createPlaceSearch} from './geocode.mjs';
+const searchPlaces=createPlaceSearch();
 const TTL=12*3600, MAX_FILE=30*1024*1024;
 const now=()=>new Date().toISOString();
 const json=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
@@ -54,6 +56,7 @@ async function route(req,env){
   const session=token&&await env.DB.prepare('SELECT * FROM sessions WHERE token_hash=? AND expires>?').bind(await digest(token),Math.floor(Date.now()/1000)).first();
   if(!session)fail('請先登入',401);
   if(path==='/api/session')return json({ok:true,environment:env.APP_ENV,expires:session.expires});
+  if(path==='/api/places'&&req.method==='GET')return json(await searchPlaces(url.searchParams.get('q'),env.FILES,env.GEOCODER_URL));
   if(path==='/api/logout'&&req.method==='POST'){
     await env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(await digest(token)).run();
     return new Response('{"ok":true}',{headers:{'Content-Type':'application/json','Cache-Control':'no-store','Set-Cookie':`lct_points_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secure}`}});

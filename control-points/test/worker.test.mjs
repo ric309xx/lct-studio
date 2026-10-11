@@ -9,6 +9,7 @@ test('獨立本機環境：登入、匯入、照片重試、巡查、回收與�
     let cookie='';const request=async(path,options={})=>{const r=new Request('http://localhost'+path,{...options,headers:{Cookie:cookie,...options.headers}});return mf.dispatchFetch(r.url,{method:r.method,headers:Object.fromEntries(r.headers),body:r.body?await r.arrayBuffer():undefined});};
     const j=(data,method='POST')=>({method,headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
     assert.equal((await request('/api/points')).status,401);
+    assert.equal((await request('/api/places?q=中壢車站')).status,401);
     assert.equal((await request('/api/login',j({password:'wrong'}))).status,401);
     const login=await request('/api/login',j({password}));assert.equal(login.status,200);cookie=login.headers.get('set-cookie').split(';')[0];assert.match(login.headers.get('set-cookie'),/HttpOnly.*SameSite=Strict/);
     assert.equal((await request('/api/logout',{method:'POST',headers:{Origin:'https://evil.example'}})).status,403);
