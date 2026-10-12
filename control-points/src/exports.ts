@@ -1,3 +1,4 @@
+import {readBackup} from '../shared/pages.mjs';
 import {sourceAttributes} from '../shared/attributes.mjs';
 import JSZip from 'jszip';import type {Point,Dataset,Attachment} from './types';import {api} from './api';
 export function download(blob:Blob,filename:string){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
@@ -18,7 +19,7 @@ export async function downloadPhotos(attachments:Attachment[]){
   download(await zip.generateAsync({type:'blob'}),'控制點照片.zip');
 }
 export async function fullBackup(){
-  const data=await api('/api/backup'),zip=new JSZip();zip.file('data.json',JSON.stringify(data,null,2));
+  const data=await readBackup(api),zip=new JSZip();zip.file('data.json',JSON.stringify(data,null,2));
   const add=async(path:string,url:string)=>{const r=await fetch(url,{credentials:'same-origin',cache:'no-store'});if(!r.ok)throw new Error('備份下載不完整，請重新登入後重試');zip.file(path,await r.blob());};
   for(const d of data.datasets)await add(`sources/${d.id}/${d.source_name}`,`/api/datasets/${d.id}/source`);
   for(const a of data.attachments){await add(`photos/${a.id}/${a.filename}`,`/api/backup-files/${a.id}`);if(a.thumb_key)await add(`photos/${a.id}/thumbnail.jpg`,`/api/backup-files/${a.id}/thumbnail`);}

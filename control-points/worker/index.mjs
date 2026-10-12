@@ -1,4 +1,5 @@
 import {loginRoute} from './login.mjs';
+import {readPage} from './pages.mjs';
 import {normalizeRecords} from '../shared/coordinates.mjs';
 import {referenceRoute,listReferences} from './references.mjs';
 import {createPlaceSearch} from './geocode.mjs';
@@ -50,13 +51,14 @@ async function route(req,env){
   if(path==='/api/datasets'&&req.method==='GET')return json((await env.DB.prepare('SELECT d.*, (SELECT COUNT(*) FROM points p WHERE p.dataset_id=d.id AND p.deleted_at IS NULL) point_count FROM datasets d ORDER BY imported_at,id').all()).results);
   if(path==='/api/points'&&req.method==='GET'){
     const dataset=url.searchParams.get('dataset'),trash=url.searchParams.get('trash')==='1';
+    if(url.searchParams.get('paged')==='1')return json(await readPage(env.DB,'points',url.searchParams,'deleted_at IS '+(trash?'NOT NULL':'NULL')+(dataset?' AND dataset_id=?':''),dataset?[dataset]:[]));
     const sql='SELECT * FROM points WHERE deleted_at IS '+(trash?'NOT NULL':'NULL')+(dataset?' AND dataset_id=?':'')+' ORDER BY dataset_id,code';
     return json((await (dataset?env.DB.prepare(sql).bind(dataset):env.DB.prepare(sql)).all()).results);
   }
   if(path==='/api/offline'&&req.method==='GET'){
     const dataset=url.searchParams.get('dataset'),where='p.deleted_at IS NULL'+(dataset?' AND p.dataset_id=?':'');
     const query=async sql=>(await (dataset?env.DB.prepare(sql).bind(dataset):env.DB.prepare(sql)).all()).results;
-    return json({datasets:await query('SELECT d.*, (SELECT COUNT(*) FROM points WHERE dataset_id=d.id AND deleted_at IS NULL) point_count FROM datasets d'+(dataset?' WHERE d.id=?':'')),points:await query('SELECT p.* FROM points p WHERE '+where),visits:await query('SELECT v.* FROM visits v JOIN points p ON p.id=v.point_id WHERE '+where),attachments:await query("SELECT a.* FROM attachments a JOIN points p ON p.id=a.point_id WHERE a.state='ready' AND "+where),downloadedAt:now()});
+    return json({datasets:await query('SELECT d.*, (SELECT COUNT(*) FROM points WHERE dataset_id=d.id AND deleted_at IS NULL) point_count FROM datasets d'+(dataset?' WHERE d.id=?':'')),points:url.searchParams.get('metadata')==='1'?[]:await query('SELECT p.* FROM points p WHERE '+where),visits:await query('SELECT v.* FROM visits v JOIN points p ON p.id=v.point_id WHERE '+where),attachments:await query("SELECT a.* FROM attachments a JOIN points p ON p.id=a.point_id WHERE a.state='ready' AND "+where),downloadedAt:now()});
   }
   if(path==='/api/points'&&req.method==='POST'){
     const data=await readJson(req,32768),dataset=await env.DB.prepare('SELECT * FROM datasets WHERE id=?').bind(data.dataset_id).first();if(!dataset)fail('請選擇資料集');
@@ -91,6 +93,11 @@ async function route(req,env){
     return json({ok:true,id,count:normalized.points.length,warnings:normalized.warnings});
   }
   if(path==='/api/backup'&&req.method==='GET'){
+    if(url.searchParams.get('metadata')==='1')return json({version:1,created_at:now(),references:await listReferences(env.FILES)});
+    if(url.searchParams.has('table')){
+      const table=url.searchParams.get('table');if(!['datasets','points','visits','attachments','audits'].includes(table))fail('備份資料表不正確');
+      return json(await readPage(env.DB,table,url.searchParams));
+    }
     const tables={};for(const table of ['datasets','points','visits','attachments','audits'])tables[table]=(await env.DB.prepare(`SELECT * FROM ${table}`).all()).results;
     return new Response(JSON.stringify({version:1,created_at:now(),...tables,references:await listReferences(env.FILES)}),{headers:downloadHeaders('控制點資料備份.json','application/json; charset=utf-8')});
   }
