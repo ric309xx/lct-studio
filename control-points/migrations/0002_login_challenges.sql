@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS login_challenges(ip_hash TEXT PRIMARY KEY,challenge TEXT NOT NULL,expires INTEGER NOT NULL);

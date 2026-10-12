@@ -134,3 +134,10 @@ AR 找點可在定位距離與方位的基礎上繼續製作，手機定位精�
 DXF 必須先確認來源 CRS、轉成 WGS84 GeoJSON，再經登入後以 `POST /api/references` multipart 上傳 `source`（DXF，10 MB 內）、`geojson`（5 MB 內）、`metadata`（JSON，含 `name`、`epsg`、可選 `warning`）。目前介面提供檢視與下載，尚未提供瀏覽器直接解析 DXF。`GET /api/references` 列出圖層，`GET /api/references/:id` 取得完整圖徵，`GET /api/references/:id/source` 下載原始檔。來源／轉換內容及 CRS 共同產生識別碼，重試不重複建立。
 
 完整 ZIP 備份及 `check-backup` 還原核對包含參考圖層 metadata、原始 DXF、GeoJSON 與 SHA-256。離線下載會保存轉換圖形；底圖及原始 DXF 下載仍需網路。
+
+
+### 登入計算與成果年份顯示
+
+密碼仍使用既有 PBKDF2-SHA256（100,000 次）設定。瀏覽器／CLI 在裝置端衍生金鑰，對 120 秒有效的一次性挑戰做 HMAC；Worker 原子消耗挑戰並驗證憑證，保留原有登入速率限制與 HttpOnly 工作階段。避免在 Worker 內執行高成本 PBKDF2 導致 Error 1102。舊版直接送密碼的頁面會提示重新整理；不再由 Worker 執行密碼雜湊。
+
+升級前對既有本機／正式 D1 執行 `migrations/0002_login_challenges.sql`；首次安裝的 `schema.sql` 已包含新表。此表只保存短效登入挑戰，不改動點位資料。資料集顯示名稱依來源 metadata 的 `resultYear` 加上年份前綴，不將坐標年代當成果年份，也不修改資料庫原始名稱。

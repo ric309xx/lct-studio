@@ -1,3 +1,4 @@
+import {createLoginProof} from '../shared/loginProof.mjs';
 import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import {pbkdf2Sync,createHash} from 'node:crypto';import {Miniflare,convertV4MiniflareOptions} from 'miniflare';import {build} from 'esbuild';
 const hash=x=>createHash('sha256').update(x).digest('hex');
 test('獨立本機環境：登入、匯入、照片重試、巡查、回收與還原',async()=>{
@@ -10,9 +11,19 @@ test('獨立本機環境：登入、匯入、照片重試、巡查、回收與�
     const j=(data,method='POST')=>({method,headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
     assert.equal((await request('/api/points')).status,401);
     assert.equal((await request('/api/places?q=中壢車站')).status,401);
-    assert.equal((await request('/api/login',j({password:'wrong'}))).status,401);
-    const login=await request('/api/login',j({password}));assert.equal(login.status,200);cookie=login.headers.get('set-cookie').split(';')[0];assert.match(login.headers.get('set-cookie'),/HttpOnly.*SameSite=Strict/);
+    const proofFor=async password=>createLoginProof(password,await(await request('/api/login/challenge',{method:'POST'})).json());
+    assert.equal((await request('/api/login',j(await proofFor('wrong')))).status,401);
+    const proof=await proofFor(password);
+    const login=await request('/api/login',j(proof));assert.equal(login.status,200);cookie=login.headers.get('set-cookie').split(';')[0];assert.match(login.headers.get('set-cookie'),/HttpOnly.*SameSite=Strict/);
+    assert.equal((await request('/api/login',j(proof))).status,401,'登入憑證不可重複使用');
+    assert.equal((await request('/api/login',j({password}))).status,409,'舊登入請求提示重新整理，不能進行高成本雜湊');
     assert.equal((await request('/api/logout',{method:'POST',headers:{Origin:'https://evil.example'}})).status,403);
+    assert.equal((await request('/api/login/challenge',{method:'POST',headers:{Origin:'https://evil.example'}})).status,403);
+    const expired=await proofFor(password);await db.prepare('UPDATE login_challenges SET expires=0').run();assert.equal((await request('/api/login',j(expired))).status,401,'過期憑證拒絕');
+    const ipProof=await proofFor(password);assert.equal((await request('/api/login',{...j(ipProof),headers:{'Content-Type':'application/json','cf-connecting-ip':'test-different-ip'}})).status,401,'不同來源 IP 無法使用憑證');
+    assert.equal((await request('/api/login',j(ipProof))).status,200,'不同 IP 嘗試不消耗原來源憑證');
+    for(let i=0;i<8;i++)assert.equal((await request('/api/login',{...j(proof),headers:{'Content-Type':'application/json','cf-connecting-ip':'rate-test-ip'}})).status,401);
+    assert.equal((await request('/api/login/challenge',{method:'POST',headers:{'cf-connecting-ip':'rate-test-ip'}})).status,429,'密碼重試仍有速率限制');
     const source=new TextEncoder().encode('test workbook fixture'),dataset={id:'qa',name:'獨立驗證資料',epsg:3826,height_type:'橢球高'},records=[{code:'QA-A',original_code:'QA-ORIG',east:250000,north:2770000,height:10},{code:'QA-ORIG',original_code:'QA-ORIG',east:256000,north:2775000,height:15}];
     const form=()=>{const f=new FormData();f.set('source',new File([source],'fixture.xlsx'));f.set('payload',JSON.stringify({dataset,records}));return f;};
     const imported=await request('/api/import',{method:'POST',body:form()});assert.equal(imported.status,200,await imported.clone().text());assert.equal((await imported.json()).count,2);

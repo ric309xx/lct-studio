@@ -1,3 +1,4 @@
+import {createLoginProof} from '../shared/loginProof.mjs';
 import {queueDelete,queueList,queuePut} from './storage';
 import type {QueueItem} from './types';
 export class ApiError extends Error {constructor(message:string,public status:number){super(message);}}
@@ -31,3 +32,5 @@ export async function makeThumbnail(file:Blob):Promise<Blob|undefined>{
   try{url=URL.createObjectURL(file);const image=new Image();image.src=url;await image.decode();const scale=Math.min(1,1000/Math.max(image.naturalWidth,image.naturalHeight)),canvas=document.createElement('canvas');canvas.width=Math.round(image.naturalWidth*scale);canvas.height=Math.round(image.naturalHeight*scale);canvas.getContext('2d')!.drawImage(image,0,0,canvas.width,canvas.height);return await new Promise(resolve=>canvas.toBlob(b=>resolve(b||undefined),'image/jpeg',.82));}
   catch{return;}finally{if(url)URL.revokeObjectURL(url);}
 }
+
+export async function loginWithPassword(password:string){const challenge=await api('/api/login/challenge',{method:'POST'});return api('/api/login',jsonRequest('POST',await createLoginProof(password,challenge)));}

@@ -9,3 +9,4 @@ CREATE INDEX IF NOT EXISTS attachments_point ON attachments(point_id);
 CREATE TABLE IF NOT EXISTS audits(id TEXT PRIMARY KEY, point_id TEXT, action TEXT NOT NULL, before_json TEXT, after_json TEXT, created_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS sessions(token_hash TEXT PRIMARY KEY, expires INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS login_attempts(ip_hash TEXT PRIMARY KEY, attempts INTEGER NOT NULL, reset_at INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS login_challenges(ip_hash TEXT PRIMARY KEY,challenge TEXT NOT NULL,expires INTEGER NOT NULL);

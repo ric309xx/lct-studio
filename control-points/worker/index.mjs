@@ -1,15 +1,14 @@
+import {loginRoute} from './login.mjs';
 import {normalizeRecords} from '../shared/coordinates.mjs';
 import {referenceRoute,listReferences} from './references.mjs';
 import {createPlaceSearch} from './geocode.mjs';
 const searchPlaces=createPlaceSearch();
-const TTL=12*3600, MAX_FILE=30*1024*1024;
+const MAX_FILE=30*1024*1024;
 const now=()=>new Date().toISOString();
 const json=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
 const fail=(message,status=400)=>{throw Object.assign(new Error(message),{status});};
 const hex=buffer=>[...new Uint8Array(buffer)].map(x=>x.toString(16).padStart(2,'0')).join('');
 export const digest=async value=>hex(await crypto.subtle.digest('SHA-256',typeof value==='string'?new TextEncoder().encode(value):value));
-const equal=(a,b)=>{if(typeof a!=='string'||typeof b!=='string'||a.length!==b.length)return false;let v=0;for(let i=0;i<a.length;i++)v|=a.charCodeAt(i)^b.charCodeAt(i);return v===0;};
-async function passwordHash(password,salt) {const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);return hex(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:new TextEncoder().encode(salt),iterations:100000},k,256));}
 const audit=(env,id,action,before,after)=>env.DB.prepare('INSERT INTO audits VALUES(?,?,?,?,?,?)').bind(crypto.randomUUID(),id,action,before?JSON.stringify(before):null,after?JSON.stringify(after):null,now());
 export function csvCell(value) {let s=String(value??'');if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"';}
 async function readJson(req,limit=16*1024*1024){const text=await req.text();if(new TextEncoder().encode(text).length>limit)fail('資料過大',413);try{return JSON.parse(text);}catch{fail('JSON 格式錯誤');}}
@@ -37,22 +36,7 @@ async function route(req,env){
     const origin=req.headers.get('origin');if(origin&&origin!==url.origin)fail('來源不允許',403);
   }
   const secure=url.protocol==='https:'?'; Secure':'';
-  if(path==='/api/login'&&req.method==='POST'){
-    if(!env.PASSWORD_HASH||!env.PASSWORD_SALT)fail('請先執行本機設定',503);
-    const ip=await digest(req.headers.get('cf-connecting-ip')||'local');const time=Math.floor(Date.now()/1000);
-    const attempt=await env.DB.prepare('SELECT * FROM login_attempts WHERE ip_hash=?').bind(ip).first();
-    if(attempt&&attempt.reset_at>time&&attempt.attempts>=8)fail('登入失敗次數過多，請於 15 分鐘後重試',429);
-    const data=await readJson(req,4096);
-    if(typeof data.password!=='string'||data.password.length>128)fail('密碼格式錯誤');
-    if(!equal(await passwordHash(data.password,env.PASSWORD_SALT),env.PASSWORD_HASH)){
-      await env.DB.prepare('INSERT INTO login_attempts VALUES(?,1,?) ON CONFLICT(ip_hash) DO UPDATE SET attempts=CASE WHEN reset_at>? THEN attempts+1 ELSE 1 END,reset_at=CASE WHEN reset_at>? THEN reset_at ELSE ? END').bind(ip,time+900,time,time,time+900).run();
-      fail('密碼不正確',401);
-    }
-    await env.DB.prepare('DELETE FROM login_attempts WHERE ip_hash=?').bind(ip).run();
-    const token=crypto.randomUUID()+crypto.randomUUID();await env.DB.prepare('INSERT INTO sessions VALUES(?,?)').bind(await digest(token),time+TTL).run();
-    await env.DB.prepare('DELETE FROM sessions WHERE expires<?').bind(time).run();
-    return new Response(JSON.stringify({ok:true}),{headers:{'Content-Type':'application/json','Cache-Control':'no-store','Set-Cookie':`lct_points_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${TTL}${secure}`}});
-  }
+  if((path==='/api/login'||path==='/api/login/challenge')&&req.method==='POST')return loginRoute(req,env);
   const token=req.headers.get('cookie')?.match(/(?:^|;\s*)lct_points_session=([^;]+)/)?.[1];
   const session=token&&await env.DB.prepare('SELECT * FROM sessions WHERE token_hash=? AND expires>?').bind(await digest(token),Math.floor(Date.now()/1000)).first();
   if(!session)fail('請先登入',401);

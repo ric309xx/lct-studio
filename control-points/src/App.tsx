@@ -1,3 +1,4 @@
+import {datasetDisplayName} from '../shared/datasetPresentation.mjs';
 import ReferenceLayers from './ReferenceLayers';
 import BatchPointRecordDialog from './BatchPointRecordDialog';
 import {toggleRecordSelection,selectRecordResults} from '../shared/batchRecords.mjs';
@@ -5,7 +6,7 @@ import PlaceSearch,{type Place} from './PlaceSearch';
 import {createLocationTracking} from '../shared/locationTracking.mjs';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Search,Crosshair,Layers,LocateFixed,Upload,Download,ChevronRight,ChevronDown,Wifi,WifiOff,LogOut,Map as MapIcon,List,Database,CloudUpload,RefreshCw,Star,Plus,X,ArrowRight,FolderOpen,HardDrive,Trash2,RotateCcw,CheckCircle2,Navigation,LockKeyhole} from 'lucide-react';
-import PointMap from './PointMap';import PointDetail from './PointDetail';import ImportPanel from './ImportPanel';import {api,ApiError,jsonRequest,syncQueue} from './api';import {readStored,storeValue,queueList,clearOffline} from './storage';import {exportPoints,fullBackup} from './exports';import {distance} from '../shared/coordinates.mjs';import type {Point,Dataset,Position,QueueItem,OfflinePack,ReferenceLayer} from './types';
+import PointMap from './PointMap';import PointDetail from './PointDetail';import ImportPanel from './ImportPanel';import {api,ApiError,jsonRequest,syncQueue,loginWithPassword} from './api';import {readStored,storeValue,queueList,clearOffline} from './storage';import {exportPoints,fullBackup} from './exports';import {distance} from '../shared/coordinates.mjs';import type {Point,Dataset,Position,QueueItem,OfflinePack,ReferenceLayer} from './types';
 const fmt=(n:number)=>n.toLocaleString('en-US');
 const fetchReferences=async()=>Promise.all((await api<Omit<ReferenceLayer,'data'>[]>('/api/references')).map(async r=>({...r,data:await api(`/api/references/${r.id}`)})));
 export default function App(){
@@ -25,10 +26,10 @@ export default function App(){
   if(!tracking.current)tracking.current=createLocationTracking({onPosition:setPosition,onLocate:(p,initial,follow)=>setLocationFocus({...p,initial,follow}),onState:setLocationState,onError:e=>notify(e.code===1?'未取得定位權限，仍可搜尋或點選控制點。':'定位暫時無法使用，請移至空曠處再試。')});
   function cancelLocationFocus(){tracking.current?.cancelFocus();setLocationFocus(null);}
   function selectPoint(p:Point|null,locatePoint=false){cancelLocationFocus();setSelectedId(p?.id??null);if(locatePoint&&p){setPointFocus(f=>f+1);setMobileView('map');}}
-  async function refresh(){const [d,p]=await Promise.all([api<Dataset[]>('/api/datasets'),api<Point[]>('/api/points')]);setDatasets(d);setPoints(p);}
+  async function refresh(){const [d,p]=await Promise.all([api<Dataset[]>('/api/datasets'),api<Point[]>('/api/points')]);setDatasets(d.map(row=>({...row,name:datasetDisplayName(row)})));setPoints(p);}
   async function loadQueue(){setQueue(await queueList());}
   async function runSync(){if(syncRef.current||!navigator.onLine||offlineMode)return;syncRef.current=true;setSyncing(true);try{await syncQueue(()=>{loadQueue();});await refresh();}catch(e){if(e instanceof ApiError&&e.status===401){setAuth(false);notify('登入已過期；待傳資料仍保留，重新登入後續傳。');}else notify((e as Error).message);}finally{syncRef.current=false;setSyncing(false);await loadQueue();}}
-  useEffect(()=>{(async()=>{await loadQueue();const saved=await readStored<OfflinePack>('offline');setPack(saved||null);try{await api('/api/session');await refresh();setAuth(true);api('/api/overlay').then(setOverlay).catch(()=>{});}catch(e){if(!(e instanceof ApiError)&&saved){setDatasets(saved.datasets);setPoints(saved.points);setDataset('');setOfflineMode(true);setAuth(true);setOverlay(await readStored('overlay')||null);}else setAuth(false);}})();const on=()=>{setConnected(true);setOfflineMode(false);},off=()=>setConnected(false);window.addEventListener('online',on);window.addEventListener('offline',off);return()=>{window.removeEventListener('online',on);window.removeEventListener('offline',off);tracking.current?.stop();};},[]);
+  useEffect(()=>{(async()=>{await loadQueue();const saved=await readStored<OfflinePack>('offline');setPack(saved||null);try{await api('/api/session');await refresh();setAuth(true);api('/api/overlay').then(setOverlay).catch(()=>{});}catch(e){if(!(e instanceof ApiError)&&saved){setDatasets(saved.datasets.map(row=>({...row,name:datasetDisplayName(row)})));setPoints(saved.points);setDataset('');setOfflineMode(true);setAuth(true);setOverlay(await readStored('overlay')||null);}else setAuth(false);}})();const on=()=>{setConnected(true);setOfflineMode(false);},off=()=>setConnected(false);window.addEventListener('online',on);window.addEventListener('offline',off);return()=>{window.removeEventListener('online',on);window.removeEventListener('offline',off);tracking.current?.stop();};},[]);
   useEffect(()=>{if(auth&&online)runSync();},[auth,online]);
   useEffect(()=>{let cancelled=false;if(!auth){setReferences([]);setReferenceError('');return;}
     (async()=>{try{const loaded=online?await fetchReferences():await readStored<ReferenceLayer[]>('references')||[];if(!cancelled){setReferences(loaded);setReferenceError('');}}catch{if(!cancelled)setReferenceError('參考圖層載入失敗，請重新整理後再試。');}})();
@@ -36,7 +37,7 @@ export default function App(){
   },[auth,online]);
   useEffect(()=>{setLimit(80);},[query,hiddenDatasets,category,status,onlyFavorites,view]);
   useEffect(()=>{if(view==='回收筒'&&online)api<Point[]>('/api/points?trash=1').then(setTrash).catch(e=>notify(e.message));},[view,points.length]);
-  async function login(e:React.FormEvent){e.preventDefault();setBusy(true);setLoginError('');try{await api('/api/login',jsonRequest('POST',{password}));setPassword('');setOfflineMode(false);await refresh();setAuth(true);setOverlay(await api('/api/overlay'));}catch(e){setLoginError((e as Error).message);}finally{setBusy(false);}}
+  async function login(e:React.FormEvent){e.preventDefault();setBusy(true);setLoginError('');try{await loginWithPassword(password);setPassword('');setOfflineMode(false);await refresh();setAuth(true);setOverlay(await api('/api/overlay'));}catch(e){setLoginError((e as Error).message);}finally{setBusy(false);}}
   async function logout(){if(queue.length&&!confirm(`還有 ${queue.length} 筆待傳紀錄，登出後會保留於此裝置。確定登出？`))return;try{await api('/api/logout',{method:'POST'});}catch{}tracking.current?.stop();setPosition(null);setLocationFocus(null);setAuth(false);setPoints([]);setSelectedId(null);setBatchIds(new Set());setBatchMode(false);setBatchOpen(false);}
   async function queued(){await loadQueue();if(online)await runSync();}
   function locate(mode=locationMode,toggle=true){setLocationMenu(false);if(toggle&&locationState!=='idle'){cancelLocationFocus();return;}if(!navigator.geolocation){notify('此瀏覽器不支援定位');return;}if(!window.isSecureContext){notify('手機定位需要 HTTPS 或本機 localhost');return;}setSelectedId(null);setSearchPlace(null);setMobileView('map');if(tracking.current?.request(navigator.geolocation,mode))notify('正在取得定位…');}
