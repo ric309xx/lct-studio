@@ -21,6 +21,12 @@ async function collect(path,key,mime,hash){
 for(const d of data.datasets)if(d.source_key)await collect(`sources/${d.id}/${d.source_name}`,d.source_key,'application/octet-stream',d.source_hash);
 for(const a of data.attachments){await collect(`photos/${a.id}/${a.filename}`,a.object_key,a.mime,a.sha256);if(a.thumb_key)await collect(`photos/${a.id}/thumbnail.jpg`,a.thumb_key,'image/jpeg');}
 if(zip.file('cadastral.geojson'))await collect('cadastral.geojson','settings/cadastral.geojson','application/geo+json');
+for(const r of data.references||[]){
+  if(!/^[a-f0-9]{32}$/.test(r.id))throw new Error('參考圖層 ID 不正確');
+  await collect(`references/${r.id}/source.dxf`,`references/source/${r.id}.dxf`,'application/dxf',r.source_hash);
+  await collect(`references/${r.id}/data.geojson`,`references/data/${r.id}.geojson`,'application/geo+json',r.geojson_hash);
+  const bytes=Buffer.from(JSON.stringify(r));objects.push({key:`references/meta/${r.id}.json`,mime:'application/json',bytes,hash:createHash('sha256').update(bytes).digest('hex')});
+}
 const target=resolve('.local',`recovery-${new Date().toISOString().replaceAll(':','-')}`);
 if(existsSync(target))throw new Error('還原目錄已存在，不可覆寫');mkdirSync(target,{recursive:true});
 const mf=new Miniflare({...convertV4MiniflareOptions({modules:true,script:'export default {fetch(){return new Response("recovery check")}}',compatibilityDate:'2026-10-01',d1Databases:['DB'],r2Buckets:['FILES'],d1Persist:resolve(target,'d1'),r2Persist:resolve(target,'r2')}),resourcePersistencePath:resolve(target,'state')});

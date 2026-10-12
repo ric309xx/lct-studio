@@ -42,6 +42,19 @@ test('獨立本機環境：登入、匯入、照片重試、巡查、回收與�
     for(const id of newIds){const a=allPhotos.find(a=>a.id===id);assert.equal(a.captured_at,capturedAt);assert.ok(Date.parse(a.created_at)>Date.parse('2000-01-02'));assert.equal(a.filename,'photo.png');}
     const originalUpload=allPhotos.find(a=>a.id===photoId).created_at;await request(`/api/points/${p.id}/attachments`,{method:'POST',body:photo()});
     assert.equal((await(await request(`/api/points/${p.id}/attachments`)).json()).find(a=>a.id===photoId).created_at,originalUpload);
-    await request('/api/logout',{method:'POST'});assert.equal((await request('/files/'+photoId)).status,401);assert.equal((await request('/api/backup')).status,401);
+    const refGeo={type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'LineString',coordinates:[[121.2,24.9],[121.21,24.91]]},properties:{layer:'__proto__'}},{type:'Feature',geometry:{type:'Point',coordinates:[121.2,24.9]},properties:{attributes:[{tag:'ID',value:'原始屬性'}]}}]};
+    const referenceForm=(data=refGeo)=>{const f=new FormData();f.set('source',new File(['dxf reference fixture'],'房屋.dxf'));f.set('geojson',new File([JSON.stringify(data)],'ref.geojson'));f.set('metadata',JSON.stringify({name:'房屋',epsg:3826}));return f;};
+    assert.equal((await request('/api/references',{method:'POST',body:referenceForm(),headers:{Origin:'https://evil.example'}})).status,403);
+    const refUpload=await request('/api/references',{method:'POST',body:referenceForm()});assert.equal(refUpload.status,200,await refUpload.clone().text());const ref=(await refUpload.json()).reference;
+    assert.equal(ref.shape_count,1);assert.equal(ref.feature_count,2);assert.equal(ref.layers.__proto__,1);assert.equal(ref.epsg,3826);
+    assert.equal((await(await request('/api/references',{method:'POST',body:referenceForm()})).json()).duplicate,true);
+    assert.equal((await(await request('/api/references')).json()).length,1);
+    assert.deepEqual(await(await request(`/api/references/${ref.id}`)).json(),refGeo);
+    const originalRef=await request(`/api/references/${ref.id}/source`);assert.match(originalRef.headers.get('content-disposition'),/filename\*=UTF-8/);assert.equal(await originalRef.text(),'dxf reference fixture');
+    assert.equal((await request('/api/references',{method:'POST',body:referenceForm({...refGeo,features:[{type:'Feature',geometry:{type:'LineString',coordinates:[[271000,2760000],[272000,2761000]]}}]})})).status,400);
+    assert.equal((await(await request('/api/references')).json()).length,1);
+    assert.equal((await(await request('/api/overlay')).json()),null,'參考圖層不覆寫地籍套繪');
+    assert.deepEqual((await(await request('/api/backup')).json()).references,[ref]);
+    await request('/api/logout',{method:'POST'});assert.equal((await request('/api/references')).status,401);assert.equal((await request(`/api/references/${ref.id}`)).status,401);assert.equal((await request(`/api/references/${ref.id}/source`)).status,401);assert.equal((await request('/files/'+photoId)).status,401);assert.equal((await request('/api/backup')).status,401);
   }finally{await mf.dispose();}
 });

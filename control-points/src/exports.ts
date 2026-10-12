@@ -23,5 +23,6 @@ export async function fullBackup(){
   for(const d of data.datasets)await add(`sources/${d.id}/${d.source_name}`,`/api/datasets/${d.id}/source`);
   for(const a of data.attachments){await add(`photos/${a.id}/${a.filename}`,`/api/backup-files/${a.id}`);if(a.thumb_key)await add(`photos/${a.id}/thumbnail.jpg`,`/api/backup-files/${a.id}/thumbnail`);}
   const overlay=await api('/api/overlay');if(overlay)zip.file('cadastral.geojson',JSON.stringify(overlay));
+  for(const r of data.references||[]){await add(`references/${r.id}/source.dxf`,`/api/references/${r.id}/source`);await add(`references/${r.id}/data.geojson`,`/api/references/${r.id}`);}
   download(await zip.generateAsync({type:'blob'}),`控制點完整備份_${new Date().toISOString().slice(0,10)}.zip`);
 }

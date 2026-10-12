@@ -4,5 +4,6 @@ export type Visit={id:string;point_id:string;status:string;note:string;visited_a
 export type Attachment={id:string;point_id:string;visit_id:string|null;filename:string;mime:string;size:number;category:string;thumb_key:string|null;created_at:string;captured_at:string;pending?:boolean};
 export type Position={lon:number;lat:number;accuracy:number;timestamp:number};
 export type LocationFocus=Position&{initial:boolean;follow:boolean};
+export type ReferenceLayer={id:string;name:string;epsg:number;source_name:string;shape_count:number;feature_count:number;layers:Record<string,number>;warning:string;data:any};
 export type QueueItem={id:string;kind:'visit'|'attachment';pointId:string;code:string;createdAt:string;payload:any;file?:Blob;thumbnail?:Blob;filename?:string;error?:string};
 export type OfflinePack={datasets:Dataset[];points:Point[];visits:Visit[];attachments:Attachment[];downloadedAt:string;withPhotos:boolean};

@@ -1,4 +1,5 @@
 import {normalizeRecords} from '../shared/coordinates.mjs';
+import {referenceRoute,listReferences} from './references.mjs';
 import {createPlaceSearch} from './geocode.mjs';
 const searchPlaces=createPlaceSearch();
 const TTL=12*3600, MAX_FILE=30*1024*1024;
@@ -55,6 +56,7 @@ async function route(req,env){
   const token=req.headers.get('cookie')?.match(/(?:^|;\s*)lct_points_session=([^;]+)/)?.[1];
   const session=token&&await env.DB.prepare('SELECT * FROM sessions WHERE token_hash=? AND expires>?').bind(await digest(token),Math.floor(Date.now()/1000)).first();
   if(!session)fail('請先登入',401);
+  if(path==='/api/references'||path.startsWith('/api/references/'))return referenceRoute(req,env.FILES);
   if(path==='/api/session')return json({ok:true,environment:env.APP_ENV,expires:session.expires});
   if(path==='/api/places'&&req.method==='GET')return json(await searchPlaces(url.searchParams.get('q'),env.FILES,env.GEOCODER_URL));
   if(path==='/api/logout'&&req.method==='POST'){
@@ -106,7 +108,7 @@ async function route(req,env){
   }
   if(path==='/api/backup'&&req.method==='GET'){
     const tables={};for(const table of ['datasets','points','visits','attachments','audits'])tables[table]=(await env.DB.prepare(`SELECT * FROM ${table}`).all()).results;
-    return new Response(JSON.stringify({version:1,created_at:now(),...tables}),{headers:downloadHeaders('控制點資料備份.json','application/json; charset=utf-8')});
+    return new Response(JSON.stringify({version:1,created_at:now(),...tables,references:await listReferences(env.FILES)}),{headers:downloadHeaders('控制點資料備份.json','application/json; charset=utf-8')});
   }
   if(path==='/api/overlay'){
     if(req.method==='GET'){const object=await env.FILES.get('settings/cadastral.geojson');return object?new Response(object.body,{headers:{'Content-Type':'application/geo+json','Cache-Control':'no-store'}}):json(null);}
