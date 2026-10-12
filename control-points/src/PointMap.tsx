@@ -3,19 +3,20 @@ import {useEffect,useLayoutEffect,useRef,useState,type CSSProperties} from 'reac
 import {X,ChevronRight,Crosshair,ZoomIn} from 'lucide-react';
 import {uniqueMapPoints} from '../shared/mapSelection.mjs';
 import {createMapMarkerStyle} from '../shared/mapMarkerStyles.mjs';
-import {focusPointImmediately,mapInteractions} from '../shared/mapNavigation.mjs';
+import {focusPointImmediately,followLocationImmediately,pausesLocationFollow,mapInteractions} from '../shared/mapNavigation.mjs';
 import Map from 'ol/Map';import View from 'ol/View';import Feature from 'ol/Feature';import PointGeometry from 'ol/geom/Point';
 import TileLayer from 'ol/layer/Tile';import VectorLayer from 'ol/layer/Vector';import XYZ from 'ol/source/XYZ';import VectorSource from 'ol/source/Vector';import Cluster from 'ol/source/Cluster';
 import {Style,Circle as CircleStyle,Fill,Stroke,Text} from 'ol/style';import {fromLonLat} from 'ol/proj';import GeoJSON from 'ol/format/GeoJSON';
-import {defaults as defaultControls} from 'ol/control';import {boundingExtent} from 'ol/extent';import type {Point,Position,Dataset} from './types';
+import {defaults as defaultControls} from 'ol/control';import {boundingExtent} from 'ol/extent';import type {Point,Position,LocationFocus,Dataset} from './types';
 import 'ol/ol.css';
-type Props={batchMode:boolean;batchIds:Set<string>;onToggleBatch:(p:Point)=>void;place:Place|null;points:Point[];datasets:Dataset[];selected:Point|null;pointFocus:number;locationFocus:Position|null;position:Position|null;basemap:string;roadNames:boolean;labelStyle:string;imageBrightness:number;overlay:any;overlayVisible:boolean;focus:number;onSelect:(p:Point|null)=>void;onInteraction:()=>void;onMapReady:()=>void};
+type Props={batchMode:boolean;batchIds:Set<string>;onToggleBatch:(p:Point)=>void;place:Place|null;points:Point[];datasets:Dataset[];selected:Point|null;pointFocus:number;locationFocus:LocationFocus|null;position:Position|null;basemap:string;roadNames:boolean;labelStyle:string;imageBrightness:number;overlay:any;overlayVisible:boolean;focus:number;onSelect:(p:Point|null)=>void;onInteraction:()=>void;onMapReady:()=>void};
 export default function PointMap({batchMode,batchIds,onToggleBatch,place,points,datasets,selected,pointFocus,locationFocus,position,basemap,roadNames,labelStyle,imageBrightness,overlay,overlayVisible,focus,onSelect,onInteraction,onMapReady}:Props){
   const el=useRef<HTMLDivElement>(null),mapRef=useRef<Map|null>(null),sourceRef=useRef(new VectorSource()),selectedSource=useRef(new VectorSource()),locationSource=useRef(new VectorSource()),overlaySource=useRef(new VectorSource()),baseSource=useRef<XYZ|null>(null),onSelectRef=useRef(onSelect),initialFit=useRef(false);onSelectRef.current=onSelect;
   const batchSource=useRef(new VectorSource()),batchRef=useRef({batchMode,onToggleBatch});batchRef.current={batchMode,onToggleBatch};
   const placeSource=useRef(new VectorSource());
   const onInteractionRef=useRef(onInteraction);onInteractionRef.current=onInteraction;
   const roadNamesLayer=useRef<TileLayer<XYZ>|null>(null);
+  const locationFocusRef=useRef(locationFocus);locationFocusRef.current=locationFocus?.follow?locationFocus:null;
   const [choices,setChoices]=useState<Point[]>([]),choiceClose=useRef<HTMLButtonElement>(null);
   function closeChoices(){setChoices([]);el.current?.focus({preventScroll:true});}
   function zoomChoices(){const view=mapRef.current?.getView();if(!view||!choices.length)return;view.fit(boundingExtent(choices.map(p=>fromLonLat([p.lon,p.lat]))),{duration:350,padding:[90,70,90,70],maxZoom:19});}
@@ -36,9 +37,11 @@ export default function PointMap({batchMode,batchIds,onToggleBatch,place,points,
     const placeLayer=new VectorLayer({source:placeSource.current,style:f=>new Style({image:new CircleStyle({radius:8,fill:new Fill({color:'#c24531'}),stroke:new Stroke({color:'#fff',width:3})}),text:new Text({text:'搜尋：'+f.get('name'),font:'600 12px sans-serif',fill:new Fill({color:'#8d2f20'}),stroke:new Stroke({color:'#fff',width:4}),offsetY:-20})})});
     const map=new Map({target:el.current!,layers:[new TileLayer({source,className:'imagery-base-layer'}),labels,parcelLayer,clusters,selectionLayer,batchLayer,positionLayer,placeLayer],view:new View({center:fromLonLat([121.255,24.96]),zoom:12}),interactions:mapInteractions(),controls:defaultControls({zoom:false,rotate:false})});
     mapRef.current=map;
-    const viewport=map.getViewport(),interruptNavigation=()=>{onInteractionRef.current();const view=map.getView();if(view.getAnimating())view.cancelAnimations();};
+    const viewport=map.getViewport(),interruptNavigation=()=>{const view=map.getView();if(view.getAnimating())view.cancelAnimations();};
     viewport?.addEventListener('pointerdown',interruptNavigation,{passive:true});
     viewport?.addEventListener('wheel',interruptNavigation,{passive:true});
+    map.on('pointerdrag',event=>{if(pausesLocationFollow(event)){locationFocusRef.current=null;onInteractionRef.current();}});
+    map.on('moveend',()=>{const p=locationFocusRef.current;if(p)followLocationImmediately(map.getView(),fromLonLat([p.lon,p.lat]));});
     map.on('singleclick',event=>{
       const hits:Point[]=[];
       map.forEachFeatureAtPixel(event.pixel,f=>{
@@ -58,7 +61,7 @@ export default function PointMap({batchMode,batchIds,onToggleBatch,place,points,
   useEffect(()=>{batchSource.current.clear();if(batchMode)batchSource.current.addFeatures(points.filter(p=>batchIds.has(p.id)).map(p=>new Feature({geometry:new PointGeometry(fromLonLat([p.lon,p.lat]))})));},[batchMode,batchIds,points]);
   useLayoutEffect(()=>{const map=mapRef.current,view=map?.getView();if(pointFocus&&selected&&map&&view){map.updateSize();focusPointImmediately(view,fromLonLat([selected.lon,selected.lat]));}},[pointFocus]);
   useEffect(()=>{locationSource.current.clear();if(position)locationSource.current.addFeature(new Feature({geometry:new PointGeometry(fromLonLat([position.lon,position.lat]))}));},[position]);
-  useEffect(()=>{if(locationFocus)focusPointImmediately(mapRef.current!.getView(),fromLonLat([locationFocus.lon,locationFocus.lat]),16);},[locationFocus]);
+  useEffect(()=>{if(locationFocus)followLocationImmediately(mapRef.current!.getView(),fromLonLat([locationFocus.lon,locationFocus.lat]),locationFocus.initial);},[locationFocus]);
   useEffect(()=>{placeSource.current.clear();if(place){placeSource.current.addFeature(new Feature({geometry:new PointGeometry(fromLonLat([place.lon,place.lat])),name:place.name}));mapRef.current?.getView().animate({center:fromLonLat([place.lon,place.lat]),zoom:16,duration:450});}},[place]);
   useEffect(()=>{baseSource.current?.setUrl(`https://wmts.nlsc.gov.tw/wmts/${basemap==='aerial'?'PHOTO2':'EMAP'}/default/EPSG:3857/{z}/{y}/{x}`);},[basemap]);
   useEffect(()=>{roadNamesLayer.current?.getSource()?.setUrl(`https://wmts.nlsc.gov.tw/wmts/${labelStyle==='full'?'EMAP2':'EMAP12'}/default/EPSG:3857/{z}/{y}/{x}`);},[labelStyle]);

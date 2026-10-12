@@ -1,7 +1,22 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import View from 'ol/View.js';
 import DragPan from 'ol/interaction/DragPan.js';import MouseWheelZoom from 'ol/interaction/MouseWheelZoom.js';
-import {focusPointImmediately,mapInteractions} from '../shared/mapNavigation.mjs';
+import {focusPointImmediately,followLocationImmediately,pausesLocationFollow,mapInteractions} from '../shared/mapNavigation.mjs';
+
+test('連續跟隨與縮放後置中保留比例，雙指操作完成後才追到最新位置',()=>{
+  const view=new View({center:[0,0],zoom:10});
+  followLocationImmediately(view,[100,120],true);assert.equal(view.getZoom(),16);
+  view.setZoom(13);followLocationImmediately(view,[200,220]);assert.equal(view.getZoom(),13);assert.deepEqual(view.getCenter(),[200,220]);
+  // A pinch can move its anchor; keep the chosen zoom when re-centering.
+  view.setCenter([230,240]);followLocationImmediately(view,[200,220]);assert.deepEqual(view.getCenter(),[200,220]);assert.equal(view.getZoom(),13);
+  view.beginInteraction();followLocationImmediately(view,[300,320]);assert.deepEqual(view.getCenter(),[200,220]);
+  view.endInteraction(0);followLocationImmediately(view,[300,320]);assert.deepEqual(view.getCenter(),[300,320]);assert.equal(view.getAnimating(),false);
+});
+
+test('單指拖曳暫停跟隨，觸碰、滾輪及雙指縮放不會退出跟隨',()=>{
+  assert.equal(pausesLocationFollow({type:'pointerdrag',activePointers:[{}]}),true);
+  for(const event of [{type:'pointerdown',activePointers:[{}]},{type:'wheel'},{type:'pointerdrag',activePointers:[{},{}]}])assert.equal(pausesLocationFollow(event),false);
+});
 
 test('清單選點立即定位，不留動畫等待，並保留已放大的比例',t=>{
   const oldRequest=globalThis.requestAnimationFrame,oldCancel=globalThis.cancelAnimationFrame;

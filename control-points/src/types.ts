@@ -3,5 +3,6 @@ export type Dataset={id:string;name:string;crs:string;epsg:number;height_type:st
 export type Visit={id:string;point_id:string;status:string;note:string;visited_at:string;position:string|null;created_at:string;pending?:boolean};
 export type Attachment={id:string;point_id:string;visit_id:string|null;filename:string;mime:string;size:number;category:string;thumb_key:string|null;created_at:string;captured_at:string;pending?:boolean};
 export type Position={lon:number;lat:number;accuracy:number;timestamp:number};
+export type LocationFocus=Position&{initial:boolean;follow:boolean};
 export type QueueItem={id:string;kind:'visit'|'attachment';pointId:string;code:string;createdAt:string;payload:any;file?:Blob;thumbnail?:Blob;filename?:string;error?:string};
 export type OfflinePack={datasets:Dataset[];points:Point[];visits:Visit[];attachments:Attachment[];downloadedAt:string;withPhotos:boolean};
