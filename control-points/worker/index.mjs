@@ -1,8 +1,13 @@
 import {loginRoute} from './login.mjs';
+import {surveyResultRoute} from './surveyResults.mjs';
 import {readPage} from './pages.mjs';
 import {normalizeRecords} from '../shared/coordinates.mjs';
+import {approximatePoint,measuredPoint} from '../shared/fieldPoints.mjs';
+import {PHOTO_CATEGORIES,VISIT_STATUSES} from '../shared/fieldWorkflow.mjs';
 import {referenceRoute,listReferences} from './references.mjs';
 import {createPlaceSearch} from './geocode.mjs';
+import {createWalkingRoute} from './walkingRoute.mjs';
+const walkingRoute=createWalkingRoute();
 const searchPlaces=createPlaceSearch();
 const MAX_FILE=30*1024*1024;
 const now=()=>new Date().toISOString();
@@ -23,6 +28,9 @@ export default {
     try { response=await route(request,env); }
     catch(e){console.error('request_failed',e.status||500,e.status||env.APP_ENV!=='production'?e.message:'internal_error');response=json({error:e.status?e.message:'服務暫時無法使用，請稍後重試'},e.status||500);}
     const headers=new Headers(response.headers);
+    // Revalidate the app shell and worker script even on browsers with an old
+    // offline shell. Hashed assets keep their normal caching behavior.
+    if(headers.get('Content-Type')?.includes('text/html')||new URL(request.url).pathname==='/sw.js')headers.set('Cache-Control','no-store');
     headers.set('X-Content-Type-Options','nosniff');headers.set('Referrer-Policy','no-referrer');headers.set('X-Frame-Options','DENY');headers.set('X-Robots-Tag','noindex, nofollow');
     headers.set('Permissions-Policy','camera=(self), geolocation=(self), accelerometer=(self), gyroscope=(self), magnetometer=(self), microphone=()');
     headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://wmts.nlsc.gov.tw; connect-src 'self' https://wmts.nlsc.gov.tw; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'");
@@ -41,14 +49,31 @@ async function route(req,env){
   const token=req.headers.get('cookie')?.match(/(?:^|;\s*)lct_points_session=([^;]+)/)?.[1];
   const session=token&&await env.DB.prepare('SELECT * FROM sessions WHERE token_hash=? AND expires>?').bind(await digest(token),Math.floor(Date.now()/1000)).first();
   if(!session)fail('請先登入',401);
+  if(req.method==='POST'&&(/^\/api\/datasets\/[^/]+\/revisions$/.test(path)||/^\/api\/points\/[^/]+\/measurements$/.test(path)))return surveyResultRoute(req,env,url);
   if(path==='/api/references'||path.startsWith('/api/references/'))return referenceRoute(req,env.FILES);
   if(path==='/api/session')return json({ok:true,environment:env.APP_ENV,expires:session.expires});
+  if(path==='/api/points-revision'&&req.method==='GET'){
+    const row=await env.DB.prepare('SELECT generation,revision FROM point_revision WHERE id=1').first();
+    return json({revision:row.generation+':'+row.revision});
+  }
   if(path==='/api/places'&&req.method==='GET')return json(await searchPlaces(url.searchParams.get('q'),env.FILES,env.GEOCODER_URL));
+  if(path==='/api/walking-route'&&req.method==='POST'){
+    const data=await readJson(req,2048),target=await point(env,String(data.pointId||''));
+    return json(await walkingRoute([data.lon,data.lat],[target.lon,target.lat],env.WALKING_ROUTER_URL));
+  }
   if(path==='/api/logout'&&req.method==='POST'){
     await env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(await digest(token)).run();
     return new Response('{"ok":true}',{headers:{'Content-Type':'application/json','Cache-Control':'no-store','Set-Cookie':`lct_points_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secure}`}});
   }
   if(path==='/api/datasets'&&req.method==='GET')return json((await env.DB.prepare('SELECT d.*, (SELECT COUNT(*) FROM points p WHERE p.dataset_id=d.id AND p.deleted_at IS NULL) point_count FROM datasets d ORDER BY imported_at,id').all()).results);
+  if(path==='/api/field-datasets'&&req.method==='POST'){
+    const data=await readJson(req,2048),id=crypto.randomUUID();
+    if(typeof data.name!=='string'||!data.name.trim()||data.name.length>100)fail('請填寫 100 字以內的圖層名稱');
+    if(!Number.isInteger(data.resultYear)||data.resultYear<1||data.resultYear>300||!/^#[a-f0-9]{6}$/i.test(data.color))fail('年份或顏色不正確');
+    const metadata={fieldLayer:true,resultYear:data.resultYear,color:data.color};
+    await env.DB.batch([env.DB.prepare('INSERT INTO datasets VALUES(?,?,?,?,?,?,?,?,?,?,?)').bind(id,data.name.trim(),'WGS84',4326,'未註明',null,'現場新增',null,null,now(),JSON.stringify(metadata)),audit(env,null,'field-layer',null,{id,name:data.name.trim(),metadata})]);
+    return json({id},201);
+  }
   if(path==='/api/points'&&req.method==='GET'){
     const dataset=url.searchParams.get('dataset'),trash=url.searchParams.get('trash')==='1';
     if(url.searchParams.get('paged')==='1')return json(await readPage(env.DB,'points',url.searchParams,'deleted_at IS '+(trash?'NOT NULL':'NULL')+(dataset?' AND dataset_id=?':''),dataset?[dataset]:[]));
@@ -62,7 +87,10 @@ async function route(req,env){
   }
   if(path==='/api/points'&&req.method==='POST'){
     const data=await readJson(req,32768),dataset=await env.DB.prepare('SELECT * FROM datasets WHERE id=?').bind(data.dataset_id).first();if(!dataset)fail('請選擇資料集');
-    const n=normalizeRecords([data],dataset);if(n.errors.length)fail(n.errors[0].message);const p=n.points[0];
+    if(JSON.parse(dataset.metadata||'{}').archiveOnly)fail('此資料集保存歷史來源，點位沿用115年成果，請選擇成果資料集');
+    let p;
+    if(data.coordinateQuality==='approximate')p=approximatePoint(data,dataset);
+    else{const n=normalizeRecords([data],dataset);if(n.errors.length)fail(n.errors[0].message);p=n.points[0];}
     if(await env.DB.prepare('SELECT id FROM points WHERE dataset_id=? AND code=?').bind(dataset.id,p.code).first())fail('此資料集已有相同點號',409);
     const fields=Object.keys(p);await env.DB.batch([env.DB.prepare(`INSERT INTO points(${fields.join(',')},updated_at) VALUES(${Array(fields.length+1).fill('?').join(',')})`).bind(...fields.map(k=>p[k]??null),now()),audit(env,p.id,'create',null,p)]);return json(await point(env,p.id),201);
   }
@@ -76,7 +104,9 @@ async function route(req,env){
     const id=d.id||crypto.randomUUID();if(typeof id!=='string'||!/^[a-zA-Z0-9_-]{1,80}$/.test(id))fail('資料集 ID 不正確');
     if(!source||typeof source.arrayBuffer!=='function'||source.size>10*1024*1024)fail('請附上 10 MB 以內原始檔');
     const bytes=await source.arrayBuffer(),hash=await digest(bytes);
-    const existing=await env.DB.prepare('SELECT id FROM datasets WHERE source_hash=?').bind(hash).first();
+    const scope=d.metadata?.importScope;
+    if(scope!=null&&(typeof scope!=='string'||!scope.trim()||scope.length>100))fail('來源分組識別不正確');
+    const existing=scope?await env.DB.prepare("SELECT id FROM datasets WHERE source_hash=? AND json_extract(metadata,'$.importScope')=?").bind(hash,scope).first():await env.DB.prepare('SELECT id FROM datasets WHERE source_hash=?').bind(hash).first();
     if(existing)return json({ok:true,duplicate:true,id:existing.id});
     if(await env.DB.prepare('SELECT id FROM datasets WHERE id=?').bind(id).first())fail('資料集已存在，請使用不同名稱建立新批次',409);
     const normalized=normalizeRecords(input.records,{...d,id});
@@ -113,15 +143,28 @@ async function route(req,env){
   const sourceMatch=path.match(/^\/api\/datasets\/([^/]+)\/source$/);
   if(sourceMatch&&req.method==='GET'){
     const d=await env.DB.prepare('SELECT * FROM datasets WHERE id=?').bind(decodeURIComponent(sourceMatch[1])).first();if(!d)fail('找不到資料集',404);
-    const f=await env.FILES.get(d.source_key);if(!f)fail('找不到原始檔',404);return new Response(f.body,{headers:downloadHeaders(d.source_name,'application/octet-stream')});
+    if(!d.source_key)fail('現場圖層沒有來源 Excel，可由資料工具匯出點表。',404);
+    const hash=url.searchParams.get('hash'),revision=hash&&hash!==d.source_hash?JSON.parse(d.metadata).sourceRevisions?.find(r=>r.hash===hash):null;
+    if(hash&&hash!==d.source_hash&&!revision)fail('找不到來源版本',404);
+    const f=await env.FILES.get(revision?.key||d.source_key);if(!f)fail('找不到原始檔',404);return new Response(f.body,{headers:downloadHeaders(revision?.name||d.source_name,'application/octet-stream')});
   }
-  const pointMatch=path.match(/^\/api\/points\/([^/]+)(?:\/(visits|attachments|history|restore))?$/);
+  const pointMatch=path.match(/^\/api\/points\/([^/]+)(?:\/(visits|attachments|history|restore|measurement))?$/);
   if(pointMatch){
     const id=decodeURIComponent(pointMatch[1]),action=pointMatch[2],p=await point(env,id,action==='restore');
     if(req.method==='GET'&&!action)return json(p);
     if(req.method==='GET'&&action==='history')return json((await env.DB.prepare('SELECT * FROM audits WHERE point_id=? ORDER BY created_at DESC').bind(id).all()).results);
     if(req.method==='GET'&&action==='visits')return json((await env.DB.prepare('SELECT * FROM visits WHERE point_id=? ORDER BY visited_at DESC').bind(id).all()).results);
     if(req.method==='GET'&&action==='attachments')return json((await env.DB.prepare("SELECT * FROM attachments WHERE point_id=? AND state='ready' ORDER BY created_at DESC").bind(id).all()).results);
+    if(req.method==='PATCH'&&action==='measurement'){
+      const data=await readJson(req,4096);if(data.version!==p.version)fail('資料已更新，請重新載入後再補測量。',409);
+      const changed=measuredPoint(data,p),fields=['north','east','height','lon','lat','crs','epsg','height_type','height_datum','raw'];
+      // 稽核以版本條件插入；同一批次中舊版更新不得留下成功的測量紀錄。
+      const result=await env.DB.batch([
+        env.DB.prepare('INSERT INTO audits SELECT ?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM points WHERE id=? AND version=?)').bind(crypto.randomUUID(),id,'measurement',JSON.stringify(p),JSON.stringify(changed),now(),id,p.version),
+        env.DB.prepare(`UPDATE points SET ${fields.map(f=>f+'=?').join(',')},version=version+1,updated_at=? WHERE id=? AND version=?`).bind(...fields.map(f=>changed[f]??null),now(),id,p.version)
+      ]);
+      if(!result[1].meta.changes)fail('資料已更新，請重新載入後再補測量。',409);return json(await point(env,id));
+    }
     if(req.method==='PATCH'&&!action){
       const data=await readJson(req,16384);if(data.version!==p.version)fail('資料已更新，請重新載入後再編輯',409);
       const changed={...p};for(const key of ['name','description','notes'])if(key in data){if(typeof data[key]!=='string'||data[key].length>8000)fail('文字欄位過長');changed[key]=data[key];}
@@ -136,12 +179,12 @@ async function route(req,env){
     }
     if(req.method==='POST'&&action==='visits'){
       const data=await readJson(req,16384);
-      if(!['完好','損壞','找不到','無法進入'].includes(data.status))fail('點況不正確');
+      if(!VISIT_STATUSES.includes(data.status))fail('點況不正確');
       if(typeof data.id!=='string'||!/^[a-f0-9-]{36}$/.test(data.id))fail('紀錄 ID 不正確');
       const old=await env.DB.prepare('SELECT * FROM visits WHERE id=?').bind(data.id).first();if(old){if(old.point_id!==id)fail('紀錄 ID 已使用',409);return json(old);}
       const visited=new Date(data.visited_at||now());if(!Number.isFinite(+visited))fail('巡查時間不正確');
       const note=String(data.note||'');if(note.length>8000)fail('備註過長');
-      await env.DB.batch([env.DB.prepare('INSERT INTO visits VALUES(?,?,?,?,?,?,?)').bind(data.id,id,data.status,note,visited.toISOString(),data.position?JSON.stringify(data.position):null,now()),env.DB.prepare('UPDATE points SET status=?,updated_at=?,version=version+1 WHERE id=? AND (SELECT id FROM visits WHERE point_id=? ORDER BY visited_at DESC,created_at DESC LIMIT 1)=?').bind(data.status,now(),id,id,data.id),audit(env,id,'visit',null,{id:data.id,status:data.status,note})]);
+      await env.DB.batch([env.DB.prepare('INSERT INTO visits VALUES(?,?,?,?,?,?,?)').bind(data.id,id,data.status,note,visited.toISOString(),data.position?JSON.stringify(data.position):null,now()),env.DB.prepare('UPDATE points SET status=?,updated_at=?,version=version+1 WHERE id=? AND (SELECT id FROM visits WHERE point_id=? ORDER BY visited_at DESC,created_at DESC,id DESC LIMIT 1)=?').bind(data.status,now(),id,id,data.id),audit(env,id,'visit',null,{id:data.id,status:data.status,note})]);
       return json({ok:true,id:data.id});
     }
     if(req.method==='POST'&&action==='attachments'){
@@ -167,6 +210,31 @@ async function route(req,env){
       catch(e){const duplicate=await env.DB.prepare('SELECT * FROM attachments WHERE id=?').bind(attachmentId).first();if(duplicate&&duplicate.point_id===id)return json(duplicate);throw e;}
       return json({ok:true,id:attachmentId,sha256:hash});
     }
+  }
+  const editMatch=path.match(/^\/api\/points\/([^/]+)\/(attachments|visits)\/([^/]+)$/);
+  if(editMatch&&req.method==='PATCH'){
+    const pointId=decodeURIComponent(editMatch[1]),kind=editMatch[2],id=decodeURIComponent(editMatch[3]);await point(env,pointId);
+    const data=await readJson(req,16384),old=await env.DB.prepare(`SELECT * FROM ${kind} WHERE id=? AND point_id=?${kind==='attachments'?" AND state='ready'":''}`).bind(id,pointId).first();if(!old)fail('找不到該點位的紀錄',404);
+    const auditId=crypto.randomUUID(),time=now();let result;
+    if(kind==='attachments'){
+      if(!PHOTO_CATEGORIES.includes(data.category))fail('照片分類不正確');
+      if(data.expectedCategory!==old.category)fail('照片分類已被修改，請重新載入。',409);
+      result=await env.DB.batch([
+        env.DB.prepare('INSERT INTO audits SELECT ?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM attachments WHERE id=? AND point_id=? AND category=?)').bind(auditId,pointId,'photo-category',JSON.stringify({id,category:old.category}),JSON.stringify({id,category:data.category}),time,id,pointId,old.category),
+        env.DB.prepare('UPDATE attachments SET category=? WHERE id=? AND point_id=? AND category=?').bind(data.category,id,pointId,old.category),
+        env.DB.prepare('UPDATE points SET version=version+1,updated_at=? WHERE id=? AND EXISTS(SELECT 1 FROM audits WHERE id=?)').bind(time,pointId,auditId)
+      ]);
+    }else{
+      if(!VISIT_STATUSES.includes(data.status)||typeof data.note!=='string'||data.note.length>8000)fail('巡查點況或內容不正確');
+      if(data.expectedStatus!==old.status||data.expectedNote!==old.note)fail('巡查紀錄已被修改，請重新載入。',409);
+      result=await env.DB.batch([
+        env.DB.prepare('INSERT INTO audits SELECT ?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM visits WHERE id=? AND point_id=? AND status=? AND note=?)').bind(auditId,pointId,'visit-edit',JSON.stringify(old),JSON.stringify({...old,status:data.status,note:data.note}),time,id,pointId,old.status,old.note),
+        env.DB.prepare('UPDATE visits SET status=?,note=? WHERE id=? AND point_id=? AND status=? AND note=?').bind(data.status,data.note,id,pointId,old.status,old.note),
+        env.DB.prepare('UPDATE points SET status=(SELECT status FROM visits WHERE point_id=? ORDER BY visited_at DESC,created_at DESC,id DESC LIMIT 1),version=version+1,updated_at=? WHERE id=? AND EXISTS(SELECT 1 FROM audits WHERE id=?)').bind(pointId,time,pointId,auditId)
+      ]);
+    }
+    if(!result[1].meta.changes)fail('紀錄已被修改，請重新載入。',409);
+    return json({ok:true,id});
   }
   const fileMatch=path.match(/^\/files\/([a-f0-9-]{36})(\/thumbnail)?$/);
   if(fileMatch&&(req.method==='GET'||req.method==='HEAD')){

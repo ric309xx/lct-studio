@@ -1,4 +1,5 @@
 import proj4 from 'proj4';
+import {coordinateLabel} from './datasets.mjs';
 for (const [epsg, lon, datum] of [[3826,121,'GRS80'],[3825,119,'GRS80'],[3828,121,'aust_SA'],[3827,119,'aust_SA']]) {
   proj4.defs(`EPSG:${epsg}`, `+proj=tmerc +lat_0=0 +lon_0=${lon} +k=0.9999 +x_0=250000 +y_0=0 +ellps=${datum} +units=m +no_defs`);
 }
@@ -23,7 +24,7 @@ export function bearing(a,b) {
 }
 export function normalizeRecords(records, options) {
   if (!Array.isArray(records) || !records.length || records.length>20000) throw new Error('請提供 1–20,000 筆資料');
-  const epsg=Number(options.epsg), crs=CRS_OPTIONS.find(c=>c.epsg===epsg)?.label;
+  const epsg=Number(options.epsg), crs=coordinateLabel(options);
   if (!crs || ![3826,3825,4326].includes(epsg)) throw new Error('請選擇支援的坐標系統');
   const seen=new Set(), points=[], errors=[], warnings=[];
   records.forEach((raw,i)=>{

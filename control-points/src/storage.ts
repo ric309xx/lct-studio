@@ -12,5 +12,6 @@ export const storeValue=(key:string,value:unknown)=>tx('kv','readwrite',s=>s.put
 export const deleteStored=(key:string)=>tx('kv','readwrite',s=>s.delete(key));
 export const queueList=()=>tx<QueueItem[]>('queue','readonly',s=>s.getAll());
 export const queuePut=(item:QueueItem)=>tx('queue','readwrite',s=>s.put(item));
+export async function queuePutMany(items:QueueItem[]){const db=await dbPromise;return new Promise<void>((resolve,reject)=>{const transaction=db.transaction('queue','readwrite'),store=transaction.objectStore('queue');try{for(const item of items)store.put(item);}catch(e){transaction.abort();reject(e);return;}transaction.oncomplete=()=>resolve();transaction.onerror=()=>reject(transaction.error);transaction.onabort=()=>reject(transaction.error||new Error('照片未能整批保存'));});}
 export const queueDelete=(id:string)=>tx('queue','readwrite',s=>s.delete(id));
 export async function clearOffline(){const db=await dbPromise;return new Promise<void>((resolve,reject)=>{const t=db.transaction('kv','readwrite');t.objectStore('kv').clear();t.oncomplete=()=>resolve();t.onerror=()=>reject(t.error);});}

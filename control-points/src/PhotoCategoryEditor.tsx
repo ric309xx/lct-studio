@@ -1,0 +1,7 @@
+import {useState} from 'react';import {Pencil} from 'lucide-react';
+import {PHOTO_CATEGORIES,photoCategory} from './photos';import {api,jsonRequest} from './api';import type {Attachment} from './types';
+export default function PhotoCategoryEditor({attachment,online,onSaved}:{attachment:Attachment;online:boolean;onSaved:()=>void}){
+  const [open,setOpen]=useState(false),[category,setCategory]=useState(photoCategory(attachment.category)),[busy,setBusy]=useState(false),[error,setError]=useState('');
+  async function save(){setBusy(true);setError('');try{await api(`/api/points/${attachment.point_id}/attachments/${attachment.id}`,jsonRequest('PATCH',{category,expectedCategory:attachment.category}));setOpen(false);onSaved();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
+  return <div className="photo-category-editor">{open?<><label>修改照片類別<select value={category} onChange={e=>setCategory(e.target.value)}>{PHOTO_CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></label><div className="button-row"><button className="primary" disabled={busy} onClick={save}>保存</button><button className="secondary" disabled={busy} onClick={()=>setOpen(false)}>取消</button></div>{error&&<p className="error-text" role="alert">{error}</p>}</>:<button className="text-button" disabled={!online} onClick={()=>{setCategory(photoCategory(attachment.category));setError('');setOpen(true);}}><Pencil size={13}/>修改分類</button>}</div>;
+}

@@ -423,3 +423,12 @@ Viewer 專案清單以 `project-data/projects.json` 為準；其中包含單一�
 - 以本機 HTTP server 開啟網站，不要直接使用 `file://`，避免影片、CSP 與資源路徑在不同瀏覽器產生差異。
 - 檢查南雅／龍洞切換、模型飛行模擬、三維模型密碼入口、兩地各四張照片燈箱及手機版面。
 - 正式上線前確認 Cesium ion 商業方案、儲存容量、官方 attribution 與 token Allowed URLs。
+
+
+## 控制點系統跨電腦合併與發布（2026-10-14）
+
+- `control-points/` 為獨立 React／OpenLayers／Cloudflare Worker 系統，開發與正式資料綁定分開。操作與維護詳見 [控制點 README](control-points/README.md)。
+- 兩台電腦以 GitHub `main` 同步程式；OneDrive 的電腦名稱衝突檔先封存再合併，不能讓兩份同名元件進入 TypeScript 編譯。
+- 正式 D1／R2 保留最新控制點、EGNSS2025／TWD97 成果、巡查、照片、PDF 與 Excel 修訂版本。發布程式不還原本機舊資料；先完整備份，部署後以逐欄核對確認保留。
+- IndexedDB 點表快取經登入驗證後載入，以資料庫觸發器產生的版本決定是否重新分頁下載；現場寫入完成會再檢查版本，避免與背景更新競態造成舊點況。
+- 手機分類連拍先在裝置成批保存，巡查／照片編輯採原值衝突檢查，找到點後可拍照／略過／下一點。原始成果與現場資訊分開保存。

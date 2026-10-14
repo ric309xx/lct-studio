@@ -19,6 +19,7 @@ test('7301 full records: bounded pages preserve attributes, dataset identity, tr
     const request=path=>mf.dispatchFetch('http://localhost'+path,{headers:{Cookie:'lct_points_session=pages-test'}});
     const pages=[];const json=async path=>{const response=await request(path);assert.equal(response.status,200);const data=await response.json();if(data.items){assert.ok(data.items.length<=200);pages.push(data.items.length);}return data;};
     assert.equal((await mf.dispatchFetch('http://localhost/api/points?paged=1')).status,401);
+    assert.equal((await mf.dispatchFetch('http://localhost/api/points-revision')).status,401);
     const progress=[],points=await readAllPages(json,'/api/points',n=>progress.push(n));
     assert.equal(points.length,7301);assert.equal(pages.length,37);assert.equal(progress.at(-1),7301);assert.equal(new Set(points.map(p=>p.id)).size,7301);
     assert.ok(points.every(p=>p.raw===raw&&p.original_code==='duplicate-original'));
@@ -28,6 +29,11 @@ test('7301 full records: bounded pages preserve attributes, dataset identity, tr
     assert.equal((await request('/api/backup?table=sessions')).status,400);
     const backup=await readBackup(json);assert.equal(backup.points.length,7302);assert.equal(backup.datasets.length,2);assert.equal(backup.version,1);
     const offline=await json('/api/offline?metadata=1&dataset=a');assert.equal(offline.points.length,0);assert.equal(offline.datasets.length,1);
+    let revision=(await json('/api/points-revision')).revision;
+    for(const sql of ["UPDATE points SET notes='edited elsewhere' WHERE id='000000'","UPDATE points SET deleted_at='2026-10-13' WHERE id='000000'","UPDATE points SET deleted_at=NULL WHERE id='000000'","UPDATE datasets SET metadata='{\"resultYear\":115}' WHERE id='a'","DELETE FROM points WHERE id='000000'"]){
+      await db.prepare(sql).run();const next=(await json('/api/points-revision')).revision;assert.notEqual(next,revision);revision=next;
+    }
+    await db.exec(readFileSync('migrations/0003_point_revision.sql','utf8'));assert.equal((await json('/api/points-revision')).revision,revision,'reapplying migration does not reset the version');
   }finally{await mf.dispose();}
 });
 

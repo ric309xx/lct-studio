@@ -8,7 +8,7 @@ test('record defaults select one close and four far, stably, without inventing m
 test('record preserves projected coordinates and an unknown height datum',()=>{
  const fields=Object.fromEntries(recordFields({dataset_id:'leveling-109',code:'123',north:2760000.123,east:250000.456,height:10.12345,lat:24.9,lon:121.2,crs:'TWD97 / TM2 121 分帶',epsg:3826,height_type:'正高',source_row:2,notes:'待確認'},undefined));
  assert.equal(fields['N 縱坐標（m）'],'2,760,000.123');assert.equal(fields['正高（m）'],'10.12345');assert.match(fields['坐標系統'],/3826/);assert.match(fields['高程基準'],/待確認/);assert.equal(fields['備註'],'待確認');
- assert.equal(Object.keys(fields).length,9);for(const removed of ['資料集','原點號','點名','說明／所在地','巡查狀態','來源'])assert.equal(fields[removed],undefined);
+ assert.equal(Object.keys(fields).length,10);assert.equal(fields['成果年份'],'民國 109 年');for(const removed of ['資料集','原點號','點名','說明／所在地','巡查狀態','來源'])assert.equal(fields[removed],undefined);
  assert.deepEqual(mapPixel(0,0,0),[128,128]);assert.throws(()=>mapPixel(NaN,24,17));assert.equal(escapeRecord('<script>'), '&lt;script&gt;');assert.equal(recordFilename('../A:B'),'點之記_.._A_B');
 });
 test('portrait photos rotate into landscape without cropping; landscape photos keep their direction',()=>{

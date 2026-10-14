@@ -19,6 +19,7 @@ async function collect(path,key,mime,hash){
   objects.push({key,mime,bytes,hash:actual});
 }
 for(const d of data.datasets)if(d.source_key)await collect(`sources/${d.id}/${d.source_name}`,d.source_key,'application/octet-stream',d.source_hash);
+for(const d of data.datasets)for(const r of JSON.parse(d.metadata||'{}').sourceRevisions||[])await collect(`sources/${d.id}/revisions/${r.hash}/${r.name}`,r.key,'application/octet-stream',r.hash);
 for(const a of data.attachments){await collect(`photos/${a.id}/${a.filename}`,a.object_key,a.mime,a.sha256);if(a.thumb_key)await collect(`photos/${a.id}/thumbnail.jpg`,a.thumb_key,'image/jpeg');}
 if(zip.file('cadastral.geojson'))await collect('cadastral.geojson','settings/cadastral.geojson','application/geo+json');
 for(const r of data.references||[]){

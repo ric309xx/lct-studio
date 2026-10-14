@@ -62,3 +62,11 @@ test('登出後的舊回呼不更新位置，定位失敗可重試而不累積�
   s.tracking.request(s.gps);s.watches[1].success(s.fix(121));assert.equal(s.locations.length,0);
   s.watches[2].success(s.fix(121.1));assert.equal(s.locations.length,1);
 });
+
+test('找點更新定位要求新的 GPS，舊定位回呼不能覆蓋新結果',()=>{
+  const s=setup();s.tracking.request(s.gps);s.watches[0].success(s.fix(121));
+  s.tracking.request(s.gps,'single',true);
+  assert.deepEqual(s.cleared,[1]);assert.equal(s.watches[1].options.maximumAge,0);assert.equal(s.states.at(-1),'locating');
+  s.watches[0].success(s.fix(122));assert.equal(s.positions.at(-1).lon,121);
+  s.watches[1].success(s.fix(121.01));assert.equal(s.positions.at(-1).lon,121.01);assert.equal(s.states.at(-1),'idle');
+});

@@ -1,28 +1,33 @@
 import {Style,Circle as CircleStyle,Fill,Stroke,Text} from 'ol/style.js';
 import {representativeMapPoint} from './mapSelection.mjs';
+import {datasetColor} from './datasets.mjs';
+import {isApproximate} from './fieldPoints.mjs';
 
 // Repaints (including hit detection) reuse symbols instead of sorting the
 // cluster and constructing every circle/text again. Re-clustering makes new
 // feature keys; WeakMap lets obsolete clusters be collected.
-export function createMapMarkerStyle() {
+/** @param {any[] | (()=>any[])} datasets */
+export function createMapMarkerStyle(datasets=[]) {
   const cache=new WeakMap();
   return (feature,zoom)=>{
     const showCode=zoom>15,revision=feature.getRevision(),previous=cache.get(feature);
     if(previous&&previous.showCode===showCode&&previous.revision===revision)return previous.styles;
-    const styles=mapMarkerStyles(feature.get('features'),zoom);
+    const list=typeof datasets==='function'?datasets():datasets;
+    const styles=mapMarkerStyles(feature.get('features'),zoom,new Map(list.map(d=>[d.id,d])));
     cache.set(feature,{showCode,revision,styles});
     return styles;
   };
 }
 
-export function mapMarkerStyles(children,zoom) {
+export function mapMarkerStyles(children,zoom,datasets=new Map()) {
   const count=children.length,p=representativeMapPoint(children.map(f=>f.get('point')));
   if(!p)return [];
   const representative=children.find(f=>f.get('point')?.id===p.id);
   const geometry=representative.getGeometry();
-  const color=p.status==='損壞'||p.status==='找不到'?'#b65b38':p.dataset_id==='leveling-109'?'#743c92':p.dataset_id==='image-control-202610'?'#f2c53d':'#2b6852';
+  const color=p.status==='損壞'||p.status==='找不到'?'#b65b38':datasetColor(datasets.get(p.dataset_id)||{id:p.dataset_id});
+  const approximate=isApproximate(p);
   const styles=[new Style({geometry,
-    image:new CircleStyle({radius:7,fill:new Fill({color}),stroke:new Stroke({color:color==='#f2c53d'?'#795b10':'#fff',width:2.5})}),
+    image:new CircleStyle({radius:approximate?9:7,fill:new Fill({color:approximate?'#fffef5':color}),stroke:new Stroke({color:approximate?color:color==='#f2c53d'?'#795b10':'#fff',width:2.5,lineDash:approximate?[3,2]:undefined})}),
     text:new Text({text:zoom>15?p.code||'':'',font:'600 11px sans-serif',fill:new Fill({color:'#163c33'}),stroke:new Stroke({color:'#fff',width:3}),offsetY:18})
   })];
   if(count>1){
