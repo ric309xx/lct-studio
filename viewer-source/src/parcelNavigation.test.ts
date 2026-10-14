@@ -16,7 +16,8 @@ describe("parcel orbit navigation", () => {
         pickPosition: () => target, requestRender: vi.fn() }
     } as unknown as Viewer;
     let allowed = false;
-    const dispose = tuneParcelNavigation(viewer, () => null, () => allowed);
+    let parcelTarget: Cartesian3 | null = null;
+    const dispose = tuneParcelNavigation(viewer, () => parcelTarget, () => allowed);
     const click = () => {
       canvas.dispatchEvent(new MouseEvent("mousedown", { button: 0, bubbles: true }));
       canvas.dispatchEvent(new MouseEvent("mouseup", { button: 0, bubbles: true }));
@@ -30,6 +31,10 @@ describe("parcel orbit navigation", () => {
     canvas.dispatchEvent(new MouseEvent("mousedown", { button: 1, bubbles: true }));
     expect(transform.mock.calls.at(-1)![0]).not.toEqual(Matrix4.IDENTITY);
     expect(controller.enableCollisionDetection).toBe(false);
+    document.dispatchEvent(new MouseEvent("mouseup", { button: 1, bubbles: true }));
+    parcelTarget = Cartesian3.fromDegrees(121.218, 24.963, 130);
+    canvas.dispatchEvent(new MouseEvent("mousedown", { button: 1, bubbles: true }));
+    expect(transform.mock.calls.at(-1)![0]).toEqual(Transforms.eastNorthUpToFixedFrame(parcelTarget));
     dispose();
     expect(controller.enableCollisionDetection).toBe(true);
     canvas.remove();

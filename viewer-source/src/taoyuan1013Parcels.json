@@ -27,8 +27,11 @@
       "rightsCategory": "本國人 15.55%；省市 50.00%；本國私法人 34.45%",
       "cadastralAreaM2": 4509.15,
       "geometryAreaM2": 4509.128,
-      "analysisStatus": "awaiting-building-confirmation",
-      "analysisNote": "地籍依提供 DXF 與查詢截圖匯入；占用範圍待圈選確認，尚未計算面積與比例。"
+      "analysisStatus": "survey-reference",
+      "analysisNote": "依外業房屋參考線與地籍之 TWD97 平面交集計算；未計入牆面表面積，尚待複核範圍完整性與線別。",
+      "occupiedAreaM2": 3.3766,
+      "occupancyPercent": 0.07488,
+      "analysisVersion": "20261014-field-reference-v1"
     },
     "overlayUrl": "overlays/taoyuan-1013/block-01.geojson",
     "tilesetPath": "1013/tileset.json",
@@ -69,8 +72,11 @@
       "rightsCategory": "本國人 58.04%；國有 11.83%；省市 27.35%；本國私法人 2.78%",
       "cadastralAreaM2": 54.16,
       "geometryAreaM2": 54.164,
-      "analysisStatus": "awaiting-building-confirmation",
-      "analysisNote": "地籍依提供 DXF 與查詢截圖匯入；占用範圍待圈選確認，尚未計算面積與比例。"
+      "analysisStatus": "survey-reference",
+      "analysisNote": "依外業房屋參考線與地籍之 TWD97 平面交集計算；未計入牆面表面積，尚待複核範圍完整性與線別。",
+      "occupiedAreaM2": 12.219,
+      "occupancyPercent": 22.5609,
+      "analysisVersion": "20261014-field-reference-v1"
     },
     "overlayUrl": "overlays/taoyuan-1013/block-01.geojson",
     "tilesetPath": "1013/tileset.json",
@@ -111,8 +117,11 @@
       "rightsCategory": "本國人 61.93%；國有 11.83%；省市 26.23%",
       "cadastralAreaM2": 22.24,
       "geometryAreaM2": 22.241,
-      "analysisStatus": "awaiting-building-confirmation",
-      "analysisNote": "地籍依提供 DXF 與查詢截圖匯入；占用範圍待圈選確認，尚未計算面積與比例。"
+      "analysisStatus": "survey-reference",
+      "analysisNote": "依外業房屋參考線與地籍之 TWD97 平面交集計算；未計入牆面表面積，尚待複核範圍完整性與線別。",
+      "occupiedAreaM2": 5.4592,
+      "occupancyPercent": 24.54656,
+      "analysisVersion": "20261014-field-reference-v1"
     },
     "overlayUrl": "overlays/taoyuan-1013/block-01.geojson",
     "tilesetPath": "1013/tileset.json",
@@ -153,8 +162,11 @@
       "rightsCategory": "本國人 84.48%；省市 15.52%",
       "cadastralAreaM2": 12.05,
       "geometryAreaM2": 12.05,
-      "analysisStatus": "awaiting-building-confirmation",
-      "analysisNote": "地籍依提供 DXF 與查詢截圖匯入；占用範圍待圈選確認，尚未計算面積與比例。"
+      "analysisStatus": "model-derived",
+      "analysisNote": "依同批 Terra 模型彩色點雲判讀屋頂／雨遮投影，與 TWD97 地籍平面相交；非外業實測建物線，結果待複核。",
+      "occupiedAreaM2": 10.3643,
+      "occupancyPercent": 86.01043,
+      "analysisVersion": "20261014-model-1153-v1"
     },
     "overlayUrl": "overlays/taoyuan-1013/block-01.geojson",
     "tilesetPath": "1013/tileset.json",
@@ -195,8 +207,11 @@
       "rightsCategory": "省市 100.00%",
       "cadastralAreaM2": 730.73,
       "geometryAreaM2": 730.733,
-      "analysisStatus": "awaiting-building-confirmation",
-      "analysisNote": "地籍依提供 DXF 與查詢截圖匯入；占用範圍待圈選確認，尚未計算面積與比例。"
+      "analysisStatus": "survey-reference",
+      "analysisNote": "依外業房屋參考線與地籍之 TWD97 平面交集計算；未計入牆面表面積，尚待複核範圍完整性與線別。",
+      "occupiedAreaM2": 8.2353,
+      "occupancyPercent": 1.127,
+      "analysisVersion": "20261014-field-reference-v1"
     },
     "overlayUrl": "overlays/taoyuan-1013/block-02.geojson",
     "tilesetPath": "1013/tileset.json",
@@ -237,8 +252,11 @@
       "rightsCategory": "省市 100.00%",
       "cadastralAreaM2": 737.74,
       "geometryAreaM2": 737.743,
-      "analysisStatus": "awaiting-building-confirmation",
-      "analysisNote": "地籍依提供 DXF 與查詢截圖匯入；占用範圍待圈選確認，尚未計算面積與比例。"
+      "analysisStatus": "survey-reference",
+      "analysisNote": "依外業房屋參考線與地籍之 TWD97 平面交集計算；未計入牆面表面積，尚待複核範圍完整性與線別。",
+      "occupiedAreaM2": 265.3278,
+      "occupancyPercent": 35.96494,
+      "analysisVersion": "20261014-field-reference-v1"
     },
     "overlayUrl": "overlays/taoyuan-1013/block-02.geojson",
     "tilesetPath": "1013/tileset.json",
@@ -279,8 +297,11 @@
       "rightsCategory": "本國人 53.66%；省市 46.34%",
       "cadastralAreaM2": 1028.72,
       "geometryAreaM2": 1028.722,
-      "analysisStatus": "awaiting-building-confirmation",
-      "analysisNote": "地籍依提供 DXF 與查詢截圖匯入；占用範圍待圈選確認，尚未計算面積與比例。"
+      "analysisStatus": "survey-reference",
+      "analysisNote": "依外業房屋參考線與地籍之 TWD97 平面交集計算；未計入牆面表面積，尚待複核範圍完整性與線別。",
+      "occupiedAreaM2": 10.2686,
+      "occupancyPercent": 0.99819,
+      "analysisVersion": "20261014-field-reference-v1"
     },
     "overlayUrl": "overlays/taoyuan-1013/block-03.geojson",
     "tilesetPath": "1013/tileset.json",

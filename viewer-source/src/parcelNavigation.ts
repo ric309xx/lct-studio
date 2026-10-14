@@ -41,6 +41,7 @@ export function tuneParcelNavigation(viewer: Viewer, getTarget: () => Cartesian3
   const collision = controller.enableCollisionDetection;
   controller.enableCollisionDetection = false;
   let selectedTarget: Cartesian3 | null = null;
+  let selectedParcelTarget = getTarget();
   let orbiting = false;
   const removeLevelListener = viewer.scene.postUpdate.addEventListener(() => keepCameraLevel(viewer.camera));
   const releaseOrbit = () => {
@@ -68,10 +69,16 @@ export function tuneParcelNavigation(viewer: Viewer, getTarget: () => Cartesian3
     }
     if (!target || !Number.isFinite(Cartesian3.magnitude(target))) return;
     selectedTarget = Cartesian3.clone(target);
+    selectedParcelTarget = getTarget();
     const range = Math.max(0.5, Cartesian3.distance(viewer.camera.positionWC, target));
     focusParcelOrbit(viewer, target, viewer.camera.heading, CesiumMath.toDegrees(viewer.camera.pitch), range);
   }, ScreenSpaceEventType.LEFT_CLICK);
   handler.setInputAction(() => {
+    // 同區換地號不重建 Viewer；清除上一筆地號的臨時旋轉中心。
+    if (getTarget() !== selectedParcelTarget) {
+      selectedTarget = null;
+      selectedParcelTarget = getTarget();
+    }
     const target = selectedTarget ?? getTarget();
     if (!target || !controller.enableInputs) return;
     viewer.camera.cancelFlight();

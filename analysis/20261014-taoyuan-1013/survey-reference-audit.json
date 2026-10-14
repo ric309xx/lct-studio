@@ -1,0 +1,87 @@
+{
+  "source": "D:\\DATA\\WORK\\20261006桃園三維地籍\\02成果\\1013\\1013房屋參考.dxf",
+  "sha256": "5c79ee30cd24520a1d1ef65f35e3ff5be4f7ddbd355dfb297fce6d4ae81dbc5d",
+  "crs": "EPSG:3826",
+  "referenceParcelMatchToleranceM": 0.001,
+  "closures": [
+    {
+      "handle": "98DB",
+      "layer": "$00310",
+      "closure": "與實測 98D8 線共同閉合",
+      "closureLengthInsideParcelsM": 11.647611593067902
+    },
+    {
+      "handle": "98DC",
+      "layer": "$00310",
+      "closure": "開放線外側連接；連接線完全在本次地籍外，交集待複核",
+      "closureLengthInsideParcelsM": 0.0
+    },
+    {
+      "handle": "98DD",
+      "layer": "$00300",
+      "closure": "開放線外側連接；連接線完全在本次地籍外，交集待複核",
+      "closureLengthInsideParcelsM": 0.0
+    },
+    {
+      "handle": "A788",
+      "layer": "$00310",
+      "closure": "來源已閉合",
+      "closureLengthInsideParcelsM": 0.6356283532278785
+    }
+  ],
+  "excludedOutsideParcels": [
+    "98DA"
+  ],
+  "sourceHeightsUsedForArea": false,
+  "results": [
+    {
+      "parcelNo": "1121",
+      "intersectionAreaM2": 3.376587,
+      "registeredAreaM2": 4509.15,
+      "percent": 0.07488,
+      "status": "survey-reference"
+    },
+    {
+      "parcelNo": "1144",
+      "intersectionAreaM2": 12.218981,
+      "registeredAreaM2": 54.16,
+      "percent": 22.5609,
+      "status": "survey-reference"
+    },
+    {
+      "parcelNo": "1152",
+      "intersectionAreaM2": 5.459155,
+      "registeredAreaM2": 22.24,
+      "percent": 24.54656,
+      "status": "survey-reference"
+    },
+    {
+      "parcelNo": "1153",
+      "intersectionAreaM2": 0.0,
+      "registeredAreaM2": 12.05,
+      "percent": null,
+      "status": "awaiting-building-confirmation"
+    },
+    {
+      "parcelNo": "1028",
+      "intersectionAreaM2": 8.235335,
+      "registeredAreaM2": 730.73,
+      "percent": 1.127,
+      "status": "survey-reference"
+    },
+    {
+      "parcelNo": "1039",
+      "intersectionAreaM2": 265.327769,
+      "registeredAreaM2": 737.74,
+      "percent": 35.96494,
+      "status": "survey-reference"
+    },
+    {
+      "parcelNo": "704-1",
+      "intersectionAreaM2": 10.268622,
+      "registeredAreaM2": 1028.72,
+      "percent": 0.99819,
+      "status": "survey-reference"
+    }
+  ]
+}

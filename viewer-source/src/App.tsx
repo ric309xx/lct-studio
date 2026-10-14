@@ -2,6 +2,7 @@ import driplineMetrics from "./taoyuanDriplineMetrics.json";
 import { isSharedViewerEntry } from "./accessPolicy";
 import taoyuan1006Parcels from "./taoyuan1006Parcels.json";
 import taoyuan1013Parcels from "./taoyuan1013Parcels.json";
+import { roadGround, roadPosition, roadHeightAt, sampleRoadOffset } from "./shuanglingGround";
 import { PRIVATE_R2_ORIGIN, TAOYUAN_R2_PROJECT, R2AuthorizationRequired, ensureR2Access, hasR2Access, privateR2Resource } from "./r2Access";
 import { CadastralInfoPanel } from "./CadastralInfoPanel";
 import { focusParcelOrbit, tuneParcelNavigation } from "./parcelNavigation";
@@ -542,6 +543,8 @@ export function App() {
   const cadastralModelGroundEntitiesRef = useRef<Entity[]>([]);
   const cadastralLabelEntitiesRef = useRef<Entity[]>([]);
   const cadastralHandlerRef = useRef<ScreenSpaceEventHandler | null>(null);
+  const selectedParcelKeyRef = useRef("");
+  const selectParcelInPlaceRef = useRef<((key: string) => boolean) | null>(null);
   const landmarkHandlerRef = useRef<ScreenSpaceEventHandler | null>(null);
   const calibrationHandlerRef = useRef<ScreenSpaceEventHandler | null>(null);
   const landmarkEntitiesRef = useRef<Entity[]>([]);
@@ -756,6 +759,7 @@ export function App() {
           ? cadastralConfig?.parcels[0]?.info ?? null
           : null);
         setSelectedCadastralParcelKey(cadastralConfig?.parcels[0]?.key ?? "");
+        selectedParcelKeyRef.current = cadastralConfig?.parcels[0]?.key ?? "";
         const projectLandmarks = comparison
           ? []
           : readProjectLandmarks(project.id);
@@ -1026,16 +1030,20 @@ export function App() {
               if (heights.length > 0 && !cancelled) {
                 const groundHeight =
                   heights[Math.floor((heights.length - 1) * 0.25)] + 0.35;
+                const roadOffset = activeParcel?.groupKey === "shuangling-1013-01"
+                  ? await sampleRoadOffset(viewer) : null;
+                if (cancelled || viewer.isDestroyed()) return;
+                const heightAt = (latitude: number) => roadOffset !== null ? roadHeightAt(latitude, roadOffset) : groundHeight;
                 if (project.id === "taoyuan-building-overlay") {
                   const focus = cadastralConfig!.parcels[0].focus!;
-                  parcelOrbitTargetRef.current = Cartesian3.fromDegrees(focus.longitude, focus.latitude, groundHeight);
+                  parcelOrbitTargetRef.current = Cartesian3.fromDegrees(focus.longitude, focus.latitude, heightAt(CesiumMath.toRadians(focus.latitude)));
                 }
                 const toGroundPosition = (position: Cartesian3) => {
                   const cartographic = Cartographic.fromCartesian(position);
                   return Cartesian3.fromRadians(
                     cartographic.longitude,
                     cartographic.latitude,
-                    groundHeight
+                    heightAt(cartographic.latitude)
                   );
                 };
                 const groundEntities: Entity[] = [];
@@ -1058,6 +1066,16 @@ export function App() {
                   }
                 }
                 fillHierarchies.forEach((hierarchy, index) => {
+                  const key = fillEntities[index]?.properties?.parcelKey?.getValue();
+                  if (key === roadGround.parcelKey && roadOffset !== null) {
+                    roadGround.pieces.forEach((ring, pieceIndex) => groundEntities.push(viewer!.entities.add({
+                      id: `cadastral-road-ground-${pieceIndex}`, show: initialCadastralMode === "model-ground",
+                      properties: { kind: "cadastral-fill", parcelKey: key },
+                      polygon: { hierarchy: new PolygonHierarchy(ring.map(p => roadPosition(p, roadOffset))),
+                        perPositionHeight: true, material: Color.fromCssColorString("#ef626c").withAlpha(key === activeParcel?.key ? 0.3 : 0.12) }
+                    })));
+                    return;
+                  }
                   groundEntities.push(viewer!.entities.add({
                     id: `cadastral-model-ground-fill-${index + 1}`,
                     show: initialCadastralMode === "model-ground",
@@ -1078,7 +1096,8 @@ export function App() {
                     show: initialCadastralMode === "model-ground",
                     properties: { kind: "cadastral-boundary", parcelKey: boundaryEntities[index]?.properties?.parcelKey?.getValue() },
                     polyline: {
-                      positions: positions.map(toGroundPosition),
+                      positions: boundaryEntities[index]?.properties?.parcelKey?.getValue() === roadGround.parcelKey && roadOffset !== null
+                        ? roadGround.boundary.map(p => roadPosition(p, roadOffset)) : positions.map(toGroundPosition),
                       width: 3,
                       material: Color.fromCssColorString("#ffbf47"),
                       depthFailMaterial: new PolylineDashMaterialProperty({
@@ -1131,14 +1150,14 @@ export function App() {
                   : interiorAnchor;
                 if (labelAnchor) {
                   const { longitude, latitude } = labelAnchor;
-                  const isSelectedLabel = labelParcel.key === activeParcel?.key || !labelParcel.groupKey;
+                  const isSelectedLabel = () => labelParcel.key === selectedParcelKeyRef.current || !labelParcel.groupKey;
                   const anchorPosition = Cartesian3.fromRadians(
                     longitude,
                     latitude,
-                    groundHeight + 0.6
+                    heightAt(latitude) + 0.6
                   );
                   const labelPosition = () => {
-                    if (!isSelectedLabel) return anchorPosition;
+                    if (!isSelectedLabel()) return anchorPosition;
                     const activeViewer = viewer!;
                     const metresPerPixel = activeViewer.camera.getPixelSize(
                       new BoundingSphere(anchorPosition, 1),
@@ -1159,8 +1178,8 @@ export function App() {
                       parcelKey: parcel.key
                     },
                     label: {
-                      text: isSelectedLabel ? `${parcel.info.sectionName}\n地號 ${parcel.info.parcelNo}` : `地號 ${parcel.info.parcelNo}`,
-                      font: `600 ${isSelectedLabel ? 18 : 14}px 'Noto Sans TC', sans-serif`,
+                      text: new CallbackProperty(() => isSelectedLabel() ? `${parcel.info.sectionName}\n地號 ${parcel.info.parcelNo}` : `地號 ${parcel.info.parcelNo}`, false),
+                      font: new CallbackProperty(() => `600 ${isSelectedLabel() ? 18 : 14}px 'Noto Sans TC', sans-serif`, false),
                       style: LabelStyle.FILL_AND_OUTLINE,
                       fillColor: Color.fromCssColorString("#f8fffd"),
                       outlineColor: Color.fromCssColorString("#07262b"),
@@ -1200,6 +1219,39 @@ export function App() {
             }
           }
 
+          // 同區沿用目前 Viewer、模型與地籍；只改選取樣式、資訊與相機。
+          selectParcelInPlaceRef.current = (key: string) => {
+            const parcel = cadastralConfig!.parcels.find(item => item.key === key);
+            if (!parcel?.groupKey || !parcel.focus || !viewer || viewer.isDestroyed()) return false;
+            selectedParcelKeyRef.current = key;
+            const url = new URL(window.location.href);
+            url.searchParams.set("parcel", key);
+            window.history.replaceState({}, "", url);
+            setSelectedCadastralParcelKey(key);
+            setSelectedCadastral(parcel.info);
+            for (const entity of cadastral.entities.values) {
+              const context = entity.properties?.parcelKey?.getValue() !== key;
+              entity.properties?.contextParcel?.setValue(context);
+              if (entity.polygon && entity.properties?.kind?.getValue() === "cadastral-fill") {
+                entity.polygon.material = new ColorMaterialProperty(Color.fromCssColorString("#ef626c").withAlpha(context ? 0.12 : 0.3));
+              }
+            }
+            for (const entity of cadastralModelGroundEntitiesRef.current) {
+              if (entity.polygon && entity.properties?.kind?.getValue() === "cadastral-fill") {
+                entity.polygon.material = new ColorMaterialProperty(Color.fromCssColorString("#ef626c").withAlpha(entity.properties?.parcelKey?.getValue() === key ? 0.3 : 0.12));
+              }
+            }
+            const anchor = cadastralLabelEntitiesRef.current.find(entity => entity.properties?.parcelKey?.getValue() === key)
+              ?.polyline?.positions?.getValue(viewer.clock.currentTime)?.[0] as Cartesian3 | undefined;
+            const target = anchor ?? Cartesian3.fromDegrees(parcel.focus.longitude, parcel.focus.latitude,
+              parcelOrbitTargetRef.current ? Cartographic.fromCartesian(parcelOrbitTargetRef.current).height : parcel.focus.height - 100);
+            parcelOrbitTargetRef.current = target;
+            const ring = cadastral.entities.getById(parcel.fillEntityId)?.polygon?.hierarchy?.getValue(viewer.clock.currentTime)?.positions as Cartesian3[] | undefined;
+            const range = ring?.length ? Math.max(65, BoundingSphere.fromPoints(ring).radius * 3) : 85;
+            focusParcelOrbit(viewer, target, viewer.camera.heading, -65, range);
+            viewer.scene.requestRender();
+            return true;
+          };
           const cadastralHandler = new ScreenSpaceEventHandler(viewer.scene.canvas);
           cadastralHandler.setInputAction((event: { position: Cartesian2 }) => {
             const picked = viewer!.scene.pick(event.position) as
@@ -1212,12 +1264,7 @@ export function App() {
             const parcelKey = entity.properties?.parcelKey?.getValue();
             const parcel = cadastralConfig!.parcels.find((item) => item.key === parcelKey)
               ?? cadastralConfig!.parcels[0];
-            if (parcel.groupKey && parcel.key !== activeParcel?.key) {
-              const url = new URL(window.location.href);
-              url.searchParams.set("parcel", parcel.key);
-              window.history.replaceState({}, "", url);
-              setReloadKey(key => key + 1);
-            }
+            if (parcel.groupKey && selectParcelInPlaceRef.current?.(parcel.key)) return;
             setSelectedCadastralParcelKey(parcel.key);
             setSelectedCadastral(parcel.info);
           }, ScreenSpaceEventType.LEFT_CLICK);
@@ -1401,6 +1448,7 @@ export function App() {
       cadastralDataSourceRef.current = null;
       cadastralModelGroundEntitiesRef.current = [];
       cadastralLabelEntitiesRef.current = [];
+      selectParcelInPlaceRef.current = null;
       viewerRef.current = null;
       setSectionViewer(null);
       setSectionTileset(null);
@@ -1771,6 +1819,7 @@ export function App() {
     const config = CADASTRAL_PROJECTS[projectId];
     const parcel = config?.parcels.find((item) => item.key === parcelKey);
     if (!parcel) return;
+    if (selectParcelInPlaceRef.current?.(parcelKey)) return;
     if (parcel.overlayUrl && !hasR2Access(TAOYUAN_R2_PROJECT)) {
       setR2Connecting(true);
       try { await ensureR2Access(); }
@@ -2366,7 +2415,13 @@ export function App() {
   const currentGroup = currentParcel ? cadastralGroup(currentParcel) : "";
   const currentParcelInfo = currentParcel?.info;
   const hasOccupancyAnalysis = currentParcelInfo?.occupiedAreaM2 !== undefined;
+  const hasOccupancyDisplay = hasOccupancyAnalysis || Boolean(currentParcel?.groupKey && parcelOptions.some(
+    parcel => parcel.groupKey === currentParcel.groupKey && parcel.info.occupiedAreaM2 !== undefined));
   const isDraftOccupancy = currentParcelInfo?.analysisStatus === "interpreted-draft";
+  const isSurveyOccupancy = currentParcelInfo?.analysisStatus === "survey-reference";
+  const isModelOccupancy = currentParcelInfo?.analysisStatus === "model-derived";
+  const isEstimatedOccupancy = isDraftOccupancy || isModelOccupancy;
+  const isSelectedEstimatedOccupancy = ["interpreted-draft", "model-derived"].includes(selectedCadastral?.analysisStatus ?? "");
 
   return (
     <main
@@ -2825,16 +2880,17 @@ export function App() {
                     ))}
                   </div>
                   <label className="overlay-toggle overlay-toggle-secondary">
-                    <input type="checkbox" checked={hasOccupancyAnalysis && occupancyVisible} disabled={!hasOccupancyAnalysis}
+                    <input type="checkbox" checked={hasOccupancyDisplay && occupancyVisible} disabled={!hasOccupancyDisplay}
                       onChange={event => changeOccupancyVisibility(event.currentTarget.checked)} />
                     <span>顯示占用範圍</span>
                   </label>
+                  {!hasOccupancyAnalysis && hasOccupancyDisplay && <p className="overlay-hint">本地號待確認；綠色為同區其他地號的參考範圍，可一併開關。</p>}
                   <p className="cadastral-disclaimer">
                     地籍線套繪僅供參考，最終成果以地政單位實地鑑界為準。
                   </p>
                   {cadastralDisplayMode === "model-ground" && (
                     <p className="overlay-hint cadastral-terrain-notice">
-                      {isDraftOccupancy ? "綠色為 AI 初步判讀之建物／棚架／雨遮投影，尚待複核；地籍面為模型估算地面。" : hasOccupancyAnalysis ? "地籍面位於估算地面；綠色為建物滴水線投影範圍，模型缺口保留補洞面。" : "地籍面位於模型估算地面；本地號占用範圍尚待圈選確認。"}
+                      {isModelOccupancy ? "綠色為模型判讀的建物／雨遮投影與地籍交集，待複核；非外業實測建物線。" : isSurveyOccupancy ? "綠色為外業房屋參考線與地籍的平面交集，待複核；地籍面為估算地面，1121 隨道路高低起伏。" : isDraftOccupancy ? "綠色為 AI 初步判讀之建物／棚架／雨遮投影，尚待複核；地籍面為模型估算地面。" : hasOccupancyAnalysis ? "地籍面位於估算地面；綠色為建物滴水線投影範圍，模型缺口保留補洞面。" : "地籍面位於模型估算地面；本地號占用範圍尚待圈選確認。"}
                     </p>
                   )}
                   {!modelGroundAvailable && (
@@ -2859,9 +2915,9 @@ export function App() {
               {projectId === "taoyuan-building-overlay" && (
                 <div className="occupancy-summary" aria-label="建物占用分析">
                   <div><span>登記面積</span><strong>{currentParcelInfo?.cadastralAreaM2 ?? "—"} m²</strong></div>
-                  <div><span>{isDraftOccupancy ? "已判讀投影面積（初估）" : "建物占用投影面積"}</span><strong>{currentParcelInfo?.occupiedAreaM2 === undefined ? "待確認" : `${isDraftOccupancy ? "約 " : ""}${currentParcelInfo.occupiedAreaM2.toFixed(isDraftOccupancy ? 1 : 2)} m²`}</strong></div>
-                  <div className="emphasis"><span>{isDraftOccupancy ? "占用比例（初估）" : "占用比例"}</span><strong>{currentParcelInfo?.occupancyPercent === undefined ? "待確認" : `${isDraftOccupancy ? "約 " : ""}${currentParcelInfo.occupancyPercent.toFixed(isDraftOccupancy ? 1 : 2)}%`}</strong></div>
-                  <p>{isDraftOccupancy ? "AI 初步判讀／待複核。僅計入已判讀範圍，未納入不確定區，不代表完整占用或正式鑑界。" : hasOccupancyAnalysis ? "依滴水線垂直投影與地籍範圍交集重算，已修除右端非屋頂尖角。" : "尚未指定本地號要分析的建物；未分析不代表占用為零。"}</p>
+                  <div><span>{isEstimatedOccupancy ? "已判讀投影面積（初估）" : "建物占用投影面積"}</span><strong>{currentParcelInfo?.occupiedAreaM2 === undefined ? "待確認" : `${isEstimatedOccupancy ? "約 " : ""}${currentParcelInfo.occupiedAreaM2.toFixed(isEstimatedOccupancy ? 1 : 2)} m²`}</strong></div>
+                  <div className="emphasis"><span>{isEstimatedOccupancy ? "占用比例（初估）" : "占用比例"}</span><strong>{currentParcelInfo?.occupancyPercent === undefined ? "待確認" : `${isEstimatedOccupancy ? "約 " : ""}${currentParcelInfo.occupancyPercent.toFixed(isEstimatedOccupancy ? 1 : 2)}%`}</strong></div>
+                  <p>{isModelOccupancy ? "模型判讀／待複核。依同批 Terra 彩色點雲辨識投影，再以 TWD97 地籍裁切；比例以登記面積為分母，非正式占用認定。" : isSurveyOccupancy ? "外業參考／待複核。依 TWD97 平面交集計算，不含牆面表面積；比例以登記面積為分母。" : isDraftOccupancy ? "AI 初步判讀／待複核。僅計入已判讀範圍，未納入不確定區，不代表完整占用或正式鑑界。" : hasOccupancyAnalysis ? "依滴水線垂直投影與地籍範圍交集重算，已修除右端非屋頂尖角。" : "尚未指定本地號要分析的建物；未分析不代表占用為零。"}</p>
                   {currentParcelInfo?.reviewImageUrl && <p><a href={import.meta.env.BASE_URL + currentParcelInfo.reviewImageUrl} target="_blank" rel="noopener noreferrer">查看初判圈選圖（含待釐清區）</a></p>}
                 </div>
               )}
@@ -3201,7 +3257,7 @@ export function App() {
           <p className="landmark-card-kicker">CADASTRAL INFO</p>
           <h2>{selectedCadastral.sectionName}</h2>
           <span className="landmark-card-category">地號 {selectedCadastral.parcelNo}</span>
-          {selectedCadastral.analysisStatus === "interpreted-draft" && <p className="cadastral-draft-badge">待複核</p>}
+          {["interpreted-draft", "survey-reference", "model-derived"].includes(selectedCadastral.analysisStatus ?? "") && <p className="cadastral-draft-badge">待複核</p>}
           <dl className="cadastral-details">
             <div><dt>縣市</dt><dd>{selectedCadastral.county}</dd></div>
             <div><dt>地政事務所</dt><dd>{selectedCadastral.landOffice}</dd></div>
@@ -3244,10 +3300,10 @@ export function App() {
               <div><dt>地籍面積</dt><dd>{Number.isInteger(selectedCadastral.cadastralAreaM2) ? selectedCadastral.cadastralAreaM2.toFixed(0) : selectedCadastral.cadastralAreaM2.toFixed(3)} m²</dd></div>
             )}
             {selectedCadastral.occupiedAreaM2 !== undefined && (
-              <div><dt>{selectedCadastral.analysisStatus === "interpreted-draft" ? "已判讀投影面積（初估）" : "建物占用投影面積"}</dt><dd>{selectedCadastral.analysisStatus === "interpreted-draft" ? "約 " : ""}{selectedCadastral.occupiedAreaM2.toFixed(selectedCadastral.analysisStatus === "interpreted-draft" ? 1 : 2)} m²</dd></div>
+              <div><dt>{isSelectedEstimatedOccupancy ? "已判讀投影面積（初估）" : "建物占用投影面積"}</dt><dd>{isSelectedEstimatedOccupancy ? "約 " : ""}{selectedCadastral.occupiedAreaM2.toFixed(isSelectedEstimatedOccupancy ? 1 : 2)} m²</dd></div>
             )}
             {selectedCadastral.occupancyPercent !== undefined && (
-              <div className="wide occupancy-card-result"><dt>{selectedCadastral.analysisStatus === "interpreted-draft" ? "占用比例（初估）" : "占用比例"}</dt><dd>{selectedCadastral.analysisStatus === "interpreted-draft" ? "約 " : ""}{selectedCadastral.occupancyPercent.toFixed(selectedCadastral.analysisStatus === "interpreted-draft" ? 1 : 2)}%</dd></div>
+              <div className="wide occupancy-card-result"><dt>{isSelectedEstimatedOccupancy ? "占用比例（初估）" : "占用比例"}</dt><dd>{isSelectedEstimatedOccupancy ? "約 " : ""}{selectedCadastral.occupancyPercent.toFixed(isSelectedEstimatedOccupancy ? 1 : 2)}%</dd></div>
             )}
           </dl>
         </CadastralInfoPanel>
