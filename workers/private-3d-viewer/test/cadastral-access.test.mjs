@@ -56,6 +56,23 @@ test('tampered, expired and wrong audience tokens fail before storage',async()=>
   for(const t of [token.slice(0,-1)+(token.endsWith('a')?'b':'a'),signed({role:'viewer',projectId:project,aud:'cadastral-tiles',exp:1}),signed({role:'viewer',projectId:project,aud:'wrong',exp:Date.now()/1000+300})])assert.equal((await call(`/projects/${project}/tiles/tileset.json`,{headers:{authorization:'Bearer '+t,origin}})).status,401);
   assert.equal(keys.length,before);
 });
+
+test('1013 共用桃園登入且固定對應新模型，不影響既有模型與專案隔離',async()=>{
+  const {token}=await createCadastralToken(project,env.SESSION_SECRET);
+  const headers={origin,authorization:'Bearer '+token};
+  assert.equal((await call(`/projects/${project}/tiles/1013/tileset.json`,{headers})).status,200);
+  assert.equal(keys.at(-1),'projects/taoyuan/20261013-v1/terra_b3dms/tileset.json');
+  assert.equal((await call(`/projects/${project}/tiles/1013/Block/a.b3dm`,{method:'HEAD',headers})).status,200);
+  assert.equal(keys.at(-1),'projects/taoyuan/20261013-v1/terra_b3dms/Block/a.b3dm');
+  await call(`/projects/${project}/tiles/tileset.json`,{headers});
+  assert.equal(keys.at(-1),PROJECTS[project].prefix+'tileset.json');
+  const before=keys.length;
+  assert.equal((await call(`/projects/${project}/tiles/1013/%2e%2e%2fsecret`,{headers})).status,400);
+  assert.equal((await call(`/projects/${project}/tiles/1013/tileset.json`)).status,401);
+  const wrong=await createCadastralToken('nanya',env.SESSION_SECRET);
+  assert.equal((await call(`/projects/${project}/tiles/1013/tileset.json`,{headers:{...headers,authorization:'Bearer '+wrong.token}})).status,403);
+  assert.equal(keys.length,before);
+});
 test('login ignores external return redirects',async()=>{
   const {response}=await login(project,'https://evil.test/');assert.equal(response.headers.get('location'),'/viewer?project='+project);
 });

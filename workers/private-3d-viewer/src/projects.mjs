@@ -4,6 +4,8 @@ export const PROJECTS = Object.freeze({
   'taoyuan-20261006': Object.freeze({
     id: 'taoyuan-20261006', name: '桃園地籍｜三座屋小段六地號', date: '2026-10-06',
     prefix: 'projects/taoyuan/20261006-v1/terra_b3dms/',
+    // 同一桃園網站授權下的固定模型來源；不接受使用者傳入儲存路徑。
+    tileSources: Object.freeze({ '1013': 'projects/taoyuan/20261013-v1/terra_b3dms/' }),
     landmarks: false, measurementOnly: true, cadastral: true,
     camera: { heading: 0, pitch: -55, rangeFactor: 1.5 }
   }),

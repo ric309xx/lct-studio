@@ -1,0 +1,89 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "parcel-1013-704-1-fill",
+      "properties": {
+        "kind": "cadastral-fill",
+        "parcelKey": "shuangling-704-1",
+        "parcelNo": "704-1",
+        "sectionName": "雙嶺段",
+        "groupKey": "shuangling-1013-03",
+        "sourceCrs": "EPSG:3826",
+        "dxfHandle": "328",
+        "cadastralAreaM2": 1028.72,
+        "geometryAreaM2": 1028.722,
+        "analysisStatus": "awaiting-building-confirmation"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.15996104316261,
+              24.964391284388768
+            ],
+            [
+              121.1601712285374,
+              24.964446953314255
+            ],
+            [
+              121.15959177248982,
+              24.96471055236633
+            ],
+            [
+              121.1593245122524,
+              24.96468081497385
+            ],
+            [
+              121.15996104316261,
+              24.964391284388768
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "parcel-1013-704-1-boundary",
+      "properties": {
+        "kind": "cadastral-boundary",
+        "parcelKey": "shuangling-704-1",
+        "parcelNo": "704-1",
+        "sectionName": "雙嶺段",
+        "groupKey": "shuangling-1013-03",
+        "sourceCrs": "EPSG:3826",
+        "dxfHandle": "328",
+        "cadastralAreaM2": 1028.72,
+        "geometryAreaM2": 1028.722,
+        "analysisStatus": "awaiting-building-confirmation"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.15996104316261,
+            24.964391284388768
+          ],
+          [
+            121.1601712285374,
+            24.964446953314255
+          ],
+          [
+            121.15959177248982,
+            24.96471055236633
+          ],
+          [
+            121.1593245122524,
+            24.96468081497385
+          ],
+          [
+            121.15996104316261,
+            24.964391284388768
+          ]
+        ]
+      }
+    }
+  ]
+}

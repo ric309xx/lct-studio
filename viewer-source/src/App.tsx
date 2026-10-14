@@ -1,6 +1,7 @@
 import driplineMetrics from "./taoyuanDriplineMetrics.json";
 import { isSharedViewerEntry } from "./accessPolicy";
 import taoyuan1006Parcels from "./taoyuan1006Parcels.json";
+import taoyuan1013Parcels from "./taoyuan1013Parcels.json";
 import { PRIVATE_R2_ORIGIN, TAOYUAN_R2_PROJECT, R2AuthorizationRequired, ensureR2Access, hasR2Access, privateR2Resource } from "./r2Access";
 import { CadastralInfoPanel } from "./CadastralInfoPanel";
 import { focusParcelOrbit, tuneParcelNavigation } from "./parcelNavigation";
@@ -255,6 +256,9 @@ type CadastralParcel = {
   info: CadastralInfo;
   focus?: CameraPreset;
   overlayUrl?: string;
+  groupKey?: string;
+  groupLabel?: string;
+  tilesetPath?: string;
 };
 
 type CadastralProject = {
@@ -327,7 +331,7 @@ const CADASTRAL_PROJECTS: Record<string, CadastralProject> = {
         pitchDegrees: -90,
         rollDegrees: 0
       }
-    }, ...taoyuan1006Parcels]
+    }, ...taoyuan1006Parcels, ...taoyuan1013Parcels]
   }
 };
 
@@ -336,7 +340,18 @@ function activeCadastralConfig(projectId: string): CadastralProject | undefined 
   if (!config || projectId !== "taoyuan-building-overlay") return config;
   const key = new URLSearchParams(window.location.search).get("parcel");
   const parcel = config.parcels.find(item => item.key === key) ?? config.parcels[0];
-  return { url: parcel.overlayUrl ?? config.url, parcels: [parcel] };
+  const neighbours = parcel.groupKey
+    ? config.parcels.filter(item => item.groupKey === parcel.groupKey && item.key !== parcel.key)
+    : [];
+  return { url: parcel.overlayUrl ?? config.url, parcels: [parcel, ...neighbours] };
+}
+
+function cadastralGroup(parcel: CadastralParcel) {
+  return parcel.groupKey ?? (parcel.overlayUrl ? "taoyuan-1006" : "taoyuan-first");
+}
+
+function cadastralGroupLabel(parcel: CadastralParcel) {
+  return parcel.groupLabel ?? (parcel.overlayUrl ? "三座屋小段｜六筆地號" : "舊社小段｜102-45");
 }
 
 function applyCadastralDisplayMode(
@@ -352,7 +367,7 @@ function applyCadastralDisplayMode(
       entity.polygon.material = new ColorMaterialProperty(
         kind === "occupancy-building"
           ? Color.fromCssColorString("#30e67e").withAlpha(0.62)
-          : Color.fromCssColorString("#ef626c").withAlpha(0.3)
+          : Color.fromCssColorString("#ef626c").withAlpha(entity.properties?.contextParcel?.getValue() ? 0.12 : 0.3)
       );
       entity.polygon.classificationType = new ConstantProperty(
         ClassificationType.BOTH
@@ -680,7 +695,7 @@ export function App() {
           camera: activeParcel.focus,
           modelSource: {
             type: "tileset-url" as const,
-            tilesetUrl: `${PRIVATE_R2_ORIGIN}/projects/${TAOYUAN_R2_PROJECT}/tiles/tileset.json`,
+            tilesetUrl: `${PRIVATE_R2_ORIGIN}/projects/${TAOYUAN_R2_PROJECT}/tiles/${activeParcel.tilesetPath ?? "tileset.json"}`,
             privateProjectId: TAOYUAN_R2_PROJECT
           }
         } : catalogProject;
@@ -949,11 +964,20 @@ export function App() {
             `${import.meta.env.BASE_URL}${cadastralConfig!.url}`,
             { clampToGround: true }
           );
+          if (activeParcel?.groupKey) {
+            for (const entity of cadastral.entities.values) {
+              entity.properties?.addProperty("contextParcel", entity.properties?.parcelKey?.getValue() !== activeParcel.key);
+            }
+          }
           applyCadastralDisplayMode(cadastral, initialCadastralMode);
           await viewer.dataSources.add(cadastral);
           cadastral.show = true;
           cadastralDataSourceRef.current = cadastral;
 
+          const fillEntities = cadastral.entities.values.filter(entity =>
+            entity.polygon && entity.properties?.kind?.getValue() === "cadastral-fill");
+          const boundaryEntities = cadastral.entities.values.filter(entity =>
+            entity.polyline && entity.properties?.kind?.getValue() === "cadastral-boundary");
           const fillHierarchies = cadastral.entities.values
             .filter(
               (entity) =>
@@ -1037,13 +1061,14 @@ export function App() {
                   groundEntities.push(viewer!.entities.add({
                     id: `cadastral-model-ground-fill-${index + 1}`,
                     show: initialCadastralMode === "model-ground",
-                    properties: { kind: "cadastral-fill" },
+                    properties: { kind: "cadastral-fill", parcelKey: fillEntities[index]?.properties?.parcelKey?.getValue() },
                     polygon: {
                       hierarchy: new PolygonHierarchy(
                         hierarchy.positions.map(toGroundPosition)
                       ),
                       perPositionHeight: true,
-                      material: Color.fromCssColorString("#ef626c").withAlpha(0.3)
+                      material: Color.fromCssColorString("#ef626c").withAlpha(
+                        !activeParcel?.groupKey || fillEntities[index]?.properties?.parcelKey?.getValue() === activeParcel.key ? 0.3 : 0.12)
                     }
                   }));
                 });
@@ -1051,7 +1076,7 @@ export function App() {
                   groundEntities.push(viewer!.entities.add({
                     id: `cadastral-model-ground-boundary-${index + 1}`,
                     show: initialCadastralMode === "model-ground",
-                    properties: { kind: "cadastral-boundary" },
+                    properties: { kind: "cadastral-boundary", parcelKey: boundaryEntities[index]?.properties?.parcelKey?.getValue() },
                     polyline: {
                       positions: positions.map(toGroundPosition),
                       width: 3,
@@ -1100,14 +1125,20 @@ export function App() {
                     }
                   }
                 }
-                if (interiorAnchor) {
-                  const { longitude, latitude } = interiorAnchor;
+                for (const labelParcel of cadastralConfig!.parcels) {
+                const labelAnchor = labelParcel.groupKey && labelParcel.focus
+                  ? { longitude: CesiumMath.toRadians(labelParcel.focus.longitude), latitude: CesiumMath.toRadians(labelParcel.focus.latitude) }
+                  : interiorAnchor;
+                if (labelAnchor) {
+                  const { longitude, latitude } = labelAnchor;
+                  const isSelectedLabel = labelParcel.key === activeParcel?.key || !labelParcel.groupKey;
                   const anchorPosition = Cartesian3.fromRadians(
                     longitude,
                     latitude,
                     groundHeight + 0.6
                   );
                   const labelPosition = () => {
+                    if (!isSelectedLabel) return anchorPosition;
                     const activeViewer = viewer!;
                     const metresPerPixel = activeViewer.camera.getPixelSize(
                       new BoundingSphere(anchorPosition, 1),
@@ -1118,8 +1149,8 @@ export function App() {
                       Cartesian3.multiplyByScalar(activeViewer.camera.upWC,
                         metresPerPixel * 110, new Cartesian3()), new Cartesian3());
                   };
-                  const parcel = cadastralConfig!.parcels[0];
-                  cadastralLabelEntitiesRef.current = [viewer.entities.add({
+                  const parcel = labelParcel;
+                  cadastralLabelEntitiesRef.current.push(viewer.entities.add({
                     id: `cadastral-label-${parcel.key}`,
                     show: true,
                     position: new CallbackPositionProperty(() => labelPosition(), false),
@@ -1128,8 +1159,8 @@ export function App() {
                       parcelKey: parcel.key
                     },
                     label: {
-                      text: `${parcel.info.sectionName}\n地號 ${parcel.info.parcelNo}`,
-                      font: "600 18px 'Noto Sans TC', sans-serif",
+                      text: isSelectedLabel ? `${parcel.info.sectionName}\n地號 ${parcel.info.parcelNo}` : `地號 ${parcel.info.parcelNo}`,
+                      font: `600 ${isSelectedLabel ? 18 : 14}px 'Noto Sans TC', sans-serif`,
                       style: LabelStyle.FILL_AND_OUTLINE,
                       fillColor: Color.fromCssColorString("#f8fffd"),
                       outlineColor: Color.fromCssColorString("#07262b"),
@@ -1157,7 +1188,8 @@ export function App() {
                         Color.fromCssColorString("#b8fff0").withAlpha(0.7)
                       )
                     }
-                  })];
+                  }));
+                }
                 }
                 applyCadastralDisplayMode(cadastral, initialCadastralMode, occupancyVisibleRef.current);
                 cadastralModelGroundEntitiesRef.current = groundEntities;
@@ -1180,6 +1212,12 @@ export function App() {
             const parcelKey = entity.properties?.parcelKey?.getValue();
             const parcel = cadastralConfig!.parcels.find((item) => item.key === parcelKey)
               ?? cadastralConfig!.parcels[0];
+            if (parcel.groupKey && parcel.key !== activeParcel?.key) {
+              const url = new URL(window.location.href);
+              url.searchParams.set("parcel", parcel.key);
+              window.history.replaceState({}, "", url);
+              setReloadKey(key => key + 1);
+            }
             setSelectedCadastralParcelKey(parcel.key);
             setSelectedCadastral(parcel.info);
           }, ScreenSpaceEventType.LEFT_CLICK);
@@ -1306,6 +1344,12 @@ export function App() {
           project.camera,
           parcelOrbitTargetRef.current ?? undefined
         );
+        if (activeParcel?.groupKey && parcelOrbitTargetRef.current) {
+          const fill = cadastralDataSourceRef.current?.entities.getById(activeParcel.fillEntityId);
+          const positions = fill?.polygon?.hierarchy?.getValue(viewer.clock.currentTime)?.positions as Cartesian3[] | undefined;
+          const range = positions?.length ? Math.max(85, BoundingSphere.fromPoints(positions).radius * 3) : 100;
+          focusParcelOrbit(viewer, parcelOrbitTargetRef.current, 0, -65, range);
+        }
         if (!cancelled) {
           const partialFailure = comparison && (!leftTileset || !rightTileset);
           setStatus({
@@ -2317,6 +2361,9 @@ export function App() {
   }, [activeComparison, projectId, selectedCadastralParcelKey]);
 
   const currentParcel = CADASTRAL_PROJECTS[projectId]?.parcels.find(parcel => parcel.key === selectedCadastralParcelKey);
+  const parcelOptions = CADASTRAL_PROJECTS[projectId]?.parcels ?? [];
+  const parcelGroups = [...new Map(parcelOptions.map(parcel => [cadastralGroup(parcel), cadastralGroupLabel(parcel)])).entries()];
+  const currentGroup = currentParcel ? cadastralGroup(currentParcel) : "";
   const currentParcelInfo = currentParcel?.info;
   const hasOccupancyAnalysis = currentParcelInfo?.occupiedAreaM2 !== undefined;
   const isDraftOccupancy = currentParcelInfo?.analysisStatus === "interpreted-draft";
@@ -2690,6 +2737,18 @@ export function App() {
           {projectHasCadastral && (
             <div className="setting-group cadastral-group">
               <span className="setting-label">地籍圖層</span>
+              {projectId === "taoyuan-building-overlay" && (
+                <label className="cadastral-parcel-picker">
+                  <span>案件區塊</span>
+                  <select aria-label="選擇案件區塊" value={currentGroup} disabled={r2Connecting}
+                    onChange={event => {
+                      const first = parcelOptions.find(parcel => cadastralGroup(parcel) === event.currentTarget.value);
+                      if (first) void selectCadastralParcel(first.key);
+                    }}>
+                    {parcelGroups.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                  </select>
+                </label>
+              )}
               {CADASTRAL_PROJECTS[projectId]?.parcels.length > 0 && (
                 <label className="cadastral-parcel-picker">
                   <span>地段／地號</span>
@@ -2699,11 +2758,35 @@ export function App() {
                     disabled={r2Connecting}
                     onChange={(event) => selectCadastralParcel(event.currentTarget.value)}
                   >
-                    {CADASTRAL_PROJECTS[projectId].parcels.map((parcel) => (
+                    {CADASTRAL_PROJECTS[projectId].parcels.filter(parcel => projectId !== "taoyuan-building-overlay" || cadastralGroup(parcel) === currentGroup).map((parcel) => (
                       <option key={parcel.key} value={parcel.key}>{parcel.label}</option>
                     ))}
                   </select>
                 </label>
+              )}
+              {currentParcel?.groupKey && (
+                <>
+                  <p className="overlay-hint">同區地籍一起顯示，選取地號以較深色標示；面積與資訊依各筆地號顯示。</p>
+                  <div className="clip-actions"><button type="button" className="primary" onClick={() => {
+                    const viewer = viewerRef.current;
+                    const data = cadastralDataSourceRef.current;
+                    if (!viewer || !data || !parcelOrbitTargetRef.current) return;
+                    // 隱藏的原始地籍面沒有模型高程，不可直接用其 bounding sphere 定位。
+                    const height = Cartographic.fromCartesian(parcelOrbitTargetRef.current).height;
+                    const positions = data.entities.values.flatMap(entity => {
+                      if (entity.properties?.kind?.getValue() !== "cadastral-fill") return [];
+                      const ring = entity.polygon?.hierarchy?.getValue(viewer.clock.currentTime)?.positions as Cartesian3[] | undefined;
+                      return (ring ?? []).map(position => {
+                        const point = Cartographic.fromCartesian(position);
+                        return Cartesian3.fromRadians(point.longitude, point.latitude, height);
+                      });
+                    });
+                    if (!positions.length) return;
+                    const bounds = BoundingSphere.fromPoints(positions);
+                    viewer.camera.flyToBoundingSphere(bounds, { duration: 1.2,
+                      offset: new HeadingPitchRange(0, CesiumMath.toRadians(-65), Math.max(85, bounds.radius * 3)) });
+                  }}>查看區塊全貌</button></div>
+                </>
               )}
               {currentParcel?.overlayUrl && (
                 <p className="overlay-hint">私人共用模型・隨網站登入自動載入與更新授權。</p>

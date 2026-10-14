@@ -214,7 +214,12 @@ async function servePrivateTile(request, env, encodedRelative, project) {
     return textResponse("Invalid path", 400);
   }
 
-  const key = `${project.prefix}${relative}`;
+  const sourceId = relative.split('/')[0];
+  const alternatePrefix = project.tileSources && Object.hasOwn(project.tileSources, sourceId)
+    ? project.tileSources[sourceId] : null;
+  const key = alternatePrefix
+    ? alternatePrefix + relative.slice(sourceId.length + 1)
+    : `${project.prefix}${relative}`;
   const object = request.method === "HEAD"
     ? await env.MODELS.head(key)
     : await env.MODELS.get(key, { range: request.headers });

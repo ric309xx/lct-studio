@@ -1,0 +1,107 @@
+{
+  "sourceDxf": "D:\\DATA\\WORK\\20261006桃園三維地籍\\02成果\\1013\\1013-1\\1013-1.dxf",
+  "sourceSha256": "f69afdd6b8759bd2249a0daed86d5cd1cf4818f0cbd63667b7856301ba3a3ccc",
+  "sourceCrs": "EPSG:3826",
+  "parcelCount": 7,
+  "blockCount": 3,
+  "parcels": [
+    {
+      "parcelNo": "1121",
+      "group": "01",
+      "dxfHandle": "32F",
+      "referencePointInside": true,
+      "geometryAreaM2": 4509.128,
+      "registeredAreaM2": 4509.15,
+      "anchorTwd97": [
+        265597.60176824196,
+        2761966.6328889825
+      ],
+      "demOrthometricHeight": 115.7765121459961,
+      "occupancyComputed": false
+    },
+    {
+      "parcelNo": "1144",
+      "group": "01",
+      "dxfHandle": "386",
+      "referencePointInside": true,
+      "geometryAreaM2": 54.164,
+      "registeredAreaM2": 54.16,
+      "anchorTwd97": [
+        265564.24530010833,
+        2761847.3703889865
+      ],
+      "demOrthometricHeight": 115.5278091430664,
+      "occupancyComputed": false
+    },
+    {
+      "parcelNo": "1152",
+      "group": "01",
+      "dxfHandle": "38E",
+      "referencePointInside": true,
+      "geometryAreaM2": 22.241,
+      "registeredAreaM2": 22.24,
+      "anchorTwd97": [
+        265539.72949556296,
+        2761778.95938899
+      ],
+      "demOrthometricHeight": 115.13272857666016,
+      "occupancyComputed": false
+    },
+    {
+      "parcelNo": "1153",
+      "group": "01",
+      "dxfHandle": "395",
+      "referencePointInside": true,
+      "geometryAreaM2": 12.05,
+      "registeredAreaM2": 12.05,
+      "anchorTwd97": [
+        265535.06266341294,
+        2761764.7763889898
+      ],
+      "demOrthometricHeight": 115.35498046875,
+      "occupancyComputed": false
+    },
+    {
+      "parcelNo": "1028",
+      "group": "02",
+      "dxfHandle": "36B",
+      "referencePointInside": true,
+      "geometryAreaM2": 730.733,
+      "registeredAreaM2": 730.73,
+      "anchorTwd97": [
+        265867.80738040025,
+        2761905.9423889853
+      ],
+      "demOrthometricHeight": 117.49848175048828,
+      "occupancyComputed": false
+    },
+    {
+      "parcelNo": "1039",
+      "group": "02",
+      "dxfHandle": "379",
+      "referencePointInside": true,
+      "geometryAreaM2": 737.743,
+      "registeredAreaM2": 737.74,
+      "anchorTwd97": [
+        265838.6805150233,
+        2761848.8147163633
+      ],
+      "demOrthometricHeight": 118.00543975830078,
+      "occupancyComputed": false
+    },
+    {
+      "parcelNo": "704-1",
+      "group": "03",
+      "dxfHandle": "328",
+      "referencePointInside": true,
+      "geometryAreaM2": 1028.722,
+      "registeredAreaM2": 1028.72,
+      "anchorTwd97": [
+        266129.58602899837,
+        2761862.0950285424
+      ],
+      "demOrthometricHeight": 118.22505187988281,
+      "occupancyComputed": false
+    }
+  ]
+}

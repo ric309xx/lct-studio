@@ -119,7 +119,7 @@
 
     const script = document.createElement("script");
     script.type = "module";
-    script.src = "/3d-viewer/assets/viewer.js?v=20261011a";
+    script.src = "/3d-viewer/assets/viewer.js?v=20261014-shuangling";
     script.dataset.viewerApp = "true";
     document.body.appendChild(script);
   };

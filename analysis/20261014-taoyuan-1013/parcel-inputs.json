@@ -1,0 +1,19 @@
+{
+  "sourceDxf": "D:\\DATA\\WORK\\20261006桃園三維地籍\\02成果\\1013\\1013-1\\1013-1.dxf",
+  "sourceDem": "D:\\DJI\\DJITerra\\20261006CL\\20261013CL\\models\\pc\\0\\terra_dem\\dem.tif",
+  "sectionMetadata": {
+    "county": "桃園市", "landOffice": "中壢", "sectionName": "雙嶺段", "sectionCode": "0353",
+    "sectionExtensionCode": "無", "townCode": "03", "surveyMethod": "數值法", "surveyType": "地籍圖重測",
+    "mapDate": "2003-10", "coordinateSystem": "TWD97 二度 TM 坐標", "scale": "1:500", "digitizedDate": "—",
+    "useZone": "—", "landUseCategory": "—", "crs": "TWD97 二度 TM（EPSG:3826）／TWVD2001"
+  },
+  "parcels": [
+    {"parcelNo":"1121","group":"01","dxfHandle":"32F","referencePointTwd97":[265566.453,2761869.321],"registeredAreaM2":4509.15,"registrationDate":"民國100年01月14日","announcedLandValue":"27,299 元／平方公尺","rightsCategory":"本國人 15.55%；省市 50.00%；本國私法人 34.45%"},
+    {"parcelNo":"1144","group":"01","dxfHandle":"386","referencePointTwd97":[265565.184,2761852.441],"registeredAreaM2":54.16,"registrationDate":"民國092年11月07日","announcedLandValue":"29,609 元／平方公尺","rightsCategory":"本國人 58.04%；國有 11.83%；省市 27.35%；本國私法人 2.78%"},
+    {"parcelNo":"1152","group":"01","dxfHandle":"38E","referencePointTwd97":[265542.503,2761787.103],"registeredAreaM2":22.24,"registrationDate":"民國092年11月07日","announcedLandValue":"31,271 元／平方公尺","rightsCategory":"本國人 61.93%；國有 11.83%；省市 26.23%"},
+    {"parcelNo":"1153","group":"01","dxfHandle":"395","referencePointTwd97":[265535.082,2761763.393],"registeredAreaM2":12.05,"registrationDate":"民國092年11月07日","announcedLandValue":"43,000 元／平方公尺","rightsCategory":"本國人 84.48%；省市 15.52%"},
+    {"parcelNo":"1028","group":"02","dxfHandle":"36B","referencePointTwd97":[265867.163,2761898.125],"registeredAreaM2":730.73,"registrationDate":"民國104年08月05日","announcedLandValue":"28,500 元／平方公尺","rightsCategory":"省市 100.00%"},
+    {"parcelNo":"1039","group":"02","dxfHandle":"379","referencePointTwd97":[265840.323,2761850.610],"registeredAreaM2":737.74,"registrationDate":"民國101年04月11日","announcedLandValue":"28,500 元／平方公尺","rightsCategory":"省市 100.00%"},
+    {"parcelNo":"704-1","group":"03","dxfHandle":"328","referencePointTwd97":[266135.423,2761861.310],"registeredAreaM2":1028.72,"registrationDate":"民國094年05月31日","announcedLandValue":"19,739 元／平方公尺","rightsCategory":"本國人 53.66%；省市 46.34%"}
+  ]
+}

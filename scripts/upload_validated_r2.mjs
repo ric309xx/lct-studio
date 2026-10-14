@@ -6,7 +6,7 @@ import os from 'node:os';
 import crypto from 'node:crypto';
 
 const [manifestFile, prefix, resultFile, mode = '--check'] = process.argv.slice(2);
-if (!manifestFile || !resultFile || !/^projects\/taoyuan\/20261006-v1\/terra_b3dms$/.test(prefix ?? '')) {
+if (!manifestFile || !resultFile || !/^projects\/taoyuan\/(20261006|20261013)-v1\/terra_b3dms$/.test(prefix ?? '')) {
   throw Error('Expected validation manifest, fixed new Taoyuan prefix, and local results path.');
 }
 const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
@@ -37,7 +37,7 @@ let cursor=0, bytes=0, nextRequest=Date.now(), count=0;
 const failures=[];
 const checkpoint=()=>fs.writeFileSync(resultFile,JSON.stringify({bucket,prefix,root:manifest.root,updatedAt:new Date().toISOString(),completed:[...completed.values()],failures},null,2));
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-async function throttle(){const wait=Math.max(0,nextRequest-Date.now());nextRequest=Math.max(Date.now(),nextRequest)+220;await delay(wait);}
+async function throttle(){const wait=Math.max(0,nextRequest-Date.now());nextRequest=Math.max(Date.now(),nextRequest)+270;await delay(wait);}
 async function upload(item){
   const full=path.join(manifest.root,item.relative);
   const body=fs.readFileSync(full);
