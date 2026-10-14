@@ -2917,7 +2917,7 @@ export function App() {
                   <div><span>登記面積</span><strong>{currentParcelInfo?.cadastralAreaM2 ?? "—"} m²</strong></div>
                   <div><span>{isEstimatedOccupancy ? "已判讀投影面積（初估）" : "建物占用投影面積"}</span><strong>{currentParcelInfo?.occupiedAreaM2 === undefined ? "待確認" : `${isEstimatedOccupancy ? "約 " : ""}${currentParcelInfo.occupiedAreaM2.toFixed(isEstimatedOccupancy ? 1 : 2)} m²`}</strong></div>
                   <div className="emphasis"><span>{isEstimatedOccupancy ? "占用比例（初估）" : "占用比例"}</span><strong>{currentParcelInfo?.occupancyPercent === undefined ? "待確認" : `${isEstimatedOccupancy ? "約 " : ""}${currentParcelInfo.occupancyPercent.toFixed(isEstimatedOccupancy ? 1 : 2)}%`}</strong></div>
-                  <p>{isModelOccupancy ? "模型判讀／待複核。依同批 Terra 彩色點雲辨識投影，再以 TWD97 地籍裁切；比例以登記面積為分母，非正式占用認定。" : isSurveyOccupancy ? "外業參考／待複核。依 TWD97 平面交集計算，不含牆面表面積；比例以登記面積為分母。" : isDraftOccupancy ? "AI 初步判讀／待複核。僅計入已判讀範圍，未納入不確定區，不代表完整占用或正式鑑界。" : hasOccupancyAnalysis ? "依滴水線垂直投影與地籍範圍交集重算，已修除右端非屋頂尖角。" : "尚未指定本地號要分析的建物；未分析不代表占用為零。"}</p>
+                  <p>{isModelOccupancy ? "模型判讀／待複核。僅計已判讀建物／棚架／雨遮與 TWD97 地籍的投影交集，CAD 房屋線只作參考；補色立面不另計面積。比例以登記面積為分母，不代表全筆清查或正式占用認定。" : isSurveyOccupancy ? "外業參考／待複核。依 TWD97 平面交集計算，不含牆面表面積；比例以登記面積為分母。" : isDraftOccupancy ? "AI 初步判讀／待複核。僅計入已判讀範圍，未納入不確定區，不代表完整占用或正式鑑界。" : hasOccupancyAnalysis ? "依滴水線垂直投影與地籍範圍交集重算，已修除右端非屋頂尖角。" : "尚未指定本地號要分析的建物；未分析不代表占用為零。"}</p>
                   {currentParcelInfo?.reviewImageUrl && <p><a href={import.meta.env.BASE_URL + currentParcelInfo.reviewImageUrl} target="_blank" rel="noopener noreferrer">查看初判圈選圖（含待釐清區）</a></p>}
                 </div>
               )}

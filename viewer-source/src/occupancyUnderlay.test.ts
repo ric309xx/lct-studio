@@ -56,3 +56,21 @@ it("ignores a single isolated tall nearby hit",async()=>{
   const h=result[0].polygon!.hierarchy!.getValue(time) as PolygonHierarchy;
   for(const p of h.positions)expect(Cartographic.fromCartesian(p).height).toBeCloseTo(132.05,4);
 });
+it("低棚只採樣地面校準，不讓上方樹冠抬高屋頂且保留平面孔洞",async()=>{
+  const b=building(true);
+  b.properties!.addProperty("modelRoofSamples",[[121.217,24.962,120],[121.2171,24.9621,120]]);
+  b.properties!.addProperty("modelGroundAnchors",[[121.216,24.961,118],[121.2161,24.961,118],[121.2162,24.961,118]]);
+  let calls=0;
+  const v=viewer(points=>{calls++;expect(points).toHaveLength(3);return points.map(p=>{p.height=140;return p;});});
+  const result=await createOccupancyUnderlay(v,b,140,()=>false);
+  expect(calls).toBe(1);
+  const h=result[0].polygon!.hierarchy!.getValue(time) as PolygonHierarchy;
+  expect(h.holes).toHaveLength(1);
+  for(const p of h.positions)expect(Cartographic.fromCartesian(p).height).toBeCloseTo(142.12,4);
+});
+it("模型屋頂校準不可靠時不擅自改用最高樹冠",async()=>{
+  const b=building(true);
+  b.properties!.addProperty("modelRoofSamples",[[121.217,24.962,120]]);
+  b.properties!.addProperty("modelGroundAnchors",[[121.216,24.961,118],[121.2161,24.961,118]]);
+  expect(await createOccupancyUnderlay(viewer(points=>points.map((p,i)=>{p.height=i?150:140;return p;})),b,140,()=>false)).toEqual([]);
+});

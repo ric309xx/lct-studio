@@ -14,6 +14,8 @@ export async function createOccupancyUnderlay(viewer: Viewer, building: Entity,
   options: { nearbyRoofProbeMeters?: number } = {}): Promise<Entity[]> {
   const hierarchy = building.polygon!.hierarchy!.getValue(viewer.clock.currentTime) as PolygonHierarchy;
   const continuous = building.properties?.displayWallContinuity?.getValue() === true;
+  const sourceRoof = building.properties?.modelRoofSamples?.getValue() as number[][] | undefined;
+  const sourceAnchors = building.properties?.modelGroundAnchors?.getValue() as number[][] | undefined;
   const rings: Cartesian3[][] = [];
   const collect = (ring: PolygonHierarchy): PolygonHierarchy => {
     const positions = continuous ? densifyRing(ring.positions) : ring.positions;
@@ -23,6 +25,30 @@ export async function createOccupancyUnderlay(viewer: Viewer, building: Entity,
   const dense = collect(hierarchy);
   const all = rings.flat();
   const boundarySamples = all.map(position => Cartographic.fromCartesian(position));
+  // 已判讀的屋頂使用來源模型高度，地面實際採樣只校準高程基準。
+  // 不在樹冠遮住的低棚上向下取最高面，避免把樹當成棚頂。
+  if (sourceRoof?.length && sourceAnchors?.length) {
+    const anchors = await viewer.scene.sampleHeightMostDetailed(sourceAnchors.map(p => Cartographic.fromDegrees(p[0], p[1])));
+    if (cancelled() || viewer.isDestroyed()) return [];
+    const offsets = anchors.flatMap((p, i) => p && Number.isFinite(p.height) ? [p.height - sourceAnchors[i][2]] : []).sort((a,b) => a-b);
+    // 校準失敗不退回樹冠取樣，也不把正高直接當橢球高。
+    if (offsets.length < 2 || offsets.at(-1)! - offsets[0] > 2) return [];
+    const offset = offsets[Math.floor(offsets.length / 2)];
+    const sourcePositions = sourceRoof.map(p => Cartographic.fromDegrees(p[0], p[1], p[2]));
+    const lift = (ring: PolygonHierarchy): PolygonHierarchy => new PolygonHierarchy(ring.positions.map(position => {
+      const point = Cartographic.fromCartesian(position);
+      const nearest = sourcePositions.reduce((best, candidate) => {
+        const distance = (p: Cartographic) => Math.hypot((p.longitude-point.longitude)*Math.cos(point.latitude),p.latitude-point.latitude);
+        return distance(candidate)<distance(best) ? candidate : best;
+      });
+      return Cartesian3.fromRadians(point.longitude, point.latitude, nearest.height + offset + 0.12);
+    }),ring.holes.map(lift));
+    return [new Entity({id:`occupancy-roof-underlay-${building.id}`,
+      properties:{kind:"occupancy-roof-underlay",parcelKey:building.properties?.parcelKey?.getValue()},
+      polygon:{hierarchy:lift(dense),perPositionHeight:true,
+        extrudedHeight:Math.min(groundHeight, ...sourceAnchors.map(p => p[2]+offset)),closeTop:true,closeBottom:true,
+        material:Color.fromCssColorString("#43ee82").withAlpha(0.58)}})];
+  }
   // A narrow frontage footprint may contain only a low awning: the upper
   // roof is behind the parcel edge. Probe its height, but never use probe XY
   // positions as display vertices or as analysis/area geometry.
