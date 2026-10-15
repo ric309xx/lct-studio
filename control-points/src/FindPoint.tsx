@@ -4,6 +4,9 @@ import {bearing,distance} from '../shared/coordinates.mjs';
 import {createCompass} from '../shared/compass.mjs';
 import {cardinal,formatDistance,routeProgress} from '../shared/finding.mjs';
 import {datasetLabel} from '../shared/datasets.mjs';
+import {pointStatusStyle} from '../shared/pointStatus.mjs';
+import {displayPointStatus} from '../shared/fieldWorkflow.mjs';
+import PointCoordinates from './PointCoordinates';
 import {api,jsonRequest} from './api';
 import type {Point,Position,Dataset,WalkingRoute} from './types';
 
@@ -27,7 +30,9 @@ export default function FindPoint({onChoose,onCreate,visitId,complete,photoCount
   }
   return <section className={'find-panel '+(expanded?'expanded':'')} aria-label="找點模式">
     <div className="find-heading"><div><small>找點模式 · {datasetLabel(dataset)}</small><h2>{point.code}<span>{point.name&&point.name!==point.code?point.name:''}</span></h2></div><button className="icon-button" onClick={onClose} aria-label="結束找點"><X size={21}/></button></div>
+    <PointCoordinates point={point}/>
     <div className="find-distance"><div className="find-arrow" aria-label={heading==null?'以正北為上方的目標方向':'相對手機的目標方向'}><small>{heading==null?'北 ↑':'羅盤'}</small><Navigation size={38} style={{transform:`rotate(${(direction??0)-(heading??0)-45}deg)`,opacity:direction==null?.25:1}}/></div><div><strong>{meters==null?'等待定位':formatDistance(meters)}</strong><span>{direction==null?'取得位置後顯示距離與方位':`直線距離 · 目標在${cardinal(direction)}方 ${direction.toFixed(0)}°`}</span><small>{position?`GPS 精度 ±${Math.round(position.accuracy)} m · ${new Date(position.timestamp).toLocaleTimeString('zh-TW',{hour12:false})}${fresh?'':' · 定位已過期'}`:'請允許本站使用位置資訊'}</small></div></div>
+    <p className="find-point-status" style={{color:pointStatusStyle(point.status)?.color}}><i style={{backgroundColor:pointStatusStyle(point.status)?.color}}/>{displayPointStatus(point.status)}{point.pending_visit?'（待同步）':''}</p>
     {!fresh&&<p className="find-notice">{position?'目前顯示上次定位，距離可能已改變。請重新定位。':'尚未取得 GPS 定位；可先查看目標位置或重試定位。'}</p>}
     {fresh&&meters!=null&&position&&meters<=Math.max(10,position.accuracy)&&<p className="find-notice">已接近目標／進入 GPS 誤差範圍，請對照標石與現場照片確認。</p>}
     <div className="found-workflow">{!visitId?<button className="primary full" onClick={found} disabled={foundBusy}><CheckCircle2 size={19}/>{foundBusy?'保存巡查中…':'點位存在／找到點了'}</button>:<><strong><CheckCircle2 size={18}/>已巡查 · 點位存在{point.pending_visit?'（待同步）':''}</strong>{!complete?<><p>要拍攝本次現場照片嗎？可先選近照、遠照，再各自連拍一批。</p><div className="button-row"><button className="primary" onClick={onCapture}><Camera size={17}/>拍攝現場照片</button><button className="secondary" onClick={onSkip}>略過</button></div></>:<><p>{photoCount?`本點已保存 ${photoCount} 張照片，可繼續拍其他類別。`:'本點巡查已完成，可之後再補照片。'}</p><div className="button-row"><button className="secondary" onClick={onCapture}><Camera size={16}/>繼續拍照</button><button className="primary" onClick={onNext}>下一點<ArrowRight size={17}/></button></div></>}</>}{foundError&&<p className="error-text" role="alert">{foundError}</p>}</div>

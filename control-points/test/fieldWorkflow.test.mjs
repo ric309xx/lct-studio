@@ -11,7 +11,7 @@ test('近照三張、遠照四張各自成批，保留同一巡查關聯及每�
 });
 test('現場找到點立即顯示待同步，同號不同來源不受影響；同步清空後使用正式點況',()=>{
   const points=[{id:'a',code:'5004',status:'未巡查'},{id:'b',code:'5004',status:'未巡查'}],queue=[{kind:'visit',pointId:'a',payload:{visited_at:'2026-10-12T06:00:00Z',status:'點位存在'}}];
-  const shown=pendingVisitPoints(points,queue);assert.equal(shown[0].status,'點位存在');assert.equal(shown[0].pending_visit,true);assert.equal(shown[1].status,'未巡查');assert.equal(points[0].status,'未巡查');assert.match(displayPointStatus(shown[0].status),/已巡查/);
+  const shown=pendingVisitPoints(points,queue);assert.equal(shown[0].status,'點位存在');assert.equal(shown[0].pending_visit,true);assert.equal(shown[1].status,'未巡查');assert.equal(points[0].status,'未巡查');assert.equal(displayPointStatus(shown[0].status),'存在');
   assert.equal(pendingVisitPoints(points,[])[0].pending_visit,undefined);
 });
 test('固定直向僅在原生API成功時成立，不支援不要求全螢幕，失敗會還原',async()=>{

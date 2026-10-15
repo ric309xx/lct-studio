@@ -2,6 +2,7 @@ import {useEffect,useState} from 'react';
 import {X,LocateFixed,MapPin,FileText,Navigation,Compass,Plus} from 'lucide-react';
 import {nearbyPoints,targetDirection,distanceLabel} from '../shared/pointFinder.mjs';
 import type {Point,Dataset,Position} from './types';
+import PointCoordinates from './PointCoordinates';
 
 type Props={points:Point[];datasets:Dataset[];position:Position|null;target:Point|null;locating:boolean;error:string;online:boolean;onTarget:(id:string)=>void;onLocate:()=>void;onFit:()=>void;onDetails:()=>void;onClose:()=>void;onCreate:()=>void};
 export default function PointFinder({points,datasets,position,target,locating,error,online,onTarget,onLocate,onFit,onDetails,onClose,onCreate}:Props){
@@ -16,6 +17,7 @@ export default function PointFinder({points,datasets,position,target,locating,er
   return <section className="point-finder" role="region" aria-label="找點模式">
     <div className="finder-heading"><div><p>找點模式{dataset?` · ${dataset.name}`:''}</p><h2>{target?.code||'尋找最近控制點'}</h2>{target&&<span>{target.name||target.description||target.category}</span>}</div><button className="icon-button" aria-label="關閉找點模式" onClick={onClose}><X size={22}/></button></div>
     {direction&&position?<div className="finder-direction"><div className="finder-arrow"><span>{heading==null?'北 ↑':'手機朝向'}</span><Navigation size={52} style={{transform:`rotate(${direction.degrees-(heading??0)-45}deg)`}}/></div><div><strong>{distanceLabel(direction.meters)}</strong><p>直線距離 · 目標在{direction.cardinal}方 {Math.round(direction.degrees)}°</p><small>GPS 精度 ±{Math.round(position.accuracy)} m · {new Date(position.timestamp).toLocaleTimeString('zh-TW',{hour12:false})}</small></div></div>:<div className="finder-empty"><LocateFixed size={28}/><p>{locating?'正在取得目前位置…':position?'目前篩選範圍沒有控制點，請調整資料集或搜尋條件。':'取得目前位置後，會依距離列出最近的控制點。'}</p></div>}
+    {target&&<PointCoordinates point={target}/>}
     {error&&<p className="error-text" role="alert">{error}</p>}
     <div className="finder-actions"><button className="secondary" onClick={onLocate} disabled={locating}><LocateFixed size={16}/>{locating?'定位中…':'更新定位'}</button><button className="secondary" onClick={onFit} disabled={!position||!target}><MapPin size={16}/>查看兩端</button><button className="secondary" onClick={onDetails} disabled={!target}><FileText size={16}/>資料／照片</button></div>
     <details className="finder-nearby" open={!target}><summary>最近控制點{nearest.length?`（${nearest.length}）`:''}</summary>{nearest.map(({point,meters})=><button key={point.id} className={point.id===target?.id?'active':''} aria-pressed={point.id===target?.id} onClick={()=>onTarget(point.id)}><span><strong>{point.code}</strong><small>{datasets.find(d=>d.id===point.dataset_id)?.name} · {point.name||point.category}</small></span><b>{distanceLabel(meters)}</b></button>)}</details>

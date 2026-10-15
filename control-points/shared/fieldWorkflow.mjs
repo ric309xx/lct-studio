@@ -1,6 +1,6 @@
 export const PHOTO_CATEGORIES=['近照','遠照','環境','到達路線','點之記','其他'];
-export const VISIT_STATUSES=['點位存在','完好','損壞','找不到','無法進入'];
-export const displayPointStatus=status=>status==='點位存在'?'已巡查 · 點位存在':status;
+export const VISIT_STATUSES=['新設點位','點位存在','完好','損壞','找不到','滅失','無法進入'];
+export const displayPointStatus=status=>status==='點位存在'?'存在':status;
 export function pendingVisitPoints(points,queue){
   const latest=new Map();
   for(const q of queue){if(q.kind!=='visit')continue;const old=latest.get(q.pointId);if(!old||q.payload.visited_at>=old.payload.visited_at)latest.set(q.pointId,q);}

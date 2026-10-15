@@ -1,6 +1,6 @@
 import {Style,Circle as CircleStyle,Fill,Stroke,Text} from 'ol/style.js';
 import {representativeMapPoint} from './mapSelection.mjs';
-import {datasetColor} from './datasets.mjs';
+import {pointColor} from './pointStatus.mjs';
 import {isApproximate} from './fieldPoints.mjs';
 
 // Repaints (including hit detection) reuse symbols instead of sorting the
@@ -10,11 +10,11 @@ import {isApproximate} from './fieldPoints.mjs';
 export function createMapMarkerStyle(datasets=[]) {
   const cache=new WeakMap();
   return (feature,zoom)=>{
-    const showCode=zoom>15,revision=feature.getRevision(),previous=cache.get(feature);
-    if(previous&&previous.showCode===showCode&&previous.revision===revision)return previous.styles;
+    const showCode=zoom>15,revision=feature.getRevision(),children=feature.get('features'),previous=cache.get(feature);
+    if(previous&&previous.showCode===showCode&&previous.revision===revision&&previous.children===children)return previous.styles;
     const list=typeof datasets==='function'?datasets():datasets;
-    const styles=mapMarkerStyles(feature.get('features'),zoom,new Map(list.map(d=>[d.id,d])));
-    cache.set(feature,{showCode,revision,styles});
+    const styles=mapMarkerStyles(children,zoom,new Map(list.map(d=>[d.id,d])));
+    cache.set(feature,{showCode,revision,children,styles});
     return styles;
   };
 }
@@ -24,7 +24,7 @@ export function mapMarkerStyles(children,zoom,datasets=new Map()) {
   if(!p)return [];
   const representative=children.find(f=>f.get('point')?.id===p.id);
   const geometry=representative.getGeometry();
-  const color=p.status==='損壞'||p.status==='找不到'?'#b65b38':datasetColor(datasets.get(p.dataset_id)||{id:p.dataset_id});
+  const color=pointColor(p,datasets.get(p.dataset_id));
   const approximate=isApproximate(p);
   const styles=[new Style({geometry,
     image:new CircleStyle({radius:approximate?9:7,fill:new Fill({color:approximate?'#fffef5':color}),stroke:new Stroke({color:approximate?color:color==='#f2c53d'?'#795b10':'#fff',width:2.5,lineDash:approximate?[3,2]:undefined})}),
