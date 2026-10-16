@@ -1,5 +1,6 @@
 import {pointColor,pointStatusStyle} from '../shared/pointStatus.mjs';
 import {displayPointStatus} from '../shared/fieldWorkflow.mjs';
+import MapCoordinateQuery from './MapCoordinateQuery';
 import {datasetLabel,datasetColor} from '../shared/datasets.mjs';
 import type {Place} from './PlaceSearch';
 import {useEffect,useLayoutEffect,useRef,useState,type CSSProperties} from 'react';
@@ -17,6 +18,8 @@ type Props={references:ReferenceLayer[];hiddenReferences:Set<string>;referenceFo
 export default function PointMap({references,hiddenReferences,referenceFocus,onPickPosition,pickedPosition,findingTarget,walkingRoute,findingFocus,batchMode,batchIds,onToggleBatch,place,points,datasets,selected,pointFocus,locationFocus,position,basemap,roadNames,labelStyle,imageBrightness,overlay,overlayVisible,focus,onSelect,onInteraction,onMapReady}:Props){
   const pickRef=useRef(onPickPosition);pickRef.current=onPickPosition;
   const referenceSource=useRef(new VectorSource());
+  const querySource=useRef(new VectorSource());
+  const [queryPosition,setQueryPosition]=useState<{lon:number;lat:number}|null>(null);
   const pickedSource=useRef(new VectorSource());
   const datasetsRef=useRef(datasets);datasetsRef.current=datasets;
   const el=useRef<HTMLDivElement>(null),mapRef=useRef<Map|null>(null),sourceRef=useRef(new VectorSource()),selectedSource=useRef(new VectorSource()),locationSource=useRef(new VectorSource()),overlaySource=useRef(new VectorSource()),baseSource=useRef<XYZ|null>(null),onSelectRef=useRef(onSelect),initialFit=useRef(false);onSelectRef.current=onSelect;
@@ -31,6 +34,7 @@ export default function PointMap({references,hiddenReferences,referenceFocus,onP
   useEffect(()=>{if(choices.length>1)choiceClose.current?.focus({preventScroll:true});},[choices]);
   useEffect(()=>{setChoices([]);},[points,place,focus,locationFocus]);
   useEffect(()=>{setChoices([]);},[batchMode]);
+  useEffect(()=>{if(onPickPosition||batchMode)setQueryPosition(null);},[onPickPosition,batchMode]);
   useEffect(()=>{if(selected)setChoices([]);},[selected?.id,selected?.lon,selected?.lat,selected?.status]);
   useEffect(()=>{
     const source=new XYZ({url:'https://wmts.nlsc.gov.tw/wmts/EMAP/default/EPSG:3857/{z}/{y}/{x}',crossOrigin:'anonymous',attributions:'© 內政部國土測繪中心',maxZoom:19});baseSource.current=source;
@@ -47,13 +51,17 @@ export default function PointMap({references,hiddenReferences,referenceFocus,onP
     const pickedLayer=new VectorLayer({source:pickedSource.current,style:new Style({image:new CircleStyle({radius:10,fill:new Fill({color:'#fff9ed'}),stroke:new Stroke({color:'#c77d32',width:4,lineDash:[4,3]})}),text:new Text({text:'概略新點',offsetY:-22,fill:new Fill({color:'#82501e'}),stroke:new Stroke({color:'#fff',width:3})})})});
     const findingLayer=new VectorLayer({source:findingSource.current,style:f=>f.get('accuracy')?new Style({stroke:new Stroke({color:'#3385f066',width:1}),fill:new Fill({color:'#3385f016'})}):new Style({stroke:new Stroke({color:'#bb692c',width:3,lineDash:[8,8]})})});
     const routeLayer=new VectorLayer({source:routeSource.current,style:[new Style({stroke:new Stroke({color:'#ffffff',width:8})}),new Style({stroke:new Stroke({color:'#246bbd',width:5})})]});
-    const map=new Map({target:el.current!,layers:[new TileLayer({source,className:'imagery-base-layer'}),labels,parcelLayer,referenceLayer,findingLayer,routeLayer,clusters,selectionLayer,batchLayer,positionLayer,placeLayer,pickedLayer],view:new View({center:fromLonLat([121.255,24.96]),zoom:12}),interactions:mapInteractions(),controls:defaultControls({zoom:false,rotate:false})});
+    const queryLayer=new VectorLayer({source:querySource.current,style:new Style({image:new CircleStyle({radius:8,fill:new Fill({color:'#fff8ee'}),stroke:new Stroke({color:'#b54b2c',width:3})}),text:new Text({text:'查詢位置',offsetY:-19,fill:new Fill({color:'#8a3a22'}),stroke:new Stroke({color:'#fff',width:3})})})});
+    const map=new Map({target:el.current!,layers:[new TileLayer({source,className:'imagery-base-layer'}),labels,parcelLayer,referenceLayer,findingLayer,routeLayer,clusters,selectionLayer,batchLayer,positionLayer,placeLayer,pickedLayer,queryLayer],view:new View({center:fromLonLat([121.255,24.96]),zoom:12}),interactions:mapInteractions(),controls:defaultControls({zoom:false,rotate:false})});
     mapRef.current=map;
     const viewport=map.getViewport(),interruptNavigation=()=>{const view=map.getView();if(view.getAnimating())view.cancelAnimations();};
     viewport?.addEventListener('pointerdown',interruptNavigation,{passive:true});
     viewport?.addEventListener('wheel',interruptNavigation,{passive:true});
     map.on('pointerdrag',event=>{if(pausesLocationFollow(event)){locationFocusRef.current=null;onInteractionRef.current();}});
     map.on('moveend',()=>{const p=locationFocusRef.current;if(p)followLocationImmediately(map.getView(),fromLonLat([p.lon,p.lat]));});
+    const queryCoordinate=(coordinate:number[])=>{const [lon,lat]=toLonLat(coordinate);locationFocusRef.current=null;onInteractionRef.current();setChoices([]);setQueryPosition({lon:((lon+180)%360+360)%360-180,lat});};
+    const contextQuery=(event:MouseEvent)=>{event.preventDefault();if(pickRef.current||batchRef.current.batchMode)return;queryCoordinate(map.getEventCoordinate(event));};
+    viewport?.addEventListener('contextmenu',contextQuery);
     map.on('singleclick',event=>{
       if(pickRef.current){const [lon,lat]=toLonLat(event.coordinate);pickRef.current({lon,lat});return;}
       const hits:Point[]=[];
@@ -63,12 +71,13 @@ export default function PointMap({references,hiddenReferences,referenceFocus,onP
         else {const p=f.get('point') as Point|undefined;if(p)hits.push(p);}
       },{hitTolerance:8,layerFilter:layer=>layer===clusters||layer===selectionLayer});
       const candidates=uniqueMapPoints(hits) as Point[];
-      if(candidates.length>1){if(!batchRef.current.batchMode)onSelectRef.current(null);setChoices(candidates);}
-      else {setChoices([]);if(candidates[0]){if(batchRef.current.batchMode)batchRef.current.onToggleBatch(candidates[0]);else onSelectRef.current(candidates[0]);}}
+      if(candidates.length>1){setQueryPosition(null);if(!batchRef.current.batchMode)onSelectRef.current(null);setChoices(candidates);}
+      else {setChoices([]);if(candidates[0]){setQueryPosition(null);if(batchRef.current.batchMode)batchRef.current.onToggleBatch(candidates[0]);else onSelectRef.current(candidates[0]);}else if(!batchRef.current.batchMode)queryCoordinate(event.coordinate);}
     });
     map.once('rendercomplete',onMapReady);const observer=new ResizeObserver(()=>map.updateSize());observer.observe(el.current!);
-    return()=>{observer.disconnect();viewport?.removeEventListener('pointerdown',interruptNavigation);viewport?.removeEventListener('wheel',interruptNavigation);map.setTarget(undefined);mapRef.current=null;};
+    return()=>{observer.disconnect();viewport?.removeEventListener('contextmenu',contextQuery);viewport?.removeEventListener('pointerdown',interruptNavigation);viewport?.removeEventListener('wheel',interruptNavigation);map.setTarget(undefined);mapRef.current=null;};
   },[]);
+  useEffect(()=>{querySource.current.clear();if(queryPosition)querySource.current.addFeature(new Feature({geometry:new PointGeometry(fromLonLat([queryPosition.lon,queryPosition.lat]))}));},[queryPosition]);
   useEffect(()=>{sourceRef.current.clear();sourceRef.current.addFeatures(points.map(p=>new Feature({geometry:new PointGeometry(fromLonLat([p.lon,p.lat])),point:p})));if(points.length&&!initialFit.current){const extent=sourceRef.current.getExtent();if(extent){initialFit.current=true;mapRef.current?.getView().fit(extent,{padding:[60,40,60,40],maxZoom:15});}}},[points]);
   useEffect(()=>{pickedSource.current.clear();if(pickedPosition)pickedSource.current.addFeature(new Feature({geometry:new PointGeometry(fromLonLat([pickedPosition.lon,pickedPosition.lat]))}));},[pickedPosition]);
   useEffect(()=>{selectedSource.current.clear();if(selected)selectedSource.current.addFeature(new Feature({geometry:new PointGeometry(fromLonLat([selected.lon,selected.lat])),point:selected}));},[selected?.id,selected?.lon,selected?.lat,selected?.status]);
@@ -102,5 +111,5 @@ export default function PointMap({references,hiddenReferences,referenceFocus,onP
     const extent=source.getExtent();if(features.length&&extent){locationFocusRef.current=null;setChoices([]);map.updateSize();map.getView().cancelAnimations();map.getView().fit(extent,{padding:[110,40,80,40],maxZoom:19,duration:0});}
   },[referenceFocus,references]);
   useEffect(()=>{if(!focus)return;if(points.length){const extent=sourceRef.current.getExtent();if(extent)mapRef.current?.getView().fit(extent,{padding:[80,60,80,60],duration:400,maxZoom:15});}},[focus]);
-  return <><div ref={el} className="map-canvas" tabIndex={0} style={{'--imagery-brightness':basemap==='aerial'?imageBrightness/100:1} as CSSProperties} aria-label="控制點地圖"/>{choices.length>1&&<section className="cluster-picker" role="dialog" aria-labelledby="cluster-title" onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();closeChoices();}}}><div className="cluster-heading"><div><h3 id="cluster-title">{batchMode?'勾選點位':'選擇點位'} <small>{choices.length.toLocaleString()} 點</small></h3><p>{batchMode?'可勾選多個點位，完成後關閉清單。':'點位靠得很近，請選擇要查看的資料。'}</p></div><button ref={choiceClose} className="icon-button" onClick={closeChoices} aria-label="關閉附近點位清單"><X size={19}/></button></div><div className="cluster-point-list">{choices.map(p=><button key={p.id} className={'cluster-point '+(batchMode&&batchIds.has(p.id)?'batch-checked':'')} aria-pressed={batchMode?batchIds.has(p.id):undefined} aria-label={`${batchMode?'勾選點之記':'開啟點位'} ${p.code} · ${datasetLabel(datasets.find(d=>d.id===p.dataset_id))}`} onClick={()=>{if(batchMode)onToggleBatch(p);else{setChoices([]);onSelectRef.current(p);}}}>{batchMode&&<span className="batch-choice-check" aria-hidden="true">{batchIds.has(p.id)?'☑':'☐'}</span>}<span className="point-symbol" style={{color:pointColor(p,datasets.find(d=>d.id===p.dataset_id)),backgroundColor:pointColor(p,datasets.find(d=>d.id===p.dataset_id))+'18'}}><Crosshair size={19}/></span><span className="cluster-point-text"><strong>{p.code}<small style={{color:pointStatusStyle(p.status)?.color}}>{displayPointStatus(p.status)}</small></strong><span>{datasetLabel(datasets.find(d=>d.id===p.dataset_id))}</span><small>{p.name&&p.name!==p.code?p.name:p.category||'控制點'}{p.original_code!==p.code?` · 原點號 ${p.original_code}`:''}</small></span><ChevronRight size={17}/></button>)}</div><button className="cluster-zoom" onClick={zoomChoices}><ZoomIn size={16}/>放大此範圍</button></section>}</>;
+  return <><div ref={el} className="map-canvas" tabIndex={0} style={{'--imagery-brightness':basemap==='aerial'?imageBrightness/100:1} as CSSProperties} aria-label="控制點地圖"/>{queryPosition&&<MapCoordinateQuery position={queryPosition} onClose={()=>setQueryPosition(null)}/>}{choices.length>1&&<section className="cluster-picker" role="dialog" aria-labelledby="cluster-title" onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();closeChoices();}}}><div className="cluster-heading"><div><h3 id="cluster-title">{batchMode?'勾選點位':'選擇點位'} <small>{choices.length.toLocaleString()} 點</small></h3><p>{batchMode?'可勾選多個點位，完成後關閉清單。':'點位靠得很近，請選擇要查看的資料。'}</p></div><button ref={choiceClose} className="icon-button" onClick={closeChoices} aria-label="關閉附近點位清單"><X size={19}/></button></div><div className="cluster-point-list">{choices.map(p=><button key={p.id} className={'cluster-point '+(batchMode&&batchIds.has(p.id)?'batch-checked':'')} aria-pressed={batchMode?batchIds.has(p.id):undefined} aria-label={`${batchMode?'勾選點之記':'開啟點位'} ${p.code} · ${datasetLabel(datasets.find(d=>d.id===p.dataset_id))}`} onClick={()=>{if(batchMode)onToggleBatch(p);else{setChoices([]);onSelectRef.current(p);}}}>{batchMode&&<span className="batch-choice-check" aria-hidden="true">{batchIds.has(p.id)?'☑':'☐'}</span>}<span className="point-symbol" style={{color:pointColor(p,datasets.find(d=>d.id===p.dataset_id)),backgroundColor:pointColor(p,datasets.find(d=>d.id===p.dataset_id))+'18'}}><Crosshair size={19}/></span><span className="cluster-point-text"><strong>{p.code}<small style={{color:pointStatusStyle(p.status)?.color}}>{displayPointStatus(p.status)}</small></strong><span>{datasetLabel(datasets.find(d=>d.id===p.dataset_id))}</span><small>{p.name&&p.name!==p.code?p.name:p.category||'控制點'}{p.original_code!==p.code?` · 原點號 ${p.original_code}`:''}</small></span><ChevronRight size={17}/></button>)}</div><button className="cluster-zoom" onClick={zoomChoices}><ZoomIn size={16}/>放大此範圍</button></section>}</>;
 }
