@@ -13,6 +13,16 @@ const env={PROJECT_PASSWORD_HASH:hash('test-password'),ADMIN_PASSWORD_HASH:hash(
 }};
 const call=(path,options={})=>worker.fetch(new Request('https://worker.test'+path,options),env);
 const connect=`/connect?project=${project}&origin=${encodeURIComponent(origin)}&state=${randomUUID()}`;
+test('1015 models share authorized cadastral access but resolve separate server-owned prefixes',async()=>{
+  const {token}=await createCadastralToken(project,env.SESSION_SECRET);
+  for(const id of ['1015-cl1','1015-cl2']) {
+    const path=`/projects/${project}/tiles/${id}/tileset.json`;
+    assert.equal((await call(path)).status,401);
+    const response=await call(path,{headers:{origin,authorization:'Bearer '+token}});
+    assert.equal(response.status,200);
+    assert.equal(keys.at(-1),PROJECTS[project].tileSources[id]+'tileset.json');
+  }
+});
 async function login(id=project,returnTo=connect){
   const r=await call('/login',{method:'POST',body:new URLSearchParams({project:id,password:'test-password',returnTo})});
   assert.equal(r.status,303);return {response:r,cookie:r.headers.get('set-cookie').split(';')[0]};

@@ -1,0 +1,79 @@
+{
+  "checkedAt": "2026-10-16T07:56:45.526Z",
+  "checks": [
+    {
+      "name": "website-viewer-login",
+      "ok": true
+    },
+    {
+      "name": "cl1-anonymous-denied",
+      "ok": true
+    },
+    {
+      "name": "cl1-root-integrity",
+      "ok": true,
+      "status": 200,
+      "contentType": "application/json; charset=utf-8"
+    },
+    {
+      "name": "cl1-cors",
+      "ok": true
+    },
+    {
+      "name": "cl1-head",
+      "ok": true,
+      "status": 200,
+      "length": null,
+      "type": "model/vnd.b3dm",
+      "expectedSize": 20490
+    },
+    {
+      "name": "cl1-tile-integrity",
+      "ok": true
+    },
+    {
+      "name": "cl1-range",
+      "ok": true,
+      "contentRange": "bytes 0-31/20490"
+    },
+    {
+      "name": "cl2-anonymous-denied",
+      "ok": true
+    },
+    {
+      "name": "cl2-root-integrity",
+      "ok": true,
+      "status": 200,
+      "contentType": "application/json; charset=utf-8"
+    },
+    {
+      "name": "cl2-cors",
+      "ok": true
+    },
+    {
+      "name": "cl2-head",
+      "ok": true,
+      "status": 200,
+      "length": null,
+      "type": "model/vnd.b3dm",
+      "expectedSize": 20674
+    },
+    {
+      "name": "cl2-tile-integrity",
+      "ok": true
+    },
+    {
+      "name": "cl2-range",
+      "ok": true,
+      "contentRange": "bytes 0-31/20674"
+    },
+    {
+      "name": "previous-tileset.json",
+      "ok": true
+    },
+    {
+      "name": "previous-1013/tileset.json",
+      "ok": true
+    }
+  ]
+}

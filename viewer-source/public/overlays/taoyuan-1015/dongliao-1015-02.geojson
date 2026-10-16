@@ -1,0 +1,105 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "parcel-1015-dongliao-804-5-fill",
+      "properties": {
+        "kind": "cadastral-fill",
+        "parcelKey": "dongliao-804-5",
+        "parcelNo": "804-5",
+        "sectionName": "東寮段",
+        "groupKey": "dongliao-1015-02",
+        "sourceCrs": "EPSG:3826",
+        "dxfHandle": "46F",
+        "cadastralAreaM2": 9.84,
+        "geometryAreaM2": 9.60953536608445,
+        "analysisStatus": "awaiting-building-confirmation"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.25282146543444,
+              24.934301870529048
+            ],
+            [
+              121.25281833786342,
+              24.93428368377488
+            ],
+            [
+              121.2528644194975,
+              24.93427900762114
+            ],
+            [
+              121.25286822026065,
+              24.93429713902492
+            ],
+            [
+              121.25286484456474,
+              24.934297478987805
+            ],
+            [
+              121.25282240586453,
+              24.934301769569903
+            ],
+            [
+              121.25282146543444,
+              24.934301870529048
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "parcel-1015-dongliao-804-5-boundary",
+      "properties": {
+        "kind": "cadastral-boundary",
+        "parcelKey": "dongliao-804-5",
+        "parcelNo": "804-5",
+        "sectionName": "東寮段",
+        "groupKey": "dongliao-1015-02",
+        "sourceCrs": "EPSG:3826",
+        "dxfHandle": "46F",
+        "cadastralAreaM2": 9.84,
+        "geometryAreaM2": 9.60953536608445,
+        "analysisStatus": "awaiting-building-confirmation"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.25282146543444,
+            24.934301870529048
+          ],
+          [
+            121.25281833786342,
+            24.93428368377488
+          ],
+          [
+            121.2528644194975,
+            24.93427900762114
+          ],
+          [
+            121.25286822026065,
+            24.93429713902492
+          ],
+          [
+            121.25286484456474,
+            24.934297478987805
+          ],
+          [
+            121.25282240586453,
+            24.934301769569903
+          ],
+          [
+            121.25282146543444,
+            24.934301870529048
+          ]
+        ]
+      }
+    }
+  ]
+}

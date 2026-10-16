@@ -2,6 +2,7 @@ import driplineMetrics from "./taoyuanDriplineMetrics.json";
 import { isSharedViewerEntry } from "./accessPolicy";
 import taoyuan1006Parcels from "./taoyuan1006Parcels.json";
 import taoyuan1013Parcels from "./taoyuan1013Parcels.json";
+import taoyuan1015Parcels from "./taoyuan1015Parcels.json";
 import { roadGround, roadPosition, roadHeightAt, sampleRoadOffset } from "./shuanglingGround";
 import { PRIVATE_R2_ORIGIN, TAOYUAN_R2_PROJECT, R2AuthorizationRequired, ensureR2Access, hasR2Access, privateR2Resource } from "./r2Access";
 import { CadastralInfoPanel } from "./CadastralInfoPanel";
@@ -332,7 +333,7 @@ const CADASTRAL_PROJECTS: Record<string, CadastralProject> = {
         pitchDegrees: -90,
         rollDegrees: 0
       }
-    }, ...taoyuan1006Parcels, ...taoyuan1013Parcels]
+    }, ...taoyuan1006Parcels, ...taoyuan1013Parcels, ...taoyuan1015Parcels]
   }
 };
 

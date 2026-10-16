@@ -1,0 +1,15 @@
+{
+  "sourceDxf":"D:\\DATA\\WORK\\20261006桃園三維地籍\\地籍資料\\04_1015\\1015.dxf",
+  "sourceCrs":"EPSG:3826",
+  "parcels":[
+    {"section":"futai","sectionName":"富台段","model":1,"group":"01","parcelNo":"120-1","dxfHandle":"44A","referencePointTwd97":[275897.355,2759334.760],"registeredAreaM2":397.4,"registrationDate":"民國079年09月05日","announcedLandValue":"33,800 元／平方公尺","rightsCategory":"省市 100.00%"},
+    {"section":"futai","sectionName":"富台段","model":1,"group":"01","parcelNo":"32-3","dxfHandle":"43D","referencePointTwd97":[275853.167,2759349.698],"registeredAreaM2":185.67,"registrationDate":"民國079年08月27日","announcedLandValue":"33,800 元／平方公尺","rightsCategory":"省市 100.00%"},
+    {"section":"futai","sectionName":"富台段","model":1,"group":"01","parcelNo":"47-3","dxfHandle":"478","referencePointTwd97":[275830.053,2759348.150],"registeredAreaM2":206.34,"registrationDate":"民國113年03月07日","announcedLandValue":"33,800 元／平方公尺","rightsCategory":"省市 100.00%"},
+    {"section":"dongliao","sectionName":"東寮段","model":2,"group":"01","parcelNo":"617-1","dxfHandle":"40F","referencePointTwd97":[275424.559,2758502.479],"registeredAreaM2":51.27,"registrationDate":"民國077年10月01日","announcedLandValue":"32,700 元／平方公尺","rightsCategory":"鄉鎮市 100.00%"},
+    {"section":"dongliao","sectionName":"東寮段","model":2,"group":"01","parcelNo":"667-1","dxfHandle":"416","referencePointTwd97":[275433.290,2758505.324],"registeredAreaM2":79.28,"registrationDate":"民國077年10月01日","announcedLandValue":"32,700 元／平方公尺","rightsCategory":"鄉鎮市 100.00%"},
+    {"section":"dongliao","sectionName":"東寮段","model":2,"group":"02","parcelNo":"804-5","dxfHandle":"46F","referencePointTwd97":[275535.317,2758523.515],"registeredAreaM2":9.84,"registrationDate":"民國077年11月07日","announcedLandValue":"32,700 元／平方公尺","rightsCategory":"省市 100.00%"},
+    {"section":"dongliao","sectionName":"東寮段","model":2,"group":"03","parcelNo":"1507-1","dxfHandle":"428","referencePointTwd97":[275670.078,2758135.318],"registeredAreaM2":153.46,"registrationDate":"民國077年11月04日","announcedLandValue":"71,710 元／平方公尺","rightsCategory":"本國人 73.33%；省市 16.67%；鄉鎮市 10.00%"},
+    {"section":"dongliao","sectionName":"東寮段","model":2,"group":"03","parcelNo":"1508-1","dxfHandle":"41F","referencePointTwd97":[275654.379,2758138.599],"registeredAreaM2":50.21,"registrationDate":"民國077年11月03日","announcedLandValue":"35,500 元／平方公尺","rightsCategory":"本國人 73.33%；省市 16.67%；鄉鎮市 10.00%"}
+  ],
+  "note":"原始地籍資訊記載 TWD67；本次 CAD 依使用者說明及 TWD97 查詢點交叉核對，按 EPSG:3826 解讀，不重複做 datum 轉換。實測 CAD 只作位置參考，不作占用面積來源。"
+}
