@@ -51,7 +51,7 @@ test('快速找點正確顯示目標原始坐標、分帶、正高與零高程�
   const Component=compiled.exports.default;
   const render=point=>renderToStaticMarkup(createElement(Component,{point}));
   const base={north:2762745.231,east:271372.362,height:118.12,height_type:'正高',lat:24.9724724,lon:121.21168588,epsg:3826,crs:'TWD97 / TM2 121 分帶',raw:'{}'};
-  const html=render(base);assert.match(html,/目標點位座標/);assert.match(html,/TWD97 \/ TM2 121 分帶/);assert.match(html,/2762745.231/);assert.match(html,/271372.362/);assert.doesNotMatch(html,/2,762|271,372/);assert.match(html,/正高（m）/);assert.match(html,/118.120/);assert.match(html,/概略經緯度 · WGS84/);assert.match(html,/24.97247°/);assert.match(html,/121.21169°/);
+  const html=render(base);assert.match(html,/目標點位座標/);assert.match(html,/TWD97 \/ TM2 121 分帶/);assert.match(html,/2762745.231/);assert.match(html,/271372.362/);assert.doesNotMatch(html,/2,762|271,372/);assert.match(html,/正高（m）/);assert.match(html,/118.120/);assert.match(html,/概略經緯度 · WGS84/);assert.match(html,/24.972472, 121.211686/);assert.match(html,/複製經緯度/);
   const zero=render({...base,epsg:3825,crs:'TWD97[2010] / TM2 119 分帶',height:0});assert.match(zero,/EPSG:3825/);assert.match(zero,/0.000/);
   const geographic=render({...base,north:24.9724724,east:121.21168588,epsg:4326,crs:'WGS84 經緯度',height:null,raw:JSON.stringify({fieldCapture:{quality:'approximate'}})});
   assert.match(geographic,/緯度/);assert.match(geographic,/經度/);assert.match(geographic,/24.9724724/);assert.match(geographic,/121.2116859/);assert.match(geographic,/概略位置（待測量）/);assert.doesNotMatch(geographic,/正高（m）/);
