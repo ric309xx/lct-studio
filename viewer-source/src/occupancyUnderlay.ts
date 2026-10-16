@@ -31,10 +31,14 @@ export async function createOccupancyUnderlay(viewer: Viewer, building: Entity,
     const anchors = await viewer.scene.sampleHeightMostDetailed(sourceAnchors.map(p => Cartographic.fromDegrees(p[0], p[1])));
     if (cancelled() || viewer.isDestroyed()) return [];
     const offsets = anchors.flatMap((p, i) => p && Number.isFinite(p.height) ? [p.height - sourceAnchors[i][2]] : []).sort((a,b) => a-b);
-    // 校準失敗不退回樹冠取樣，也不把正高直接當橢球高。
-    if (offsets.length < 2 || offsets.at(-1)! - offsets[0] > 2) return [];
-    const offset = offsets[Math.floor(offsets.length / 2)];
+    // A road probe can hit a parked vehicle in the mesh. Require a majority
+    // of consistent offsets rather than discarding the entire repair skin.
+    const clusters = offsets.map(start => offsets.filter(value => value >= start && value <= start + 0.8));
+    const consensus = clusters.sort((left, right) => right.length - left.length)[0] ?? [];
+    if (consensus.length < Math.max(2, Math.ceil(offsets.length * 0.6))) return [];
+    const offset = consensus[Math.floor(consensus.length / 2)];
     const sourcePositions = sourceRoof.map(p => Cartographic.fromDegrees(p[0], p[1], p[2]));
+    const roofOnly = building.properties?.displayRoofOnly?.getValue() === true;
     const lift = (ring: PolygonHierarchy): PolygonHierarchy => new PolygonHierarchy(ring.positions.map(position => {
       const point = Cartographic.fromCartesian(position);
       const nearest = sourcePositions.reduce((best, candidate) => {
@@ -46,7 +50,10 @@ export async function createOccupancyUnderlay(viewer: Viewer, building: Entity,
     return [new Entity({id:`occupancy-roof-underlay-${building.id}`,
       properties:{kind:"occupancy-roof-underlay",parcelKey:building.properties?.parcelKey?.getValue()},
       polygon:{hierarchy:lift(dense),perPositionHeight:true,
-        extrudedHeight:Math.min(groundHeight, ...sourceAnchors.map(p => p[2]+offset)),closeTop:true,closeBottom:true,
+        // Confirmed awnings/projections get a closed, thin roof skin rather
+        // than a ground-to-roof volume that would colour the wall/cars below.
+        extrudedHeight:roofOnly ? Math.min(...sourceRoof.map(p => p[2]+offset)) - 0.18
+          : Math.min(groundHeight, ...sourceAnchors.map(p => p[2]+offset)),closeTop:true,closeBottom:true,
         material:Color.fromCssColorString("#43ee82").withAlpha(0.58)}})];
   }
   // A narrow frontage footprint may contain only a low awning: the upper

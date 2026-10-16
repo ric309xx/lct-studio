@@ -14,7 +14,7 @@
         "dxfHandle": "46F",
         "cadastralAreaM2": 9.84,
         "geometryAreaM2": 9.60953536608445,
-        "analysisStatus": "awaiting-building-confirmation"
+        "analysisStatus": "interpreted-draft"
       },
       "geometry": {
         "type": "Polygon",
@@ -65,7 +65,7 @@
         "dxfHandle": "46F",
         "cadastralAreaM2": 9.84,
         "geometryAreaM2": 9.60953536608445,
-        "analysisStatus": "awaiting-building-confirmation"
+        "analysisStatus": "interpreted-draft"
       },
       "geometry": {
         "type": "LineString",
@@ -97,6 +97,109 @@
           [
             121.25282146543444,
             24.934301870529048
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "occupancy-1015-dongliao-804-5-0",
+      "properties": {
+        "kind": "occupancy-building",
+        "parcelKey": "dongliao-804-5",
+        "parcelNo": "804-5",
+        "analysisStatus": "interpreted-draft",
+        "category": "使用者確認之突出構造",
+        "sourceCrs": "EPSG:3826",
+        "projectedAreaM2": 0.5151484215873273,
+        "displayWallContinuity": true,
+        "modelRoofSamples": [
+          [
+            121.2528328242381,
+            24.934282213765314,
+            165.69759667798562
+          ],
+          [
+            121.25282790384657,
+            24.934282713063805,
+            165.71718390631096
+          ],
+          [
+            121.25282298345502,
+            24.93428321236213,
+            165.73677113428886
+          ],
+          [
+            121.25282154284659,
+            24.93428606949239,
+            165.52301617265238
+          ],
+          [
+            121.2528255447138,
+            24.93428679851557,
+            165.41518169531165
+          ],
+          [
+            121.25283047762635,
+            24.934286415467046,
+            165.3860296597996
+          ],
+          [
+            121.25283329762294,
+            24.934284561679036,
+            165.50172567740822
+          ]
+        ],
+        "modelGroundAnchors": [
+          [
+            121.25282162554441,
+            24.934299539202183,
+            163.4384
+          ],
+          [
+            121.25285418077131,
+            24.93428444987745,
+            163.31380000000001
+          ],
+          [
+            121.2528418923839,
+            24.934299219526284,
+            163.40730000000002
+          ],
+          [
+            121.25283232883683,
+            24.934282412218632,
+            163.3514
+          ]
+        ],
+        "analysisRegion": "dongliao-804-projection",
+        "continuousOccupancy": true,
+        "displayRoofOnly": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.2528328242381,
+              24.934282213765314
+            ],
+            [
+              121.2528210072265,
+              24.934283412900502
+            ],
+            [
+              121.25282174925364,
+              24.934287093238986
+            ],
+            [
+              121.25283362215158,
+              24.93428617128956
+            ],
+            [
+              121.2528328242381,
+              24.934282213765314
+            ]
           ]
         ]
       }

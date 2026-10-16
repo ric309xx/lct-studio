@@ -353,7 +353,13 @@ function cadastralGroup(parcel: CadastralParcel) {
 }
 
 function cadastralGroupLabel(parcel: CadastralParcel) {
-  return parcel.groupLabel ?? (parcel.overlayUrl ? "三座屋小段｜六筆地號" : "舊社小段｜102-45");
+  const members = CADASTRAL_PROJECTS["taoyuan-building-overlay"].parcels
+    .filter(item => cadastralGroup(item) === cadastralGroup(parcel));
+  const section = parcel.groupLabel?.split("｜")[0]
+    ?? (parcel.overlayUrl ? "三座屋小段" : "舊社小段");
+  const numbers = members.slice(0, 2).map(item => item.info.parcelNo).join("、");
+  return members.length === 1 ? `${section}｜${numbers}`
+    : `${section}｜${numbers}${members.length > 2 ? "…" : ""} 等${members.length}筆地號`;
 }
 
 function applyCadastralDisplayMode(

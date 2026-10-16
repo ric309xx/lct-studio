@@ -114,12 +114,12 @@
 
     const stylesheet = document.createElement("link");
     stylesheet.rel = "stylesheet";
-    stylesheet.href = "/3d-viewer/assets/viewer.css?v=20261010c";
+    stylesheet.href = "/3d-viewer/assets/viewer.css?v=20261016-layered-v2";
     document.head.appendChild(stylesheet);
 
     const script = document.createElement("script");
     script.type = "module";
-    script.src = "/3d-viewer/assets/viewer.js?v=20261016-taoyuan-1015-v1";
+    script.src = "/3d-viewer/assets/viewer.js?v=20261016-layered-v2";
     script.dataset.viewerApp = "true";
     document.body.appendChild(script);
   };

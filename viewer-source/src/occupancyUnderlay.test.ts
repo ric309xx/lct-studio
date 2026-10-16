@@ -74,3 +74,26 @@ it("模型屋頂校準不可靠時不擅自改用最高樹冠",async()=>{
   b.properties!.addProperty("modelGroundAnchors",[[121.216,24.961,118],[121.2161,24.961,118]]);
   expect(await createOccupancyUnderlay(viewer(points=>points.map((p,i)=>{p.height=i?150:140;return p;})),b,140,()=>false)).toEqual([]);
 });
+it("confirmed low awnings get a closed roof skin without colouring the ground-to-roof wall",async()=>{
+  const b=building(true);
+  b.properties!.addProperty("displayRoofOnly",true);
+  b.properties!.addProperty("modelRoofSamples",[[121.217,24.962,120],[121.2171,24.9621,120]]);
+  b.properties!.addProperty("modelGroundAnchors",[[121.216,24.961,118],[121.2161,24.961,118]]);
+  const result=await createOccupancyUnderlay(viewer(points=>points.map(p=>{p.height=140;return p;})),b,140,()=>false);
+  const polygon=result[0].polygon!,h=polygon.hierarchy!.getValue(time) as PolygonHierarchy;
+  expect(polygon.closeTop!.getValue(time)).toBe(true);
+  expect(polygon.closeBottom!.getValue(time)).toBe(true);
+  expect(polygon.extrudedHeight!.getValue(time)).toBeCloseTo(141.82,4);
+  for(const point of h.positions)expect(Cartographic.fromCartesian(point).height).toBeCloseTo(142.12,4);
+});
+it("keeps a confirmed skin when a minority of road probes hit vehicles",async()=>{
+  const b=building(true);
+  b.properties!.addProperty("displayRoofOnly",true);
+  b.properties!.addProperty("modelRoofSamples",[[121.217,24.962,120]]);
+  b.properties!.addProperty("modelGroundAnchors",Array.from({length:5},(_,i)=>[121.216+i*.0001,24.961,118]));
+  const hits=[140,140.1,139.9,144,145];
+  const result=await createOccupancyUnderlay(viewer(points=>points.map((p,i)=>{p.height=hits[i];return p;})),b,140,()=>false);
+  expect(result).toHaveLength(1);
+  const h=result[0].polygon!.hierarchy!.getValue(time) as PolygonHierarchy;
+  expect(Cartographic.fromCartesian(h.positions[0]).height).toBeCloseTo(142.12,4);
+});
