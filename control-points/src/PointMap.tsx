@@ -1,6 +1,7 @@
 import {pointColor,pointStatusStyle} from '../shared/pointStatus.mjs';
 import {displayPointStatus} from '../shared/fieldWorkflow.mjs';
 import MapCoordinateQuery from './MapCoordinateQuery';
+import {installMapQueryGestures} from '../shared/mapQueryGestures.mjs';
 import {datasetLabel,datasetColor} from '../shared/datasets.mjs';
 import type {Place} from './PlaceSearch';
 import {useEffect,useLayoutEffect,useRef,useState,type CSSProperties} from 'react';
@@ -54,15 +55,17 @@ export default function PointMap({references,hiddenReferences,referenceFocus,onP
     const queryLayer=new VectorLayer({source:querySource.current,style:new Style({image:new CircleStyle({radius:8,fill:new Fill({color:'#fff8ee'}),stroke:new Stroke({color:'#b54b2c',width:3})}),text:new Text({text:'查詢位置',offsetY:-19,fill:new Fill({color:'#8a3a22'}),stroke:new Stroke({color:'#fff',width:3})})})});
     const map=new Map({target:el.current!,layers:[new TileLayer({source,className:'imagery-base-layer'}),labels,parcelLayer,referenceLayer,findingLayer,routeLayer,clusters,selectionLayer,batchLayer,positionLayer,placeLayer,pickedLayer,queryLayer],view:new View({center:fromLonLat([121.255,24.96]),zoom:12}),interactions:mapInteractions(),controls:defaultControls({zoom:false,rotate:false})});
     mapRef.current=map;
-    const viewport=map.getViewport(),interruptNavigation=()=>{const view=map.getView();if(view.getAnimating())view.cancelAnimations();};
+    const viewport=map.getViewport()!,interruptNavigation=()=>{const view=map.getView();if(view.getAnimating())view.cancelAnimations();};
     viewport?.addEventListener('pointerdown',interruptNavigation,{passive:true});
     viewport?.addEventListener('wheel',interruptNavigation,{passive:true});
     map.on('pointerdrag',event=>{if(pausesLocationFollow(event)){locationFocusRef.current=null;onInteractionRef.current();}});
     map.on('moveend',()=>{const p=locationFocusRef.current;if(p)followLocationImmediately(map.getView(),fromLonLat([p.lon,p.lat]));});
     const queryCoordinate=(coordinate:number[])=>{const [lon,lat]=toLonLat(coordinate);locationFocusRef.current=null;onInteractionRef.current();setChoices([]);setQueryPosition({lon:((lon+180)%360+360)%360-180,lat});};
+    const longPress=installMapQueryGestures(viewport,{query:(event:PointerEvent)=>queryCoordinate(map.getEventCoordinate(event)),isDisabled:()=>!!pickRef.current||batchRef.current.batchMode});
     const contextQuery=(event:MouseEvent)=>{event.preventDefault();if(pickRef.current||batchRef.current.batchMode)return;queryCoordinate(map.getEventCoordinate(event));};
     viewport?.addEventListener('contextmenu',contextQuery);
     map.on('singleclick',event=>{
+      if(longPress.suppressClick())return;
       if(pickRef.current){const [lon,lat]=toLonLat(event.coordinate);pickRef.current({lon,lat});return;}
       const hits:Point[]=[];
       map.forEachFeatureAtPixel(event.pixel,f=>{
@@ -72,10 +75,10 @@ export default function PointMap({references,hiddenReferences,referenceFocus,onP
       },{hitTolerance:8,layerFilter:layer=>layer===clusters||layer===selectionLayer});
       const candidates=uniqueMapPoints(hits) as Point[];
       if(candidates.length>1){setQueryPosition(null);if(!batchRef.current.batchMode)onSelectRef.current(null);setChoices(candidates);}
-      else {setChoices([]);if(candidates[0]){setQueryPosition(null);if(batchRef.current.batchMode)batchRef.current.onToggleBatch(candidates[0]);else onSelectRef.current(candidates[0]);}else if(!batchRef.current.batchMode)queryCoordinate(event.coordinate);}
+      else {setChoices([]);setQueryPosition(null);if(candidates[0]){if(batchRef.current.batchMode)batchRef.current.onToggleBatch(candidates[0]);else onSelectRef.current(candidates[0]);}}
     });
     map.once('rendercomplete',onMapReady);const observer=new ResizeObserver(()=>map.updateSize());observer.observe(el.current!);
-    return()=>{observer.disconnect();viewport?.removeEventListener('contextmenu',contextQuery);viewport?.removeEventListener('pointerdown',interruptNavigation);viewport?.removeEventListener('wheel',interruptNavigation);map.setTarget(undefined);mapRef.current=null;};
+    return()=>{longPress.dispose();observer.disconnect();viewport?.removeEventListener('contextmenu',contextQuery);viewport?.removeEventListener('pointerdown',interruptNavigation);viewport?.removeEventListener('wheel',interruptNavigation);map.setTarget(undefined);mapRef.current=null;};
   },[]);
   useEffect(()=>{querySource.current.clear();if(queryPosition)querySource.current.addFeature(new Feature({geometry:new PointGeometry(fromLonLat([queryPosition.lon,queryPosition.lat]))}));},[queryPosition]);
   useEffect(()=>{sourceRef.current.clear();sourceRef.current.addFeatures(points.map(p=>new Feature({geometry:new PointGeometry(fromLonLat([p.lon,p.lat])),point:p})));if(points.length&&!initialFit.current){const extent=sourceRef.current.getExtent();if(extent){initialFit.current=true;mapRef.current?.getView().fit(extent,{padding:[60,40,60,40],maxZoom:15});}}},[points]);
