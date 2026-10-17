@@ -1,0 +1,38 @@
+{
+  "version": "20261018-1013-cl2-v1",
+  "scope": "1013-2 雙嶺段174；不修改1013-1",
+  "sourceDxf": "D:\\DATA\\WORK\\20261006桃園三維地籍\\地籍資料\\1013\\1013-2\\1013-2.dxf",
+  "sourceDxfSha256": "54fddda46c1060a0187bf1a9e8c58523dd68ae27b8f435af7696cb9f85c50402",
+  "dxfHandle": "39C",
+  "sourceCrs": "EPSG:3826",
+  "sourceHeightDatum": "TWVD2001; not Cesium ellipsoid heights",
+  "sourceModel": "D:\\DJI\\DJITerra\\20261006CL\\20261013CL2\\models\\pc\\0",
+  "registeredAreaM2": 29.51,
+  "geometryAreaM2": 29.514487010317616,
+  "referencePointInside": true,
+  "anchorDemHeight": 127.93436431884766,
+  "occupancyComputed": false,
+  "reviewNote": "依 1013-2 原始 TWD97 地籍與模型匯入。俯視、側視交叉檢視，地籍內高點主要為電桿／線路；尚未確認建物、鐵皮或棚架之占用投影，不以高點或外業參考線直接推算面積，待複核。",
+  "excludedObjects": [
+    "utility poles",
+    "overhead wires",
+    "vehicles"
+  ],
+  "referenceCadUsedForArea": false,
+  "modelObjects": 672,
+  "modelBytes": 201061114,
+  "jsonCount": 38,
+  "rootTilesetSha256": "7e2fd5b105a4a03b0b9cbe39b268baee024a9bba42239004b0d39cf39d65c727",
+  "r2Prefix": "projects/taoyuan/20261013-cl2-v1/terra_b3dms/",
+  "qualityReport": {
+    "images": 336,
+    "gcpCount": 4,
+    "gcpRmseM": [
+      0.037321,
+      0.041748,
+      0.173285
+    ],
+    "independentCheckPointReported": false,
+    "note": "GCP fit residuals are not independent cadastral overlay accuracy; CL20 dz=0.297441m."
+  }
+}

@@ -1,0 +1,44 @@
+[
+  {
+    "key": "shuangling-174",
+    "label": "雙嶺段 174 地號",
+    "groupKey": "shuangling-1013-cl2-01",
+    "groupLabel": "雙嶺段｜174",
+    "fillEntityId": "parcel-1013-cl2-174-fill",
+    "info": {
+      "county": "桃園市",
+      "landOffice": "中壢",
+      "sectionName": "雙嶺段",
+      "sectionCode": "0353",
+      "sectionExtensionCode": "無",
+      "townCode": "03",
+      "surveyMethod": "數值法",
+      "surveyType": "地籍圖重測",
+      "mapDate": "2003-10",
+      "coordinateSystem": "TWD97 二度 TM 坐標",
+      "scale": "1:500",
+      "digitizedDate": "—",
+      "useZone": "—",
+      "landUseCategory": "—",
+      "crs": "TWD97 二度 TM（EPSG:3826）／TWVD2001",
+      "parcelNo": "174",
+      "registrationDate": "民國092年11月07日",
+      "announcedLandValue": "91,900 元／平方公尺",
+      "rightsCategory": "省市 100.00%",
+      "cadastralAreaM2": 29.51,
+      "geometryAreaM2": 29.514487,
+      "analysisStatus": "awaiting-building-confirmation",
+      "analysisNote": "依 1013-2 原始 TWD97 地籍與模型匯入。俯視、側視交叉檢視，地籍內高點主要為電桿／線路；尚未確認建物、鐵皮或棚架之占用投影，不以高點或外業參考線直接推算面積，待複核。"
+    },
+    "overlayUrl": "overlays/taoyuan-1013-cl2-v1/parcel-174.geojson",
+    "tilesetPath": "1013-cl2/tileset.json",
+    "focus": {
+      "longitude": 121.1681157504677,
+      "latitude": 24.958378611524093,
+      "height": 192.93436431884766,
+      "headingDegrees": 0,
+      "pitchDegrees": -65,
+      "rollDegrees": 0
+    }
+  }
+]
