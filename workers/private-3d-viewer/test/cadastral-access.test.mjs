@@ -74,6 +74,10 @@ test('1013 共用桃園登入且固定對應新模型，不影響既有模型與
   assert.equal(keys.at(-1),'projects/taoyuan/20261013-v1/terra_b3dms/tileset.json');
   assert.equal((await call(`/projects/${project}/tiles/1013/Block/a.b3dm`,{method:'HEAD',headers})).status,200);
   assert.equal(keys.at(-1),'projects/taoyuan/20261013-v1/terra_b3dms/Block/a.b3dm');
+  assert.equal((await call(`/projects/${project}/tiles/1013-v2/tileset.json`,{headers})).status,200);
+  assert.equal(keys.at(-1),'projects/taoyuan/20261013-v2/terra_b3dms/tileset.json');
+  assert.equal((await call(`/projects/${project}/tiles/1013-v2/Block/a.b3dm`,{headers})).status,200);
+  assert.equal(keys.at(-1),'projects/taoyuan/20261013-v2/terra_b3dms/Block/a.b3dm');
   await call(`/projects/${project}/tiles/tileset.json`,{headers});
   assert.equal(keys.at(-1),PROJECTS[project].prefix+'tileset.json');
   const before=keys.length;

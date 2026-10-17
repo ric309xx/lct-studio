@@ -130,9 +130,9 @@ if args.publish:
   inverse=Transformer.from_crs(4326,3826,always_xy=True)
   area=unary_union([transform(inverse.transform,shape(f['geometry'])) for f in features]).area
   parcel['info'].update(analysisStatus='model-derived',occupiedAreaM2=round(area,4),occupancyPercent=round(area/parcel['info']['cadastralAreaM2']*100,5),
-    analysisVersion='20261014-model-primary-v2',analysisNote=audit['areaNote'])
+    analysisVersion=inputs.get('analysisVersion','20261014-model-primary-v2'),analysisNote=audit['areaNote'])
  for group in ['01','03']:
-  relative=f'overlays/taoyuan-1013/block-{group}.geojson';path=ROOT/'viewer-source/public'/relative;geo=json.loads(path.read_text(encoding='utf8'))
+  relative=next(p['overlayUrl'] for p in catalog if p['groupKey']=='shuangling-1013-'+group);path=ROOT/'viewer-source/public'/relative;geo=json.loads(path.read_text(encoding='utf8'))
   geo['features']=[f for f in geo['features'] if not(f['properties'].get('kind')=='occupancy-building' and f['properties'].get('parcelNo') in targets)]
   members={p['info']['parcelNo'] for p in catalog if p['overlayUrl']==relative}
   geo['features'] += [f for f in allFeatures if f['properties']['parcelNo'] in members]

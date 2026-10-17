@@ -9,8 +9,8 @@ from shapely.ops import unary_union,transform
 from pyproj import Transformer
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'analysis/20261014-taoyuan-1013'
-src=Path(r'D:\DATA\WORK\20261006桃園三維地籍\02成果\1013\1013房屋參考.dxf')
 inputs=json.loads((OUT/'parcel-inputs.json').read_text(encoding='utf8'))
+src=Path(inputs.get('sourceSurveyDxf',r'D:\DATA\WORK\20261006桃園三維地籍\02成果\1013\1013房屋參考.dxf'))
 original=ezdxf.readfile(inputs['sourceDxf']);d=ezdxf.readfile(src)
 lands={p['parcelNo']:Polygon([(v.dxf.location.x,v.dxf.location.y) for v in original.entitydb[p['dxfHandle']].vertices]) for p in inputs['parcels']}
 all_land=unary_union(list(lands.values()))

@@ -1,0 +1,117 @@
+{
+  "version": "20261017-control-update-v2",
+  "scope": "1013-1 三區七地號；不處理1013-2",
+  "sourceDxf": "D:\\DATA\\WORK\\20261006桃園三維地籍\\地籍資料\\1013\\1013-1\\1013-1.dxf",
+  "sourceDxfSha256": "f69afdd6b8759bd2249a0daed86d5cd1cf4818f0cbd63667b7856301ba3a3ccc",
+  "cadUnchanged": true,
+  "sourceTilesRoot": "D:\\DJI\\DJITerra\\20261006CL\\20261013CL\\models\\pc\\0\\terra_b3dms",
+  "objectCount": 9200,
+  "bytes": 2854924939,
+  "jsonCount": 459,
+  "unreachable": [],
+  "rootTilesetSha256": "f28274a7b2b4f51cddbeadb2fbe5e47b20bac93efb3ba8d5fc700f9158828bb8",
+  "r2Prefix": "projects/taoyuan/20261013-v2/terra_b3dms/",
+  "legacyR2Preserved": true,
+  "viewerTilesetPath": "1013-v2/tileset.json",
+  "legacyOverlaysPreserved": true,
+  "parcels": [
+    {
+      "parcelNo": "1121",
+      "group": "shuangling-1013-01",
+      "oldAreaM2": 10.3443,
+      "newAreaM2": 4.0981,
+      "status": "model-derived"
+    },
+    {
+      "parcelNo": "1144",
+      "group": "shuangling-1013-01",
+      "oldAreaM2": 24.3352,
+      "newAreaM2": 16.1425,
+      "status": "model-derived"
+    },
+    {
+      "parcelNo": "1152",
+      "group": "shuangling-1013-01",
+      "oldAreaM2": 5.4592,
+      "newAreaM2": 5.4592,
+      "status": "survey-reference"
+    },
+    {
+      "parcelNo": "1153",
+      "group": "shuangling-1013-01",
+      "oldAreaM2": 10.3643,
+      "newAreaM2": 7.4251,
+      "status": "model-derived"
+    },
+    {
+      "parcelNo": "1028",
+      "group": "shuangling-1013-02",
+      "oldAreaM2": 8.2353,
+      "newAreaM2": 8.2353,
+      "status": "survey-reference"
+    },
+    {
+      "parcelNo": "1039",
+      "group": "shuangling-1013-02",
+      "oldAreaM2": 265.3278,
+      "newAreaM2": 265.3278,
+      "status": "survey-reference"
+    },
+    {
+      "parcelNo": "704-1",
+      "group": "shuangling-1013-03",
+      "oldAreaM2": 21.2254,
+      "newAreaM2": 21.255,
+      "status": "model-derived"
+    }
+  ],
+  "comparison": [
+    {
+      "crop": "front",
+      "oldToNewApproxShiftXYM": [
+        0.55,
+        -0.2
+      ],
+      "phasePeak": 0.08685795505772852,
+      "sameXYHeightDifferenceMedianM": 0.03349999999998943,
+      "sameXYHeightDifferenceP10P90M": [
+        -0.04899999999999238,
+        0.09359999999999502
+      ],
+      "note": "Texture correlation diagnostic only; no geometry is shifted."
+    },
+    {
+      "crop": "awning",
+      "oldToNewApproxShiftXYM": [
+        0.55,
+        -0.2
+      ],
+      "phasePeak": 0.12041174024101363,
+      "sameXYHeightDifferenceMedianM": 0.04039999999999111,
+      "sameXYHeightDifferenceP10P90M": [
+        -0.21181999999999598,
+        0.06640000000000157
+      ],
+      "note": "Texture correlation diagnostic only; no geometry is shifted."
+    },
+    {
+      "crop": "shed",
+      "oldToNewApproxShiftXYM": [
+        0.55,
+        -0.2
+      ],
+      "phasePeak": 0.20340378589106536,
+      "sameXYHeightDifferenceMedianM": -0.0006999999999948159,
+      "sameXYHeightDifferenceP10P90M": [
+        -1.127520000000008,
+        0.2600000000000051
+      ],
+      "note": "Texture correlation diagnostic only; no geometry is shifted."
+    }
+  ],
+  "notes": [
+    "Approximate texture displacement updates only semantic search ROIs; neither CAD nor model coordinates are translated.",
+    "Survey-reference areas are retained as reference, not relabelled as model-derived.",
+    "Model-derived area estimates recalculated from new source LAS; pending review, not a legal occupancy determination."
+  ]
+}

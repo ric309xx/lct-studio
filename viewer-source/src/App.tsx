@@ -4,6 +4,7 @@ import taoyuan1006Parcels from "./taoyuan1006Parcels.json";
 import taoyuan1013Parcels from "./taoyuan1013Parcels.json";
 import taoyuan1015Parcels from "./taoyuan1015Parcels.json";
 import { roadGround, roadPosition, roadHeightAt, sampleRoadOffset } from "./shuanglingGround";
+import { needsFreshShuanglingDocument } from "./cadastralTransition";
 import { PRIVATE_R2_ORIGIN, TAOYUAN_R2_PROJECT, R2AuthorizationRequired, ensureR2Access, hasR2Access, privateR2Resource } from "./r2Access";
 import { CadastralInfoPanel } from "./CadastralInfoPanel";
 import { focusParcelOrbit, tuneParcelNavigation } from "./parcelNavigation";
@@ -1859,6 +1860,11 @@ export function App() {
     const previous = new URLSearchParams(window.location.search).get("parcel") ?? config.parcels[0].key;
     const url = new URL(window.location.href);
     url.searchParams.set("parcel", parcel.key);
+    if (needsFreshShuanglingDocument(config.parcels.find(item => item.key === previous), parcel)) {
+      // Preserve share/admin pathname and the same tab's login session.
+      window.location.assign(url.href);
+      return;
+    }
     window.history.replaceState({}, "", url);
     setSelectedCadastralParcelKey(parcel.key);
     setSelectedCadastral(parcel.info);

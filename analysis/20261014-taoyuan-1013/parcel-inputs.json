@@ -1,6 +1,8 @@
 {
-  "sourceDxf": "D:\\DATA\\WORK\\20261006桃園三維地籍\\02成果\\1013\\1013-1\\1013-1.dxf",
+  "sourceDxf": "D:\\DATA\\WORK\\20261006桃園三維地籍\\地籍資料\\1013\\1013-1\\1013-1.dxf",
+  "sourceSurveyDxf": "D:\\DATA\\WORK\\20261006桃園三維地籍\\地籍資料\\1013\\1013房屋參考.dxf",
   "sourceDem": "D:\\DJI\\DJITerra\\20261006CL\\20261013CL\\models\\pc\\0\\terra_dem\\dem.tif",
+  "analysisVersion": "20261017-control-update-v2",
   "sectionMetadata": {
     "county": "桃園市", "landOffice": "中壢", "sectionName": "雙嶺段", "sectionCode": "0353",
     "sectionExtensionCode": "無", "townCode": "03", "surveyMethod": "數值法", "surveyType": "地籍圖重測",

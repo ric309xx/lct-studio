@@ -111,7 +111,7 @@ if args.publish_candidate:
     parcel=next(p for p in catalog if p['info']['parcelNo']=='1153')
     area=footprint.area; percent=area/parcel['info']['cadastralAreaM2']*100
     parcel['info'].update(occupiedAreaM2=round(area,4),occupancyPercent=round(percent,5),
-        analysisStatus='model-derived',analysisVersion='20261014-model-1153-v1',
+        analysisStatus='model-derived',analysisVersion=inputs.get('analysisVersion','20261014-model-1153-v1'),
         analysisNote='依同批 Terra 模型彩色點雲判讀屋頂／雨遮投影，與 TWD97 地籍平面相交；非外業實測建物線，結果待複核。')
     catalog_path.write_text(json.dumps(catalog,ensure_ascii=False,indent=2),encoding='utf8')
     overlay=ROOT/'viewer-source/public'/parcel['overlayUrl']

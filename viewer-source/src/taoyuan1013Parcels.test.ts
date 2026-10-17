@@ -8,11 +8,11 @@ describe("雙嶺段三區七地號", () => {
     expect(catalog.map(p => p.info.cadastralAreaM2)).toEqual([4509.15, 54.16, 22.24, 12.05, 730.73, 737.74, 1028.72]);
     expect(new Set(catalog.map(p => p.groupKey)).size).toBe(3);
     for (const parcel of catalog) {
-      expect(parcel.tilesetPath).toBe("1013/tileset.json");
+      expect(parcel.tilesetPath).toBe("1013-v2/tileset.json");
       if (parcel.info.parcelNo === "1153") {
         expect(parcel.info.analysisStatus).toBe("model-derived");
-        expect(parcel.info.occupiedAreaM2).toBeCloseTo(10.3643, 4);
-        expect(parcel.info.occupancyPercent).toBeCloseTo(86.01043, 4);
+        expect(parcel.info.occupiedAreaM2).toBeCloseTo(7.4251, 4);
+        expect(parcel.info.occupancyPercent).toBeCloseTo(61.61895, 4);
       } else if (["1121","1144","704-1"].includes(parcel.info.parcelNo)) {
         expect(parcel.info.analysisStatus).toBe("model-derived");
         expect(parcel.info.occupiedAreaM2).toBeGreaterThan(0);
@@ -25,7 +25,7 @@ describe("雙嶺段三區七地號", () => {
       expect(parcel.info.coordinateSystem).toContain("TWD97");
     }
   });
-  it("1153 補色不更動分析投影，其餘三筆外業參考保留", () => {
+  it("1153 新模型投影符合本次稽核，其餘三筆外業參考保留", () => {
     const parcel = catalog.find(p => p.info.parcelNo === "1153")!;
     const geo = JSON.parse(readFileSync(new URL("../public/" + parcel.overlayUrl, import.meta.url), "utf8"));
     const audit = JSON.parse(readFileSync("../analysis/20261014-taoyuan-1013/model-1153-audit.json", "utf8"));
@@ -38,7 +38,8 @@ describe("雙嶺段三區七地號", () => {
     expect(features[0].properties).toHaveProperty("modelRoofSamples");
   });
   it("704-1 使用低棚模型高程並停用無高度限制的樹冠套色",()=>{
-    const geo=JSON.parse(readFileSync("public/overlays/taoyuan-1013/block-03.geojson","utf8"));
+    const parcel=catalog.find(p=>p.info.parcelNo==='704-1')!;
+    const geo=JSON.parse(readFileSync('public/'+parcel.overlayUrl,'utf8'));
     const features=geo.features.filter((f:{properties:{kind:string}})=>f.properties.kind==="occupancy-building");
     expect(features).toHaveLength(1);
     expect(features[0].properties.continuousOccupancy).toBe(true);
@@ -59,6 +60,22 @@ describe("雙嶺段三區七地號", () => {
         expect(member.focus.longitude).toBeGreaterThan(121.15);
         expect(member.focus.longitude).toBeLessThan(121.17);
       }
+    }
+  });
+  it('updates only the three 1013-1 groups at versioned URLs while retaining exact cadastral XY',()=>{
+    const audit=JSON.parse(readFileSync('../analysis/20261014-taoyuan-1013/model-update-20261017.json','utf8'));
+    expect(audit.cadUnchanged).toBe(true);
+    expect(audit.legacyR2Preserved).toBe(true);
+    expect(audit.objectCount).toBe(9200);
+    expect(audit.parcels).toHaveLength(7);
+    for(const parcel of catalog){
+      expect(parcel.overlayUrl).toContain('taoyuan-1013-v2/');
+      const updated=JSON.parse(readFileSync('public/'+parcel.overlayUrl,'utf8'));
+      const legacy=JSON.parse(readFileSync('public/'+parcel.overlayUrl.replace('taoyuan-1013-v2/','taoyuan-1013/'),'utf8'));
+      for(const f of updated.features.filter((f:any)=>['cadastral-fill','cadastral-boundary'].includes(f.properties.kind))) {
+        expect(f.geometry).toEqual(legacy.features.find((o:any)=>o.id===f.id).geometry);
+      }
+      if(parcel.info.analysisStatus==='model-derived')expect(parcel.info.analysisVersion).toBe('20261017-control-update-v2');
     }
   });
 });
