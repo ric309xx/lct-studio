@@ -97,3 +97,63 @@ it("keeps a confirmed skin when a minority of road probes hit vehicles",async()=
   const h=result[0].polygon!.hierarchy!.getValue(time) as PolygonHierarchy;
   expect(Cartographic.fromCartesian(h.positions[0]).height).toBeCloseTo(142.12,4);
 });
+it("reconciles reviewed repair heights with nearby mesh without changing XY or exclusions",async()=>{
+  const b=building(true);
+  b.properties!.addProperty("displayMeshHeightRepair",true);
+  b.properties!.addProperty("displayRoofOnly",true);
+  b.properties!.addProperty("modelRoofSamples",[[121.217,24.962,120]]);
+  b.properties!.addProperty("modelGroundAnchors",[[121.216,24.961,118],[121.2161,24.961,118]]);
+  let calls=0;
+  const v=viewer(points=>{calls++;return points.map(p=>{p.height=calls===1?140:142.5;return p;});});
+  const result=await createOccupancyUnderlay(v,b,140,()=>false);
+  const h=result[0].polygon!.hierarchy!.getValue(time) as PolygonHierarchy;
+  expect(calls).toBe(2);expect(h.holes).toHaveLength(1);
+  for(const point of [...h.positions,...h.holes[0].positions])expect(Cartographic.fromCartesian(point).height).toBeCloseTo(142.7,4);
+  const original=b.polygon!.hierarchy!.getValue(time) as PolygonHierarchy;
+  expect(Cartographic.fromCartesian(h.positions[0]).longitude).toBeCloseTo(Cartographic.fromCartesian(original.positions[0]).longitude,12);
+  expect(Cartographic.fromCartesian(h.positions[0]).latitude).toBeCloseTo(Cartographic.fromCartesian(original.positions[0]).latitude,12);
+});
+it("does not raise a low canopy to an unrelated roof or sign hit",async()=>{
+  const b=building(true);
+  b.properties!.addProperty("displayMeshHeightRepair",true);
+  b.properties!.addProperty("modelRoofSamples",[[121.217,24.962,120]]);
+  b.properties!.addProperty("modelGroundAnchors",[[121.216,24.961,118],[121.2161,24.961,118]]);
+  let calls=0;
+  const result=await createOccupancyUnderlay(viewer(points=>{calls++;return points.map(p=>{p.height=calls===1?140:145;return p;});}),b,140,()=>false);
+  const h=result[0].polygon!.hierarchy!.getValue(time) as PolygonHierarchy;
+  for(const point of h.positions)expect(Cartographic.fromCartesian(point).height).toBeCloseTo(142.2,4);
+});
+it("calibrates the real-surface stencil without resampling unrelated roofs",async()=>{
+  const b=building(true);
+  b.properties!.addProperty("displayRoofOnly",true);
+  b.properties!.addProperty("displayMeshHeightRepair",true);
+  b.properties!.addProperty("modelRoofSamples",[[121.217,24.962,120]]);
+  b.properties!.addProperty("modelGroundAnchors",[[121.216,24.961,118],[121.2161,24.961,118]]);
+  let calls=0;
+  const result=await createOccupancyUnderlay(viewer(points=>{calls++;expect(points).toHaveLength(2);return points.map(p=>{p.height=140;return p;});}),b,140,()=>false,{actualSurface:true});
+  expect(calls).toBe(1);
+  expect(result[0].properties!.classificationFloorHeight.getValue()).toBeCloseTo(141.1,4);
+  expect(result[0].properties!.classificationCeilingHeight.getValue()).toBeCloseTo(142.8,4);
+});
+it("uses reviewed sign source heights with the same datum offset, not the awning plane",async()=>{
+  const b=building(true);
+  b.properties!.addProperty("displayRoofOnly",true);
+  b.properties!.addProperty("modelRoofSamples",[[121.217,24.962,120]]);
+  b.properties!.addProperty("modelGroundAnchors",[[121.216,24.961,118],[121.2161,24.961,118]]);
+  b.properties!.addProperty("displayHeightRangeSourceZ",[119.3,121.2]);
+  const result=await createOccupancyUnderlay(viewer(points=>points.map(p=>{p.height=140;return p;})),b,140,()=>false,{actualSurface:true});
+  expect(result[0].properties!.classificationFloorHeight.getValue()).toBeCloseTo(141.3,4);
+  expect(result[0].properties!.classificationCeilingHeight.getValue()).toBeCloseTo(143.2,4);
+  const h=result[0].polygon!.hierarchy!.getValue(time) as PolygonHierarchy;
+  expect(h.holes).toHaveLength(1);
+});
+it("rejects inverted display ranges and falls back to calibrated supported heights",async()=>{
+  const b=building(true);
+  b.properties!.addProperty("displayRoofOnly",true);
+  b.properties!.addProperty("modelRoofSamples",[[121.217,24.962,120]]);
+  b.properties!.addProperty("modelGroundAnchors",[[121.216,24.961,118],[121.2161,24.961,118]]);
+  b.properties!.addProperty("displayHeightRangeSourceZ",[125,119]);
+  const result=await createOccupancyUnderlay(viewer(points=>points.map(p=>{p.height=140;return p;})),b,140,()=>false,{actualSurface:true});
+  expect(result[0].properties!.classificationFloorHeight.getValue()).toBeCloseTo(141.1,4);
+  expect(result[0].properties!.classificationCeilingHeight.getValue()).toBeCloseTo(142.8,4);
+});

@@ -11,7 +11,7 @@ function densifyRing(ring: Cartesian3[], spacing = 0.5): Cartesian3[] {
 /** Original model classification plus a closed hole-filling underlay. */
 export async function createOccupancyUnderlay(viewer: Viewer, building: Entity,
   groundHeight: number, cancelled: () => boolean,
-  options: { nearbyRoofProbeMeters?: number } = {}): Promise<Entity[]> {
+  options: { nearbyRoofProbeMeters?: number; actualSurface?: boolean } = {}): Promise<Entity[]> {
   const hierarchy = building.polygon!.hierarchy!.getValue(viewer.clock.currentTime) as PolygonHierarchy;
   const continuous = building.properties?.displayWallContinuity?.getValue() === true;
   const sourceRoof = building.properties?.modelRoofSamples?.getValue() as number[][] | undefined;
@@ -39,16 +39,44 @@ export async function createOccupancyUnderlay(viewer: Viewer, building: Entity,
     const offset = consensus[Math.floor(consensus.length / 2)];
     const sourcePositions = sourceRoof.map(p => Cartographic.fromDegrees(p[0], p[1], p[2]));
     const roofOnly = building.properties?.displayRoofOnly?.getValue() === true;
+    const sourceDisplayRange = building.properties?.displayHeightRangeSourceZ?.getValue() as number[] | undefined;
+    const explicitRange = sourceDisplayRange?.length === 2 && sourceDisplayRange.every(Number.isFinite) &&
+      sourceDisplayRange[0] < sourceDisplayRange[1] && sourceDisplayRange[1] - sourceDisplayRange[0] <= 10
+      ? sourceDisplayRange : null;
+    const repairMeshHeight = !options.actualSurface && building.properties?.displayMeshHeightRepair?.getValue() === true;
+    // LAS and tiled mesh are different surface representations. A fitted LAS
+    // plane can be slightly below the mesh and disappear behind it. Only for
+    // reviewed targets, reconcile display Z with nearby mesh hits; never move
+    // XY, fill semantic exclusion holes, or use an unrelated higher roof.
+    const mesh = repairMeshHeight
+      ? await viewer.scene.sampleHeightMostDetailed(boundarySamples.map(p => new Cartographic(p.longitude,p.latitude)))
+      : [];
+    if (cancelled() || viewer.isDestroyed()) return [];
+    let vertexIndex = 0;
     const lift = (ring: PolygonHierarchy): PolygonHierarchy => new PolygonHierarchy(ring.positions.map(position => {
       const point = Cartographic.fromCartesian(position);
+      const distance = (p: Cartographic) => Math.hypot((p.longitude-point.longitude)*Math.cos(point.latitude),p.latitude-point.latitude)*6378137;
       const nearest = sourcePositions.reduce((best, candidate) => {
-        const distance = (p: Cartographic) => Math.hypot((p.longitude-point.longitude)*Math.cos(point.latitude),p.latitude-point.latitude);
         return distance(candidate)<distance(best) ? candidate : best;
       });
-      return Cartesian3.fromRadians(point.longitude, point.latitude, nearest.height + offset + 0.12);
+      let height = nearest.height + offset;
+      const hit = mesh[vertexIndex++]?.height;
+      if (repairMeshHeight) {
+        const nearby = sourcePositions.filter(p => distance(p) <= 0.8 && Math.abs(p.height-nearest.height) <= (roofOnly ? 0.35 : 0.8));
+        if (nearby.length) height = Math.max(height,...nearby.map(p => p.height+offset));
+        if (typeof hit === "number" && Number.isFinite(hit) && hit >= height - 0.6 && hit <= height + 0.8) {
+          height = Math.max(height,hit);
+        }
+      }
+      return Cartesian3.fromRadians(point.longitude, point.latitude, height + (repairMeshHeight ? 0.2 : 0.12));
     }),ring.holes.map(lift));
     return [new Entity({id:`occupancy-roof-underlay-${building.id}`,
-      properties:{kind:"occupancy-roof-underlay",parcelKey:building.properties?.parcelKey?.getValue()},
+      properties:{kind:"occupancy-roof-underlay",parcelKey:building.properties?.parcelKey?.getValue(),
+        // Display-only clipping Z. Low eaves include fascia/undersides but
+        // never extend to the ground; walls use their confirmed full height.
+        classificationFloorHeight:explicitRange ? explicitRange[0]+offset : roofOnly ? Math.min(...sourceRoof.map(p=>p[2]+offset))-.9
+          : Math.min(groundHeight,...sourceAnchors.map(p=>p[2]+offset))+1.5,
+        classificationCeilingHeight:explicitRange ? explicitRange[1]+offset : Math.max(...sourceRoof.map(p=>p[2]+offset))+.8},
       polygon:{hierarchy:lift(dense),perPositionHeight:true,
         // Confirmed awnings/projections get a closed, thin roof skin rather
         // than a ground-to-roof volume that would colour the wall/cars below.

@@ -8,6 +8,8 @@ import { PRIVATE_R2_ORIGIN, TAOYUAN_R2_PROJECT, R2AuthorizationRequired, ensureR
 import { CadastralInfoPanel } from "./CadastralInfoPanel";
 import { focusParcelOrbit, tuneParcelNavigation } from "./parcelNavigation";
 import { createOccupancyUnderlay } from "./occupancyUnderlay";
+import { createOccupancyClassification, showOccupancyClassifications } from "./occupancyClassification";
+import { taoyuanModelQuality } from "./modelQuality";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CallbackProperty,
@@ -18,6 +20,7 @@ import {
   Cartographic,
   Cesium3DTileset,
   ClassificationType,
+  ClassificationPrimitive,
   ClippingPolygon,
   ClippingPolygonCollection,
   Color,
@@ -370,10 +373,10 @@ function applyCadastralDisplayMode(
   for (const entity of dataSource.entities.values) {
     const kind = entity.properties?.kind?.getValue();
     entity.show =
-      kind === "occupancy-building" ? occupancyVisible && !entity.properties?.continuousOccupancy?.getValue() : mode === "original";
+      ["occupancy-building","occupancy-display"].includes(kind) ? occupancyVisible && !entity.properties?.continuousOccupancy?.getValue() : mode === "original";
     if (entity.polygon) {
       entity.polygon.material = new ColorMaterialProperty(
-        kind === "occupancy-building"
+        ["occupancy-building","occupancy-display"].includes(kind)
           ? Color.fromCssColorString("#30e67e").withAlpha(0.62)
           : Color.fromCssColorString("#ef626c").withAlpha(entity.properties?.contextParcel?.getValue() ? 0.12 : 0.3)
       );
@@ -531,6 +534,8 @@ async function loadModel(
         cacheBytes: 256 * 1024 * 1024,
         maximumCacheOverflowBytes: 128 * 1024 * 1024
       }
+    : source.privateProjectId === TAOYUAN_R2_PROJECT
+      ? taoyuanModelQuality(window.matchMedia("(pointer: coarse)").matches)
     : source.privateProjectId ? {
         maximumScreenSpaceError: 4,
         dynamicScreenSpaceError: false,
@@ -594,6 +599,7 @@ export function App() {
   const [cadastralVisible, setCadastralVisible] = useState(true);
   const [occupancyVisible, setOccupancyVisible] = useState(true);
   const occupancyVisibleRef = useRef(true);
+  const occupancyClassificationsRef = useRef<ClassificationPrimitive[]>([]);
   const [cadastralDisplayMode, setCadastralDisplayMode] =
     useState<CadastralDisplayMode>("original");
   const [projectHasCadastral, setProjectHasCadastral] = useState(false);
@@ -761,6 +767,7 @@ export function App() {
         setCadastralVisible(true);
         setOccupancyVisible(true);
         occupancyVisibleRef.current = true;
+        occupancyClassificationsRef.current = [];
         setCadastralDisplayMode(initialCadastralMode);
         setSelectedCadastral(project.id === "taoyuan-building-overlay"
           ? cadastralConfig?.parcels[0]?.info ?? null
@@ -1056,17 +1063,30 @@ export function App() {
                 const groundEntities: Entity[] = [];
                 if (project.id === "taoyuan-building-overlay") {
                   const buildings = cadastral.entities.values.filter(entity =>
-                    entity.polygon && entity.properties?.kind?.getValue() === "occupancy-building");
+                    entity.polygon && ["occupancy-building","occupancy-display"].includes(entity.properties?.kind?.getValue()) && !entity.properties?.analysisOnly?.getValue());
                   for (const building of buildings) {
+                    const actualSurface = building.properties?.displayActualSurface?.getValue() === true && ClassificationPrimitive.isSupported(viewer.scene);
                     const surface = await createOccupancyUnderlay(viewer, building, groundHeight, () => cancelled, {
                       // 99-1 has low awnings directly below set-back upper walls.
                       // Neighbouring roof rays repair display height only; XY and area stay unchanged.
-                      nearbyRoofProbeMeters: building.properties?.parcelKey?.getValue() === "sanzuwu-sanzuwu-99-1" ? 2 : 0
+                      nearbyRoofProbeMeters: building.properties?.parcelKey?.getValue() === "sanzuwu-sanzuwu-99-1" ? 2 : 0,
+                      actualSurface
                     });
                     if (cancelled || viewer.isDestroyed()) return;
                     if (!surface.length) continue;
                     for (const entity of surface) {
                       entity.show = initialCadastralMode === "model-ground" && occupancyVisibleRef.current;
+                      if (actualSurface) {
+                        const classification = createOccupancyClassification(building,entity,viewer.clock.currentTime);
+                        if (classification) {
+                          classification.show = entity.show;
+                          viewer.scene.primitives.add(classification);
+                          occupancyClassificationsRef.current.push(classification);
+                          // Keep the calibrated entity as a fallback/control marker,
+                          // but never paint a fictitious wall in front of the mesh.
+                          entity.polygon!.show = new ConstantProperty(false);
+                        }
+                      }
                       groundEntities.push(viewer.entities.add(entity));
                     }
 
@@ -1787,6 +1807,7 @@ export function App() {
     for (const entity of cadastralLabelEntitiesRef.current) {
       entity.show = visible;
     }
+    showOccupancyClassifications(occupancyClassificationsRef.current,visible && cadastralDisplayMode === "model-ground" && occupancyVisible);
     viewerRef.current?.scene.requestRender();
     if (!visible) setSelectedCadastral(null);
   }, [cadastralDisplayMode, occupancyVisible]);
@@ -1803,6 +1824,7 @@ export function App() {
         entity.show =
           cadastralVisible && mode === "model-ground" && (kind !== "occupancy-roof-underlay" || occupancyVisible);
       }
+      showOccupancyClassifications(occupancyClassificationsRef.current,cadastralVisible && mode === "model-ground" && occupancyVisible);
       viewerRef.current?.scene.requestRender();
     },
     [cadastralVisible, occupancyVisible]
@@ -1819,6 +1841,7 @@ export function App() {
         entity.show = cadastralVisible && cadastralDisplayMode === "model-ground" && visible;
       }
     }
+    showOccupancyClassifications(occupancyClassificationsRef.current,cadastralVisible && cadastralDisplayMode === "model-ground" && visible);
     viewerRef.current?.scene.requestRender();
   };
 
@@ -2899,6 +2922,9 @@ export function App() {
                     <p className="overlay-hint cadastral-terrain-notice">
                       {isModelOccupancy ? "綠色為模型判讀的建物／雨遮投影與地籍交集，待複核；非外業實測建物線。" : isSurveyOccupancy ? "綠色為外業房屋參考線與地籍的平面交集，待複核；地籍面為估算地面，1121 隨道路高低起伏。" : isDraftOccupancy ? "綠色為 AI 初步判讀之建物／棚架／雨遮投影，尚待複核；地籍面為模型估算地面。" : hasOccupancyAnalysis ? "地籍面位於估算地面；綠色為建物滴水線投影範圍，模型缺口保留補洞面。" : "地籍面位於模型估算地面；本地號占用範圍尚待圈選確認。"}
                     </p>
+                  )}
+                  {selectedCadastralParcelKey === "dongliao-1507-1" && cadastralDisplayMode === "model-ground" && (
+                    <p className="overlay-hint">招牌與雨遮完整補色供辨識，不另增計面積；占用仍以地籍內水平投影計算。</p>
                   )}
                   {!modelGroundAvailable && (
                     <p className="overlay-hint cadastral-terrain-notice">

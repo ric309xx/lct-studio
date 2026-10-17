@@ -1,6 +1,6 @@
 {
-  "version":"20261016-layered-review-v2",
-  "method":"依複核截圖與分層模型重判低棚、雨遮及突出構造。outline 為檢視分層模型後確認的連續頂面外緣；實測 CAD 不參與占用輪廓。重疊投影取聯集；東寮段區塊三只計棚架，排除擦邊牆面。",
+  "version":"20261017-roof-context-v7",
+  "method":"依截圖、分層模型與 CAD 位置參考複核建物、低棚及雨遮。outline 為模型確認的連續頂面外緣；右側鐵皮棚以 4A3 實測線核對位置，仍由模型投影與地籍求交集，CAD 不直接取代占用輪廓。重疊投影取聯集；完整招牌只顯示不另計面積，排除擦邊牆面。",
   "regions":[
     {"id":"futai-west-low-awnings","image":"478","targets":["478","43D"],"category":"低棚／雨遮","heightRange":[157,160.7],"roofOnly":true,"pixels":[[45,590],[190,532],[260,499],[335,464],[410,430],[510,387],[605,344],[708,302],[725,350],[631,393],[532,439],[433,484],[338,527],[243,570],[66,651]]},
     {"id":"futai-east-awning-01","image":"44A","targets":["44A"],"category":"低棚／雨遮","heightRange":[157.2,160.7],"roofOnly":true,"mode":"outline","pixels":[[656,348],[669,353],[649,411],[635,405]]},
@@ -15,7 +15,7 @@
     {"id":"futai-east-awning-10","image":"44A","targets":["44A"],"category":"低棚／雨遮","heightRange":[157.2,160.7],"roofOnly":true,"mode":"outline","pixels":[[367,1209],[384,1215],[374,1247],[358,1240]]},
     {"id":"futai-east-awning-11","image":"44A","targets":["44A"],"category":"低棚／雨遮","heightRange":[157.2,160.7],"roofOnly":true,"mode":"outline","pixels":[[355,1248],[372,1254],[353,1310],[334,1304]]},
     {"id":"futai-east-main-roofs","image":"44A","targets":["44A"],"category":"建物／鐵皮屋頂","pixels":[[232,209],[443,274],[668,348],[635,457],[620,510],[596,574],[583,624],[568,637],[559,690],[537,739],[524,797],[506,850],[492,899],[469,957],[449,1017],[428,1069],[403,1143],[389,1192],[367,1236],[358,1268],[334,1331],[308,1399],[100,1399],[100,400]]},
-    {"id":"futai-west-main-roofs","image":"478","targets":["478","43D"],"category":"建物／鐵皮屋頂","pixels":[[190,553],[260,514],[342,480],[425,441],[486,418],[580,373],[641,344],[708,309],[750,286],[800,270],[827,275],[870,260],[990,473],[455,700],[200,650]]},
+    {"id":"futai-west-main-roofs","image":"478","targets":["478","43D"],"category":"建物／鐵皮屋頂","excludePixels":[[[701,299],[734,299],[734,339],[701,339]]],"pixels":[[190,553],[260,514],[342,480],[425,441],[486,418],[580,373],[641,344],[708,309],[750,286],[800,270],[827,275],[870,260],[990,473],[455,700],[200,650]]},
     {"id":"dongliao-north-eave","image":"416","targets":["416","40F"],"category":"北側建物屋簷","pixels":[[210,45],[420,65],[400,217],[213,206]]},
     {"id":"dongliao-north-sheet-roof","image":"416","targets":["416","40F"],"category":"北側鐵皮棚頂","pixels":[[495,120],[762,151],[748,242],[488,210]]},
     {"id":"dongliao-south-sheds","image":"416","targets":["416","40F"],"category":"南側鐵皮與T棚","pixels":[[278,363],[429,376],[437,357],[716,402],[691,525],[263,525]]},
@@ -24,6 +24,18 @@
     {"id":"dongliao-corner-shed-02","image":"428","targets":["428","41F"],"category":"下方棚架／雨遮","heightRange":[168,172],"roofOnly":true,"mode":"outline","pixels":[[157,337],[247,345],[245,375],[157,368]]},
     {"id":"dongliao-corner-shed-03","image":"428","targets":["428","41F"],"category":"下方棚架／雨遮","heightRange":[168,172],"roofOnly":true,"mode":"outline","pixels":[[248,345],[352,355],[349,389],[247,382]]},
     {"id":"dongliao-corner-shed-04","image":"428","targets":["428","41F"],"category":"下方棚架／雨遮","heightRange":[168,172],"roofOnly":true,"mode":"outline","pixels":[[354,358],[449,365],[446,407],[354,399]]},
-    {"id":"dongliao-corner-east-shed","image":"428","targets":["428","41F"],"category":"東側低棚","heightRange":[168,172],"roofOnly":true,"pixels":[[622,334],[693,290],[712,308],[642,352]]}
+    {"id":"dongliao-corner-curved-awning-01","image":"428","targets":["428","41F"],"category":"轉角連續低雨遮","heightRange":[168,172],"roofOnly":true,"mode":"outline","pixels":[[350,350],[397,355],[448,357],[449,373],[397,373],[350,370]]},
+    {"id":"dongliao-corner-curved-awning-02","image":"428","targets":["428","41F"],"category":"轉角連續低雨遮","heightRange":[168,172],"roofOnly":true,"mode":"outline","pixels":[[448,357],[492,355],[530,349],[533,366],[492,374],[449,375]]},
+    {"id":"dongliao-corner-curved-awning-03","image":"428","targets":["428","41F"],"category":"轉角連續低雨遮","heightRange":[168,172],"roofOnly":true,"mode":"outline","pixels":[[530,349],[565,339],[594,325],[604,338],[575,355],[533,367]]},
+    {"id":"dongliao-corner-curved-awning-04","image":"428","targets":["428","41F"],"category":"轉角連續低雨遮","heightRange":[168,172],"roofOnly":true,"mode":"outline","pixels":[[594,325],[621,304],[650,273],[661,284],[636,316],[604,339]]},
+    {"id":"dongliao-corner-east-shed","image":"428","targets":["428","41F"],"category":"東側低棚","heightRange":[168,172],"roofOnly":true,"mode":"outline","pixels":[[614,335],[676,275],[705,294],[654,353]]},
+    {"id":"dongliao-corner-front-fascia","image":"428","targets":["428","41F"],"category":"低雨遮前緣及側面投影","heightRange":[168,172],"roofOnly":true,"pixels":[[348,350],[448,357],[493,355],[531,349],[566,339],[595,325],[621,304],[650,273],[665,283],[638,320],[608,345],[577,362],[536,376],[497,386],[448,389],[348,382]]},
+    {"id":"dongliao-1507-continuous-front-review","image":"428","targets":["428"],"category":"複核連續雨遮頂面與前緣","heightRange":[168,172],"displayHeightRange":[168.1,171.3],"roofOnly":true,"mode":"outline","pixels":[[348,350],[448,357],[493,355],[531,349],[566,339],[595,325],[621,304],[650,273],[665,283],[638,320],[608,345],[577,362],[536,376],[497,386],[448,389],[348,382]]},
+    {"id":"dongliao-1507-front-fascia-display","image":"428","targets":["428"],"category":"複核雨遮轉角前緣（僅補顯示，不另計立面面積）","heightRange":[168.9,171.6],"displayHeightRange":[168.9,171.6],"displayOnly":true,"roofOnly":true,"mode":"outline","linePixels":[[470,384],[500,378],[530,372],[560,366],[590,360],[607,356],[620,345],[635,330],[650,313],[667,287]],"pixelBuffer":6},
+    {"id":"dongliao-1507-rear-awning-context","image":"428","targets":["428"],"category":"紅圈雨遮頂面與貼牆低矮構造（整體補色，不另計面積）","heightRange":[169.3,172.2],"displayHeightRange":[169.3,172.2],"displayOnly":true,"wholeObjectDisplay":true,"displayObjectNote":"使用者確認紅圈低雨遮構造完整補色；超出地籍裁切線部分僅供辨識，不增加占用面積","roofOnly":true,"mode":"outline","pixels":[[567,337],[592,322],[619,299],[648,261],[666,238],[691,250],[680,278],[657,310],[635,337],[608,359],[580,371]]},
+    {"id":"dongliao-1507-rental-sign-context","image":"428","targets":["428"],"category":"整棟出租招牌（整體顯示，不另計面積）","heightRange":[169.3,171.2],"displayHeightRange":[169.3,171.2],"displayOnly":true,"wholeObjectDisplay":true,"roofOnly":true,"mode":"outline","linePixels":[[631,333],[697,254]],"pixelBuffer":5},
+    {"id":"dongliao-1507-neighbour-sheet-roof","image":"428","targets":["428"],"category":"右側鐵皮棚與地籍交集","heightRange":[169.1,171.7],"roofOnly":true,"cadReferenceHandle":"4A3","pixels":[[707,138],[805,184],[767,289],[659,228]]},
+    {"id":"dongliao-north-window-awnings","image":"416","targets":["40F","416"],"category":"使用者確認之窗上雨遮及立面突出物","heightRange":[166.5,178],"pixels":[[211,199],[401,210],[400,229],[211,222]]},
+    {"id":"futai-east-front-projections","image":"44A","targets":["44A"],"category":"使用者確認之窗上雨遮及沿街棚頂投影","heightRange":[157.8,169],"pixelBuffer":18,"linePixels":[[668,348],[635,457],[620,510],[596,574],[583,624],[568,637],[559,690],[537,739],[524,797],[506,850],[492,899],[469,957],[449,1017],[428,1069],[403,1143],[389,1192],[367,1236],[358,1268],[334,1331]]}
   ]
 }

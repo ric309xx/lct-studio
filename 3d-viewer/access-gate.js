@@ -114,12 +114,12 @@
 
     const stylesheet = document.createElement("link");
     stylesheet.rel = "stylesheet";
-    stylesheet.href = "/3d-viewer/assets/viewer.css?v=20261016-layered-v2";
+    stylesheet.href = "/3d-viewer/assets/viewer.css?v=20261017-roof-v7";
     document.head.appendChild(stylesheet);
 
     const script = document.createElement("script");
     script.type = "module";
-    script.src = "/3d-viewer/assets/viewer.js?v=20261016-layered-v2";
+    script.src = "/3d-viewer/assets/viewer.js?v=20261017-roof-v7";
     script.dataset.viewerApp = "true";
     document.body.appendChild(script);
   };
