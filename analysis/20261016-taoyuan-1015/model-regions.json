@@ -19,7 +19,7 @@
     {"id":"dongliao-north-eave","image":"416","targets":["416","40F"],"category":"北側建物屋簷","pixels":[[210,45],[420,65],[400,217],[213,206]]},
     {"id":"dongliao-north-sheet-roof","image":"416","targets":["416","40F"],"category":"北側鐵皮棚頂","pixels":[[495,120],[762,151],[748,242],[488,210]]},
     {"id":"dongliao-south-sheds","image":"416","targets":["416","40F"],"category":"南側鐵皮與T棚","pixels":[[278,363],[429,376],[437,357],[716,402],[691,525],[263,525]]},
-    {"id":"dongliao-804-projection","image":"46F","targets":["46F"],"category":"使用者確認之突出構造","heightRange":[163.8,167.8],"roofOnly":true,"mode":"outline","pixels":[[207,233],[231,235],[229,246],[205,244]]},
+    {"id":"dongliao-804-projection","image":"46F","targets":["46F"],"category":"使用者確認之突出構造","heightRange":[163.8,167.8],"displayHeightRange":[164.2,166.1],"displayActualSurface":true,"roofOnly":true,"mode":"outline","pixels":[[211,234.5],[230.5,237.75],[229,246],[210.5,244.458333333]],"reviewNote":"2026-10-19 依使用者紅線收進左側及斜上緣；與原已判讀投影及地籍求交集，不外擴。"},
     {"id":"dongliao-corner-shed-01","image":"428","targets":["428","41F"],"category":"下方棚架／雨遮","heightRange":[168,172],"roofOnly":true,"mode":"outline","pixels":[[64,330],[157,338],[154,381],[65,376]]},
     {"id":"dongliao-corner-shed-02","image":"428","targets":["428","41F"],"category":"下方棚架／雨遮","heightRange":[168,172],"roofOnly":true,"mode":"outline","pixels":[[157,337],[247,345],[245,375],[157,368]]},
     {"id":"dongliao-corner-shed-03","image":"428","targets":["428","41F"],"category":"下方棚架／雨遮","heightRange":[168,172],"roofOnly":true,"mode":"outline","pixels":[[248,345],[352,355],[349,389],[247,382]]},

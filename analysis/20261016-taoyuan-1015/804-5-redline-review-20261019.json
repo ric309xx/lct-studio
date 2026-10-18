@@ -1,0 +1,40 @@
+{
+  "version": "20261019-804-5-redline-review-v8",
+  "parcel": "dongliao-804-5",
+  "status": "待複核",
+  "source": "既有彩色 LAS 點雲及使用者紅線",
+  "previousAreaM2": 0.5151484216687672,
+  "occupiedAreaM2": 0.3213016573113563,
+  "removedAreaM2": 0.19384676435741088,
+  "occupancyPercent": 3.2652607450341082,
+  "registeredAreaM2": 9.84,
+  "supportedPointCount": 4919,
+  "reviewPixels": [
+    [
+      211,
+      234.5
+    ],
+    [
+      230.5,
+      237.75
+    ],
+    [
+      229,
+      246
+    ],
+    [
+      210.5,
+      244.458333333
+    ]
+  ],
+  "displayHeightRangeSourceZ": [
+    164.2,
+    166.1
+  ],
+  "displayActualSurface": true,
+  "unchangedOtherParcels": true,
+  "unchangedCadGeometry": true,
+  "noExpansion": true,
+  "sourceDxfSha256": "68f8cacd9ee534ad59a431b553ed45f1590efc3b0c57c378663e15832c727626",
+  "published": false
+}

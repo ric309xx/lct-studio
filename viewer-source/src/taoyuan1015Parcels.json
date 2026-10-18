@@ -264,11 +264,11 @@
       "cadastralAreaM2": 9.84,
       "geometryAreaM2": 9.61,
       "analysisStatus": "interpreted-draft",
-      "analysisVersion": "20261016-layered-review-v4",
-      "analysisNote": "待複核；按分層模型確認建物、低棚、雨遮與指定突出構造的投影外緣，再與地籍求交集。重疊投影取聯集；東寮區塊三排除擦邊牆面。實測 CAD 僅供參考，非正式占用認定。",
+      "analysisVersion": "20261019-804-5-redline-review-v8",
+      "analysisNote": "待複核；依使用者 2026-10-19 紅線收進突出構造左側及斜上緣，與原已判讀範圍及 TWD97 地籍求交集重算。綠色僅著於指定高度的實際模型表面；不新增假面、不計電線及路面。",
       "reviewImageUrl": "overlays/taoyuan-1015/review/dongliao-804-5.png",
-      "occupiedAreaM2": 0.5151,
-      "occupancyPercent": 5.23525
+      "occupiedAreaM2": 0.3213,
+      "occupancyPercent": 3.26526
     },
     "overlayUrl": "overlays/taoyuan-1015/dongliao-1015-02.geojson",
     "tilesetPath": "1015-cl2/tileset.json",

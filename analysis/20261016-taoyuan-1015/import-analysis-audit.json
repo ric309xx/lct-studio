@@ -4425,7 +4425,7 @@
       "queryPointInside": true,
       "cadAreaM2": 9.60953536608445,
       "registeredAreaM2": 9.84,
-      "occupiedAreaM2": 0.5151484215873273,
+      "occupiedAreaM2": 0.3213016573113563,
       "groundHeight": 163.31900000000002,
       "groundAnchors": [
         [
@@ -4450,16 +4450,35 @@
         ]
       ],
       "modelPoints": 3525750,
-      "selectedPoints": 6267,
+      "selectedPoints": 4919,
       "status": "interpreted-draft",
       "regions": [
         {
           "id": "dongliao-804-projection",
-          "points": 6267,
-          "addedAreaM2": 0.5151484215873273,
+          "points": 4919,
+          "addedAreaM2": 0.3213016573113563,
           "roofOnly": true,
           "planeSupported": true,
-          "mode": "outline"
+          "mode": "user-redline-outline",
+          "displayActualSurface": true,
+          "reviewPixels": [
+            [
+              211,
+              234.5
+            ],
+            [
+              230.5,
+              237.75
+            ],
+            [
+              229,
+              246
+            ],
+            [
+              210.5,
+              244.458333333
+            ]
+          ]
         }
       ],
       "footprintTwd97": {
@@ -4467,28 +4486,33 @@
         "coordinates": [
           [
             [
-              275534.55587357393,
+              275533.63623908715,
+              2758522.789774908
+            ],
+            [
+              275534.61065769586,
+              2758522.627460396
+            ],
+            [
+              275534.5558735739,
               2758522.3263120847
             ],
             [
-              275533.3621761839,
-              2758522.456909964
+              275533.6181104165,
+              2758522.428909175
             ],
             [
-              275533.4363583468,
-              2758522.8646892984
-            ],
-            [
-              275534.63564278913,
-              2758522.764803445
-            ],
-            [
-              275534.55587357393,
-              2758522.3263120847
+              275533.63623908715,
+              2758522.789774908
             ]
           ]
         ]
-      }
+      },
+      "reviewVersion": "20261019-804-5-redline-review-v8",
+      "displayHeightRangeSourceZ": [
+        164.2,
+        166.1
+      ]
     },
     {
       "parcelNo": "1507-1",

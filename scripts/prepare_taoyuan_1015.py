@@ -153,6 +153,7 @@ for item in inputs['parcels']:
    properties.update(continuousOccupancy=True,displayActualSurface=True,displayRoofOnly=bool(region.get('roofOnly')),analysisOnly=not display_only)
   if display_only:properties['displayOnlyProjectionM2']=q.area
   if region.get('displayHeightRange'):properties['displayHeightRangeSourceZ']=region['displayHeightRange']
+  if region.get('displayActualSurface'):properties['displayActualSurface']=True
   if context_object:properties.update(displayObjectContext=True,displayObjectNote=region.get('displayObjectNote','完整招牌顯示；超出地籍部分只供辨識，不增加占用面積'))
   features.append(dict(type='Feature',id=f"{'display' if display_only else 'occupancy'}-1015-{key}-{index}",properties=properties,geometry=export_geometry(q)))
  assert abs(sum(f['properties'].get('projectedAreaM2',0) for f in features)-area)<1e-5

@@ -119,7 +119,7 @@
 
     const script = document.createElement("script");
     script.type = "module";
-    script.src = "/3d-viewer/assets/viewer.js?v=20261018-shuangling-cl2";
+    script.src = "/3d-viewer/assets/viewer.js?v=20261019-804-5-redline-v8";
     script.dataset.viewerApp = "true";
     document.body.appendChild(script);
   };
