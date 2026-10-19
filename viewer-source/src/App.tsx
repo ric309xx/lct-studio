@@ -3,6 +3,7 @@ import { isSharedViewerEntry } from "./accessPolicy";
 import taoyuan1006Parcels from "./taoyuan1006Parcels.json";
 import taoyuan1013Parcels from "./taoyuan1013Parcels.json";
 import taoyuan1013Cl2Parcels from "./taoyuan1013Cl2Parcels.json";
+import taoyuan1010Parcels from "./taoyuan1010Parcels.json";
 import taoyuan1015Parcels from "./taoyuan1015Parcels.json";
 import { roadGround, roadPosition, roadHeightAt, sampleRoadOffset } from "./shuanglingGround";
 import { needsFreshShuanglingDocument } from "./cadastralTransition";
@@ -266,6 +267,7 @@ type CadastralParcel = {
   groupKey?: string;
   groupLabel?: string;
   tilesetPath?: string;
+  boundaryStatus?: string;
 };
 
 type CadastralProject = {
@@ -338,7 +340,7 @@ const CADASTRAL_PROJECTS: Record<string, CadastralProject> = {
         pitchDegrees: -90,
         rollDegrees: 0
       }
-    }, ...taoyuan1006Parcels, ...taoyuan1013Parcels, ...taoyuan1013Cl2Parcels, ...taoyuan1015Parcels]
+    }, ...taoyuan1006Parcels, ...taoyuan1010Parcels, ...taoyuan1013Parcels, ...taoyuan1013Cl2Parcels, ...taoyuan1015Parcels]
   }
 };
 
@@ -994,6 +996,34 @@ export function App() {
           cadastral.show = true;
           cadastralDataSourceRef.current = cadastral;
 
+          // Point-query metadata is not a surveyed cadastral polygon. Do not
+          // invent a fill/green area while the vector boundary is unavailable.
+          if (activeParcel?.boundaryStatus === "missing") {
+            cadastral.entities.values.forEach(entity => { entity.show = false; });
+            const members = cadastralConfig!.parcels;
+            const samples = members.map(parcel => Cartographic.fromDegrees(parcel.focus!.longitude, parcel.focus!.latitude, parcel.focus!.height - 100));
+            try { await viewer.scene.sampleHeightMostDetailed(samples); } catch { /* use documented DEM fallback */ }
+            if (cancelled || viewer.isDestroyed()) return;
+            members.forEach((parcel, index) => {
+              const focus = parcel.focus!;
+              const height = Number.isFinite(samples[index]?.height) ? samples[index].height : focus.height - 100;
+              const anchor = Cartesian3.fromDegrees(focus.longitude, focus.latitude, height + 0.6);
+              if (parcel.key === activeParcel.key) parcelOrbitTargetRef.current = anchor;
+              cadastralLabelEntitiesRef.current.push(viewer!.entities.add({
+                id: `cadastral-label-${parcel.key}`, position: anchor,
+                properties: { kind: "cadastral-label", parcelKey: parcel.key },
+                point: { pixelSize: 10, color: Color.fromCssColorString("#7cf1d5"),
+                  outlineColor: Color.fromCssColorString("#06252b"), outlineWidth: 3,
+                  disableDepthTestDistance: Number.POSITIVE_INFINITY },
+                label: { text: `地號 ${parcel.info.parcelNo}\n定位點・界線待補`,
+                  font: "600 14px 'Noto Sans TC', sans-serif", fillColor: Color.WHITE,
+                  showBackground: true, backgroundColor: Color.fromCssColorString("#09242a").withAlpha(0.9),
+                  pixelOffset: new Cartesian2(0, -18), verticalOrigin: VerticalOrigin.BOTTOM,
+                  disableDepthTestDistance: Number.POSITIVE_INFINITY }
+              }));
+            });
+          }
+
           const fillEntities = cadastral.entities.values.filter(entity =>
             entity.polygon && entity.properties?.kind?.getValue() === "cadastral-fill");
           const boundaryEntities = cadastral.entities.values.filter(entity =>
@@ -1270,8 +1300,9 @@ export function App() {
                 entity.polygon.material = new ColorMaterialProperty(Color.fromCssColorString("#ef626c").withAlpha(entity.properties?.parcelKey?.getValue() === key ? 0.3 : 0.12));
               }
             }
-            const anchor = cadastralLabelEntitiesRef.current.find(entity => entity.properties?.parcelKey?.getValue() === key)
-              ?.polyline?.positions?.getValue(viewer.clock.currentTime)?.[0] as Cartesian3 | undefined;
+            const labelEntity = cadastralLabelEntitiesRef.current.find(entity => entity.properties?.parcelKey?.getValue() === key);
+            const anchor = (labelEntity?.polyline?.positions?.getValue(viewer.clock.currentTime)?.[0]
+              ?? labelEntity?.position?.getValue(viewer.clock.currentTime)) as Cartesian3 | undefined;
             const target = anchor ?? Cartesian3.fromDegrees(parcel.focus.longitude, parcel.focus.latitude,
               parcelOrbitTargetRef.current ? Cartographic.fromCartesian(parcelOrbitTargetRef.current).height : parcel.focus.height - 100);
             parcelOrbitTargetRef.current = target;
@@ -2858,7 +2889,7 @@ export function App() {
               )}
               {currentParcel?.groupKey && (
                 <>
-                  <p className="overlay-hint">同區地籍一起顯示，選取地號以較深色標示；面積與資訊依各筆地號顯示。</p>
+                  <p className="overlay-hint">{currentParcel.boundaryStatus === "missing" ? "目前顯示地號查詢定位點，並非土地邊界；地籍向量界線待補。" : "同區地籍一起顯示，選取地號以較深色標示；面積與資訊依各筆地號顯示。"}</p>
                   <div className="clip-actions"><button type="button" className="primary" onClick={() => {
                     const viewer = viewerRef.current;
                     const data = cadastralDataSourceRef.current;
@@ -2873,6 +2904,12 @@ export function App() {
                         return Cartesian3.fromRadians(point.longitude, point.latitude, height);
                       });
                     });
+                    if (!positions.length && currentParcel.boundaryStatus === "missing") {
+                      positions.push(...cadastralLabelEntitiesRef.current.flatMap(entity => {
+                        const position = entity.position?.getValue(viewer.clock.currentTime);
+                        return position ? [position] : [];
+                      }));
+                    }
                     if (!positions.length) return;
                     const bounds = BoundingSphere.fromPoints(positions);
                     viewer.camera.flyToBoundingSphere(bounds, { duration: 1.2,
@@ -2886,14 +2923,15 @@ export function App() {
               <label className="overlay-toggle cadastral-toggle">
                 <input
                   type="checkbox"
-                  checked={cadastralVisible}
+                  disabled={currentParcel?.boundaryStatus === "missing"}
+                  checked={currentParcel?.boundaryStatus !== "missing" && cadastralVisible}
                   onChange={(event) =>
                     changeCadastralVisibility(event.currentTarget.checked)
                   }
                 />
-                <span>顯示地籍範圍</span>
+                <span>{currentParcel?.boundaryStatus === "missing" ? "地籍界線待補" : "顯示地籍範圍"}</span>
               </label>
-              {cadastralVisible && (
+              {cadastralVisible && currentParcel?.boundaryStatus !== "missing" && (
                 <>
                   <div className="cadastral-style-options" role="group" aria-label="地籍套繪樣式">
                     {(
@@ -2961,7 +2999,7 @@ export function App() {
                   {currentParcelInfo?.reviewImageUrl && <p><a href={import.meta.env.BASE_URL + currentParcelInfo.reviewImageUrl} target="_blank" rel="noopener noreferrer">查看初判圈選圖（含待釐清區）</a></p>}
                 </div>
               )}
-              <p className="overlay-hint">點選紅色範圍可查看土地與地籍資料</p>
+              <p className="overlay-hint">{currentParcel?.tilesetPath?.startsWith("1010-") ? currentParcelInfo?.analysisNote : "點選紅色範圍可查看土地與地籍資料"}</p>
             </div>
           )}
           {projectHasLandmarks && (
@@ -3297,6 +3335,7 @@ export function App() {
           <p className="landmark-card-kicker">CADASTRAL INFO</p>
           <h2>{selectedCadastral.sectionName}</h2>
           <span className="landmark-card-category">地號 {selectedCadastral.parcelNo}</span>
+          {selectedCadastral.analysisStatus === "awaiting-cadastral-boundary" && <p className="cadastral-draft-badge">界線待補・尚未計算占用</p>}
           {["interpreted-draft", "survey-reference", "model-derived"].includes(selectedCadastral.analysisStatus ?? "") && <p className="cadastral-draft-badge">待複核</p>}
           <dl className="cadastral-details">
             <div><dt>縣市</dt><dd>{selectedCadastral.county}</dd></div>

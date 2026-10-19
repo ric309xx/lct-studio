@@ -6,7 +6,7 @@ import os from 'node:os';
 import crypto from 'node:crypto';
 
 const [manifestFile, prefix, resultFile, mode = '--check'] = process.argv.slice(2);
-if (!manifestFile || !resultFile || !/^projects\/taoyuan\/(?:(20261006|20261013|20261013-cl2|20261015-cl1|20261015-cl2)-v1|20261013-v2)\/terra_b3dms$/.test(prefix ?? '')) {
+if (!manifestFile || !resultFile || !/^projects\/taoyuan\/(?:(20261006|20261010-cl1|20261010-cl2|20261013|20261013-cl2|20261015-cl1|20261015-cl2)-v1|20261013-v2)\/terra_b3dms$/.test(prefix ?? '')) {
   throw Error('Expected validation manifest, fixed new Taoyuan prefix, and local results path.');
 }
 const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));

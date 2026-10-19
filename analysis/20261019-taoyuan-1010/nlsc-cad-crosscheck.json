@@ -1,0 +1,16 @@
+{
+  "queryDate": "2026-10-19",
+  "sourceUrl": "https://maps.nlsc.gov.tw/T09/mapshow.action#",
+  "method": "NLSC decimal WGS84 positioning followed by centre-point cadastral query. Additional points are internal representatives of the source CAD polygons.",
+  "sectionCode": "HB0205-0",
+  "sectionName": "三座屋段舊社小段",
+  "checks": [
+    {"handle":"329","longitude":121.213454,"latitude":24.974716,"twd97":[271550.444,2762993.962],"parcelNo":"17-1","registeredAreaM2":2857},
+    {"handle":"34C","longitude":121.212184,"latitude":24.976220,"twd97":[271421.965,2763160.406],"parcelNo":"17-1"},
+    {"handle":"357","longitude":121.211913,"latitude":24.976570,"twd97":[271394.595,2763199.129],"parcelNo":"17-1"},
+    {"handle":"400","longitude":121.214881,"latitude":24.953407,"twd97":[271698.282,2760633.977],"parcelNo":"255-39"},
+    {"handle":"421","longitude":121.215242,"latitude":24.953582,"twd97":[271734.742,2760653.414],"parcelNo":"255-42","registeredAreaM2":202,"registrationDate":"民國067年08月17日","announcedLandValueTwdPerM2":108000,"rightsCategory":"國有:100.00%","useZone":null,"landUseCategory":null},
+    {"handle":"437","longitude":121.214818,"latitude":24.953453,"twd97":[271691.920,2760639.057],"parcelNo":"255-149"}
+  ],
+  "warning": "本查詢資料有時間落差，實際應以地政事務所地籍資料庫記載為準。"
+}

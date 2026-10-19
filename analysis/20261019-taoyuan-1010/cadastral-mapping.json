@@ -1,0 +1,22 @@
+{
+  "sourceDxf": "D:\\DATA\\WORK\\20261006桃園三維地籍\\地籍資料\\03_1010\\1010.dxf",
+  "coordinateSystem": "EPSG:3826; verified against NLSC point locations, not inferred from map date",
+  "includedParcelOrder": ["17-1", "179-71", "255-41", "255-42", "255-39", "255-149"],
+  "excludedQueryReferences": [{"parcelNo":"255-86","reason":"使用者確認CL2第二區為255-41、255-42、255-39、255-149；255-86僅保留歷史查詢紀錄，不列入案件。"}],
+  "parcelHandles": {
+    "17-1": ["329", "332", "34C", "357"],
+    "179-71": ["442"],
+    "255-149": ["42E", "437"],
+    "255-39": ["400", "409"],
+    "255-41": ["417"],
+    "255-42": ["421"],
+    "255-86": []
+  },
+  "notes": [
+    "NLSC live representative-point queries confirmed 329,34C,357 are 17-1; 332 contains the supplied 17-1 point.",
+    "NLSC confirmed 400 is 255-39, 437 is 255-149, 421 is 255-42 (registered 202 square metres).",
+    "255-86 reference point is outside all supplied cadastral POLYLINEs. Survey LWPOLYLINE 44D is not its cadastral boundary.",
+    "Keep CAD geometry and registered area separate; do not scale or fill gaps to force equal areas.",
+    "LWPOLYLINE/INSERT survey features are references, never directly used as occupied footprints."
+  ]
+}

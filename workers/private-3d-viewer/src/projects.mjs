@@ -6,6 +6,8 @@ export const PROJECTS = Object.freeze({
     prefix: 'projects/taoyuan/20261006-v1/terra_b3dms/',
     // 同一桃園網站授權下的固定模型來源；不接受使用者傳入儲存路徑。
     tileSources: Object.freeze({
+      '1010-cl1': 'projects/taoyuan/20261010-cl1-v1/terra_b3dms/',
+      '1010-cl2': 'projects/taoyuan/20261010-cl2-v1/terra_b3dms/',
       '1013': 'projects/taoyuan/20261013-v1/terra_b3dms/',
       '1013-v2': 'projects/taoyuan/20261013-v2/terra_b3dms/',
       '1013-cl2': 'projects/taoyuan/20261013-cl2-v1/terra_b3dms/',

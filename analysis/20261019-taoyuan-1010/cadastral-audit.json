@@ -1,0 +1,95 @@
+{
+  "version": "20261019-1010-confirmed-parcels-v3",
+  "sourceDxf": "D:\\DATA\\WORK\\20261006桃園三維地籍\\地籍資料\\03_1010\\1010.dxf",
+  "sourceDxfSha256": "488062a180ce38ab9d9c12fa79b3ec80e920867df7e2d1ed8112bb3d1ff418ac",
+  "parcels": [
+    {
+      "parcelNo": "17-1",
+      "handles": [
+        "329",
+        "332",
+        "34C",
+        "357"
+      ],
+      "boundaryAvailable": true,
+      "cadAreaM2": 2906.888154701246,
+      "registeredAreaM2": 2857,
+      "areaDifferencePercent": 1.746172723179762,
+      "referencePointInside": true,
+      "occupancyComputed": false
+    },
+    {
+      "parcelNo": "179-71",
+      "handles": [
+        "442"
+      ],
+      "boundaryAvailable": true,
+      "cadAreaM2": 61.29122594648719,
+      "registeredAreaM2": 64,
+      "areaDifferencePercent": -4.232459458613769,
+      "referencePointInside": true,
+      "occupancyComputed": false
+    },
+    {
+      "parcelNo": "255-41",
+      "handles": [
+        "417"
+      ],
+      "boundaryAvailable": true,
+      "cadAreaM2": 77.80563237215183,
+      "registeredAreaM2": 99,
+      "areaDifferencePercent": -21.408452149341585,
+      "referencePointInside": true,
+      "occupancyComputed": false
+    },
+    {
+      "parcelNo": "255-42",
+      "handles": [
+        "421"
+      ],
+      "boundaryAvailable": true,
+      "cadAreaM2": 177.12971190752933,
+      "registeredAreaM2": 202,
+      "areaDifferencePercent": -12.312023808153793,
+      "referencePointInside": true,
+      "occupancyComputed": false
+    },
+    {
+      "parcelNo": "255-39",
+      "handles": [
+        "400",
+        "409"
+      ],
+      "boundaryAvailable": true,
+      "cadAreaM2": 539.6826610146187,
+      "registeredAreaM2": 525,
+      "areaDifferencePercent": 2.796697336117848,
+      "referencePointInside": true,
+      "occupancyComputed": false
+    },
+    {
+      "parcelNo": "255-149",
+      "handles": [
+        "42E",
+        "437"
+      ],
+      "boundaryAvailable": true,
+      "cadAreaM2": 82.46399352663994,
+      "registeredAreaM2": 81,
+      "areaDifferencePercent": 1.80739941560486,
+      "referencePointInside": true,
+      "occupancyComputed": false
+    }
+  ],
+  "excludedQueryReferences": [
+    {
+      "parcelNo": "255-86",
+      "reason": "使用者確認CL2第二區為255-41、255-42、255-39、255-149；255-86僅保留歷史查詢紀錄，不列入案件。"
+    }
+  ],
+  "sourceCrs": "EPSG:3826",
+  "occupancyComputed": false,
+  "referenceCadUsedForOccupancy": false,
+  "modelCadAccuracyValidated": false,
+  "note": "NLSC點位及模型俯視作位置交叉檢查；不代表獨立控制點精度檢核。建物參考線不直接作占用輪廓。"
+}

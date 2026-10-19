@@ -88,7 +88,8 @@ describe('1015 兩批模型八地號', () => {
     const roof=fc.features.filter((f:any)=>f.properties.analysisRegion==='dongliao-1507-neighbour-sheet-roof'&&f.properties.kind==='occupancy-building');
     expect(roof.length).toBeGreaterThan(0);
     expect(roof.reduce((sum:number,f:any)=>sum+f.properties.projectedAreaM2,0)).toBeGreaterThan(0);
-    expect(catalog.filter(p=>p.key!=='dongliao-1507-1').map(p=>p.info.occupiedAreaM2)).toEqual([64.762,1.4811,24.5387,1.372,2.5961,.5151,16.2945]);
+    // 804-5 was independently corrected to the approved redline in a3cbfa5.
+    expect(catalog.filter(p=>p.key!=='dongliao-1507-1').map(p=>p.info.occupiedAreaM2)).toEqual([64.762,1.4811,24.5387,1.372,2.5961,.3213,16.2945]);
   });
   it('colours the reviewed curved front fascia without counting its vertical face again',()=>{
     const parcel=catalog.find(p=>p.key==='dongliao-1507-1')!;

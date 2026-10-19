@@ -1,0 +1,197 @@
+{
+  "version": "20261019-1010-model-reference-v1",
+  "scope": "1010CL1 17-1；1010CL2 179-71及255系列四筆；既有地號不改動",
+  "sourceQuerySha256": "5927b18982fad77c6befef51b6d5db23b549e7a785ec81428cb4b6d677212578",
+  "source17Screenshots": [
+    {
+      "file": "中壢所 (HB0205-0)三座屋段舊社小段 17-1地號.jpg",
+      "sha256": "248058e9117b4aa4e957af997b1f5b2bbdb368c74713b3c142c30be9669e33f8"
+    },
+    {
+      "file": "中壢所 (HB0205-0)三座屋段舊社小段 17-1地號2.jpg",
+      "sha256": "ab1f5326f0caaf44f90c18ef6e937c1309124b85a60fe640a2d5737c4befd181"
+    },
+    {
+      "file": "中壢所 (HB0205-0)三座屋段舊社小段 17-1地號3.jpg",
+      "sha256": "2e209da7e6a5e4e79d535bb0794309b7776ced6947e6c6fa647f1111cd86ca28"
+    }
+  ],
+  "note": "模型已匯入；目前僅有地號資訊與查詢定位點，尚缺地籍向量界線。定位點不是土地邊界，未繪製紅色地籍面或綠色占用範圍，未計算占用面積；未分析不代表零占用。",
+  "cadastralDxfAvailable": false,
+  "parcels": [
+    {
+      "parcelNo": "17-1",
+      "model": "1010-cl1",
+      "group": "1010-cl1-01",
+      "sourcePointWgs84": [
+        121.21261,
+        24.975683
+      ],
+      "transformedPointTwd97": [
+        271465.10624518665,
+        2763100.988967706
+      ],
+      "anchorSourceDemHeight": 114.30413055419922,
+      "queryPointTwd97AsDisplayed": [
+        271465.061,
+        2763100.996
+      ],
+      "administrativeAreaAsDisplayed": "桃園市中壢區三民里",
+      "registeredAreaM2": 2857,
+      "boundaryAvailable": false,
+      "occupancyComputed": false
+    },
+    {
+      "parcelNo": "179-71",
+      "model": "1010-cl2",
+      "group": "1010-cl2-01",
+      "sourcePointWgs84": [
+        121.214413,
+        24.956409
+      ],
+      "transformedPointTwd97": [
+        271650.509684853,
+        2760966.4523303485
+      ],
+      "anchorSourceDemHeight": 131.27011108398438,
+      "queryPointTwd97AsDisplayed": [
+        271650.51,
+        2760966.452
+      ],
+      "administrativeAreaAsDisplayed": "桃園市中壢區五福里",
+      "registeredAreaM2": 64,
+      "boundaryAvailable": false,
+      "occupancyComputed": false
+    },
+    {
+      "parcelNo": "255-149",
+      "model": "1010-cl2",
+      "group": "1010-cl2-02",
+      "sourcePointWgs84": [
+        121.214842,
+        24.953408
+      ],
+      "transformedPointTwd97": [
+        271694.3542636004,
+        2760634.125106593
+      ],
+      "anchorSourceDemHeight": 135.221435546875,
+      "queryPointTwd97AsDisplayed": [
+        271694.354,
+        2760634.125
+      ],
+      "administrativeAreaAsDisplayed": "桃園市平鎮區廣興里",
+      "registeredAreaM2": 81,
+      "boundaryAvailable": false,
+      "occupancyComputed": false
+    },
+    {
+      "parcelNo": "255-39",
+      "model": "1010-cl2",
+      "group": "1010-cl2-02",
+      "sourcePointWgs84": [
+        121.214991,
+        24.953555
+      ],
+      "transformedPointTwd97": [
+        271709.3742833451,
+        2760650.4308748203
+      ],
+      "anchorSourceDemHeight": 134.6847686767578,
+      "queryPointTwd97AsDisplayed": [
+        271709.374,
+        2760650.431
+      ],
+      "administrativeAreaAsDisplayed": "桃園市中壢區舊明里",
+      "registeredAreaM2": 525,
+      "boundaryAvailable": false,
+      "occupancyComputed": false
+    },
+    {
+      "parcelNo": "255-41",
+      "model": "1010-cl2",
+      "group": "1010-cl2-02",
+      "sourcePointWgs84": [
+        121.215225,
+        24.953668
+      ],
+      "transformedPointTwd97": [
+        271732.9833865798,
+        2760662.984364439
+      ],
+      "anchorSourceDemHeight": 133.75735473632812,
+      "queryPointTwd97AsDisplayed": [
+        271732.983,
+        2760662.984
+      ],
+      "administrativeAreaAsDisplayed": "桃園市中壢區舊明里",
+      "registeredAreaM2": 99,
+      "boundaryAvailable": false,
+      "occupancyComputed": false
+    },
+    {
+      "parcelNo": "255-86",
+      "model": "1010-cl2",
+      "group": "1010-cl2-02",
+      "sourcePointWgs84": [
+        121.215367,
+        24.953525
+      ],
+      "transformedPointTwd97": [
+        271747.3474195076,
+        2760647.1681833225
+      ],
+      "anchorSourceDemHeight": 133.90145874023438,
+      "queryPointTwd97AsDisplayed": [
+        271747.347,
+        2760647.168
+      ],
+      "administrativeAreaAsDisplayed": "桃園市中壢區舊明里",
+      "registeredAreaM2": 5505,
+      "boundaryAvailable": false,
+      "occupancyComputed": false
+    }
+  ],
+  "models": [
+    {
+      "model": "1010-cl1",
+      "source": "D:\\DJI\\DJITerra\\20261006CL\\20261010CL1\\models\\pc\\0\\terra_b3dms",
+      "objects": 2747,
+      "bytes": 811999519,
+      "jsonCount": 130,
+      "rootSha256": "b2d491cb4213448630cf6d7083d7e5eb7a4fea8334f7a47c0afb28606bdbaeaf",
+      "r2Prefix": "projects/taoyuan/20261010-cl1-v1/terra_b3dms/"
+    },
+    {
+      "model": "1010-cl2",
+      "source": "D:\\DJI\\DJITerra\\20261006CL\\20261010CL2\\models\\pc\\0\\terra_b3dms",
+      "objects": 3259,
+      "bytes": 1056365994,
+      "jsonCount": 153,
+      "rootSha256": "1a34e99c510caf48d621f36b1969053eb6d2717303fb10d778589d90a2c355d6",
+      "r2Prefix": "projects/taoyuan/20261010-cl2-v1/terra_b3dms/"
+    }
+  ],
+  "modelCrs": "EPSG:3826+8904",
+  "quality": {
+    "cl1": {
+      "inputImages": 852,
+      "calibratedImages": 830,
+      "controlPointRmseM": [
+        0.01074,
+        0.011946,
+        0.010427
+      ]
+    },
+    "cl2": {
+      "inputImages": 932,
+      "calibratedImages": 932,
+      "controlPointRmseM": [
+        0.007202,
+        0.012686,
+        0.02462
+      ]
+    },
+    "note": "GCP fitting residuals are not independent cadastral accuracy. No boundary comparison performed."
+  }
+}

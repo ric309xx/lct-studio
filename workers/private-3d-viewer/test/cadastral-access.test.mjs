@@ -13,14 +13,22 @@ const env={PROJECT_PASSWORD_HASH:hash('test-password'),ADMIN_PASSWORD_HASH:hash(
 }};
 const call=(path,options={})=>worker.fetch(new Request('https://worker.test'+path,options),env);
 const connect=`/connect?project=${project}&origin=${encodeURIComponent(origin)}&state=${randomUUID()}`;
-test('1015 models share authorized cadastral access but resolve separate server-owned prefixes',async()=>{
+test('1010 and 1015 models share authorized cadastral access but resolve separate server-owned prefixes',async()=>{
   const {token}=await createCadastralToken(project,env.SESSION_SECRET);
-  for(const id of ['1015-cl1','1015-cl2']) {
+  for(const id of ['1010-cl1','1010-cl2','1015-cl1','1015-cl2']) {
     const path=`/projects/${project}/tiles/${id}/tileset.json`;
     assert.equal((await call(path)).status,401);
     const response=await call(path,{headers:{origin,authorization:'Bearer '+token}});
     assert.equal(response.status,200);
     assert.equal(keys.at(-1),PROJECTS[project].tileSources[id]+'tileset.json');
+    const headers={origin,authorization:'Bearer '+token,range:'bytes=0-3'};
+    assert.equal((await call(`/projects/${project}/tiles/${id}/Block/a.b3dm`,{headers})).status,206);
+    assert.equal(keys.at(-1),PROJECTS[project].tileSources[id]+'Block/a.b3dm');
+    assert.equal((await call(`/projects/${project}/tiles/${id}/Block/a.b3dm`,{headers,method:'HEAD'})).status,200);
+    const wrong=await createCadastralToken('nanya',env.SESSION_SECRET),before=keys.length;
+    assert.equal((await call(path,{headers:{origin,authorization:'Bearer '+wrong.token}})).status,403);
+    assert.equal((await call(`/projects/${project}/tiles/${id}/%2e%2e%2fsecret`,{headers})).status,400);
+    assert.equal(keys.length,before);
   }
 });
 async function login(id=project,returnTo=connect){
