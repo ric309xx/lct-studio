@@ -12,7 +12,7 @@ if(fs.existsSync(envPath)) {
 }
 if(!process.env.VITE_CESIUM_ION_ACCESS_TOKEN)throw Error('An authorized local viewer .env is required; credentials are never printed.');
 process.env.VITE_BASE_PATH='/3d-viewer/';
-for(const args of [['node_modules/typescript/bin/tsc','-b'],['node_modules/vite/bin/vite.js','build']]) {
+for(const args of [[path.join(root,'scripts/prepare_case_map.mjs')],['node_modules/typescript/bin/tsc','-b'],['node_modules/vite/bin/vite.js','build']]) {
   const result=spawnSync(process.execPath,args,{cwd:source,env:process.env,stdio:'inherit'});
   if(result.status!==0)process.exit(result.status??1);
 }

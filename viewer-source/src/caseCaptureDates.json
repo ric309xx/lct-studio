@@ -1,0 +1,66 @@
+{
+  "tileset.json": {
+    "startDate": "2026-10-06",
+    "endDate": "2026-10-06",
+    "timezone": "Asia/Taipei",
+    "imageCount": 1339,
+    "source": "Terra影像拍攝紀錄",
+    "exifSamplesVerified": 0
+  },
+  "1010-cl1/tileset.json": {
+    "startDate": "2026-10-10",
+    "endDate": "2026-10-10",
+    "timezone": "Asia/Taipei",
+    "imageCount": 852,
+    "source": "Terra影像拍攝紀錄",
+    "exifSamplesVerified": 3
+  },
+  "1010-cl2/tileset.json": {
+    "startDate": "2026-10-10",
+    "endDate": "2026-10-10",
+    "timezone": "Asia/Taipei",
+    "imageCount": 932,
+    "source": "Terra影像拍攝紀錄",
+    "exifSamplesVerified": 3
+  },
+  "1013/tileset.json": {
+    "startDate": "2026-10-13",
+    "endDate": "2026-10-13",
+    "timezone": "Asia/Taipei",
+    "imageCount": 2262,
+    "source": "Terra影像拍攝紀錄",
+    "exifSamplesVerified": 3
+  },
+  "1013-v2/tileset.json": {
+    "startDate": "2026-10-13",
+    "endDate": "2026-10-13",
+    "timezone": "Asia/Taipei",
+    "imageCount": 2262,
+    "source": "Terra影像拍攝紀錄",
+    "exifSamplesVerified": 3
+  },
+  "1013-cl2/tileset.json": {
+    "startDate": "2026-10-13",
+    "endDate": "2026-10-13",
+    "timezone": "Asia/Taipei",
+    "imageCount": 336,
+    "source": "Terra影像拍攝紀錄",
+    "exifSamplesVerified": 3
+  },
+  "1015-cl1/tileset.json": {
+    "startDate": "2026-10-15",
+    "endDate": "2026-10-15",
+    "timezone": "Asia/Taipei",
+    "imageCount": 755,
+    "source": "Terra影像拍攝紀錄",
+    "exifSamplesVerified": 3
+  },
+  "1015-cl2/tileset.json": {
+    "startDate": "2026-10-15",
+    "endDate": "2026-10-15",
+    "timezone": "Asia/Taipei",
+    "imageCount": 758,
+    "source": "Terra影像拍攝紀錄",
+    "exifSamplesVerified": 3
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "timezone": "Asia/Taipei",
+  "folderNamesNotUsedAsDate": true,
+  "models": [
+    {
+      "tilesetPath": "tileset.json",
+      "sourceRecord": "D:\\DJI\\DJITerra\\20261006CL\\20261006CL\\images\\survey\\original_image_list.json",
+      "sourceRecordSha256": "aab998ccc56cfc63e81052320163c7620f15162f9d1742cec36bf2be511cebc7",
+      "firstCaptureTaipei": "2026-10-06T14:25:13+08:00",
+      "lastCaptureTaipei": "2026-10-06T15:07:57+08:00",
+      "dateCounts": {
+        "2026-10-06": 1339
+      },
+      "exifSamplesVerified": 0,
+      "fileNameDateMismatches": 0
+    },
+    {
+      "tilesetPath": "1010-cl1/tileset.json",
+      "sourceRecord": "D:\\DJI\\DJITerra\\20261006CL\\20261010CL1\\images\\survey\\original_image_list.json",
+      "sourceRecordSha256": "eae86fed678577343b6d3bf6902704c714b5148b6f3b22499564cb803bc0e236",
+      "firstCaptureTaipei": "2026-10-10T06:45:46+08:00",
+      "lastCaptureTaipei": "2026-10-10T06:57:08+08:00",
+      "dateCounts": {
+        "2026-10-10": 852
+      },
+      "exifSamplesVerified": 3,
+      "fileNameDateMismatches": 0
+    },
+    {
+      "tilesetPath": "1010-cl2/tileset.json",
+      "sourceRecord": "D:\\DJI\\DJITerra\\20261006CL\\20261010CL2\\images\\survey\\original_image_list.json",
+      "sourceRecordSha256": "a98a0db27f4fc92cbe26a4c8ac352bb3136c88c49d2a60f3f2db8a8619a44780",
+      "firstCaptureTaipei": "2026-10-10T08:10:31+08:00",
+      "lastCaptureTaipei": "2026-10-10T08:25:14+08:00",
+      "dateCounts": {
+        "2026-10-10": 932
+      },
+      "exifSamplesVerified": 3,
+      "fileNameDateMismatches": 0
+    },
+    {
+      "tilesetPath": "1013/tileset.json",
+      "sourceRecord": "D:\\DJI\\DJITerra\\20261006CL\\20261013CL\\images\\survey\\original_image_list.json",
+      "sourceRecordSha256": "fe9e35c7dfa46aa1bf4de487fb2b235ce1f78cf116a1fd01d925bf46f85008e7",
+      "firstCaptureTaipei": "2026-10-13T12:44:49+08:00",
+      "lastCaptureTaipei": "2026-10-13T13:21:37+08:00",
+      "dateCounts": {
+        "2026-10-13": 2262
+      },
+      "exifSamplesVerified": 3,
+      "fileNameDateMismatches": 0
+    },
+    {
+      "tilesetPath": "1013-v2/tileset.json",
+      "sourceRecord": "D:\\DJI\\DJITerra\\20261006CL\\20261013CL\\images\\survey\\original_image_list.json",
+      "sourceRecordSha256": "fe9e35c7dfa46aa1bf4de487fb2b235ce1f78cf116a1fd01d925bf46f85008e7",
+      "firstCaptureTaipei": "2026-10-13T12:44:49+08:00",
+      "lastCaptureTaipei": "2026-10-13T13:21:37+08:00",
+      "dateCounts": {
+        "2026-10-13": 2262
+      },
+      "exifSamplesVerified": 3,
+      "fileNameDateMismatches": 0
+    },
+    {
+      "tilesetPath": "1013-cl2/tileset.json",
+      "sourceRecord": "D:\\DJI\\DJITerra\\20261006CL\\20261013CL2\\images\\survey\\original_image_list.json",
+      "sourceRecordSha256": "8052144872654c36816bf64e75b549965656e87da6a429cf53fed609cef78c36",
+      "firstCaptureTaipei": "2026-10-13T15:04:19+08:00",
+      "lastCaptureTaipei": "2026-10-13T15:10:36+08:00",
+      "dateCounts": {
+        "2026-10-13": 336
+      },
+      "exifSamplesVerified": 3,
+      "fileNameDateMismatches": 0
+    },
+    {
+      "tilesetPath": "1015-cl1/tileset.json",
+      "sourceRecord": "D:\\DJI\\DJITerra\\20261006CL\\20261015CL1\\images\\survey\\original_image_list.json",
+      "sourceRecordSha256": "527745e1f2a2f355b8f96524ec84cfc0c714d10929ecb0f6fe959b98cce6b8fa",
+      "firstCaptureTaipei": "2026-10-15T11:59:43+08:00",
+      "lastCaptureTaipei": "2026-10-15T12:11:46+08:00",
+      "dateCounts": {
+        "2026-10-15": 755
+      },
+      "exifSamplesVerified": 3,
+      "fileNameDateMismatches": 0
+    },
+    {
+      "tilesetPath": "1015-cl2/tileset.json",
+      "sourceRecord": "D:\\DJI\\DJITerra\\20261006CL\\20261015CL2\\images\\survey\\original_image_list.json",
+      "sourceRecordSha256": "8c7ce97ffeea5340a2427a259cddc9309129aaf78dd0310d5b4fb2b1cadf0041",
+      "firstCaptureTaipei": "2026-10-15T14:26:20+08:00",
+      "lastCaptureTaipei": "2026-10-15T14:39:59+08:00",
+      "dateCounts": {
+        "2026-10-15": 758
+      },
+      "exifSamplesVerified": 3,
+      "fileNameDateMismatches": 0
+    }
+  ]
+}

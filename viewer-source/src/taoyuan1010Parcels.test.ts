@@ -29,7 +29,7 @@ describe('1010 models with user-confirmed cadastral parcels',()=>{
       expect(feature).toBeDefined();
       expect(p.boundaryStatus).toBe('available');
       expect(p.info.analysisStatus).toBe('model-derived');
-      expect(p.info.analysisVersion).toBe('20261019-1010-model-occupancy-v4');
+      expect(p.info.analysisVersion).toBe(p.info.parcelNo==='17-1'?'20261020-1010-17-roof-v5':'20261019-1010-model-occupancy-v4');
       expect(feature.geometry.type).toBe('Polygon');
       expect(feature.properties.sourceCrs).toBe('EPSG:3826');
       expect(source).toBe(readFileSync(new URL('../../3d-viewer/'+p.overlayUrl,import.meta.url),'utf8'));

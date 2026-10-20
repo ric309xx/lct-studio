@@ -5,7 +5,7 @@ separately; their vertical faces and overlaps add no measured area.
 """
 import argparse,json,sys,math,hashlib
 from pathlib import Path
-p=argparse.ArgumentParser();p.add_argument('--packages',required=True);p.add_argument('--work',type=Path,required=True);p.add_argument('--preview-only',action='store_true');a=p.parse_args();sys.path.insert(0,a.packages)
+p=argparse.ArgumentParser();p.add_argument('--packages',required=True);p.add_argument('--work',type=Path,required=True);p.add_argument('--preview-only',action='store_true');p.add_argument('--parcels',nargs='+',help='Recompute only these parcel numbers, preserving all others');a=p.parse_args();sys.path.insert(0,a.packages)
 import numpy as np,ezdxf
 from shapely.geometry import Polygon,Point,LineString,shape,mapping
 from shapely.ops import unary_union,transform
@@ -20,6 +20,8 @@ inventory={x['id']:x for x in json.loads((a.work/'roof-review-inventory.json').r
 group_inventory={x['group']:x for x in json.loads((a.work/'inventory.json').read_text())}
 doc=ezdxf.readfile(cfg['sourceDxf']);fwd=Transformer.from_crs(3826,4326,always_xy=True).transform
 lands={n:unary_union([Polygon([(v.dxf.location.x,v.dxf.location.y) for v in doc.entitydb[h].vertices]) for h in cfg['parcelHandles'][n]]) for n in cfg['includedParcelOrder']}
+targets=[n for n in cfg['includedParcelOrder'] if not a.parcels or n in a.parcels]
+assert targets and (not a.parcels or set(a.parcels)<=set(lands))
 resolution=config['resolutionM']
 def parts(g):return [g] if g.geom_type=='Polygon' else [v for v in getattr(g,'geoms',[]) if v.geom_type=='Polygon']
 def dump(path,data):path.parent.mkdir(parents=True,exist_ok=True);path.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
@@ -59,32 +61,44 @@ def export(g):
  return mapping(result)
 layers={n:[] for n in lands};region_audit=[];ground={};group_points={}
 for group in ['cl1','cl2-north','cl2-south']:
+ if not set(group_inventory[group]['numbers'])&set(targets):continue
  data=np.load(a.work/(group+'-points.npz'));xyz=data['xyz'];group_points[group]=xyz
  numbers=group_inventory[group]['numbers'];land=unary_union([lands[n] for n in numbers]);inside=contains_xy(land,xyz[:,0],xyz[:,1]);q=xyz[inside]
  for n in numbers:
   pp=xyz[contains_xy(lands[n],xyz[:,0],xyz[:,1])];ground[n]=float(np.quantile(pp[:,2],.1))
- for r in [r for r in config['regions'] if r['group']==group]:
+ for r in [r for r in config['regions'] if r['group']==group and set(r['targets'])&set(targets)]:
   search=roi(r);keep=contains_xy(search,xyz[:,0],xyz[:,1]) & (xyz[:,2]>=r['heightRange'][0]) & (xyz[:,2]<=r['heightRange'][1]);selected=xyz[keep]
   plane=fit_plane(selected)
   if r.get('requirePlane'):
    if plane is None:region_audit.append(dict(id=r['id'],status='insufficient-planar-model-support',points=len(selected)));continue
    origin,c,ratio=plane;selected=selected[np.abs(np.c_[selected[:,:2]-origin,np.ones(len(selected))]@c-selected[:,2])<.18]
   footprint=raster(selected,search)
+  sampling_repair_area=footprint.area
+  # Explicitly reviewed continuous sheet roofs only: close small sampling
+  # pinholes, never semantic holes or broad gaps between different objects.
+  if r.get('fillSamplingHolesM2'):
+   footprint=unary_union([Polygon(v.exterior,[ring.coords for ring in v.interiors if Polygon(ring).area>r['fillSamplingHolesM2']]) for v in parts(footprint)])
+  sampling_repair_area=footprint.area-sampling_repair_area
   areas={}
-  for no in r['targets']:
+  for no in [n for n in r['targets'] if n in targets]:
    clipped=footprint.intersection(lands[no]);clipped=unary_union([v for v in parts(clipped) if v.area>=.01]);areas[no]=clipped.area
    if clipped.is_empty:continue
    for v in parts(clipped):layers[no].append((v,r,selected,plane))
-  region_audit.append(dict(id=r['id'],heightRange=r['heightRange'],modelPoints=len(selected),planeSupport=plane[2] if plane is not None else None,modelFootprintM2=footprint.area,parcelIntersectionsM2=areas,footprintTwd97=mapping(footprint)))
+  region_audit.append(dict(id=r['id'],heightRange=r['heightRange'],modelPoints=len(selected),planeSupport=plane[2] if plane is not None else None,modelFootprintM2=footprint.area,samplingHoleThresholdM2=r.get('fillSamplingHolesM2',0),samplingHolesFilledM2=sampling_repair_area,parcelIntersectionsM2=areas,footprintTwd97=mapping(footprint)))
   print(json.dumps({k:v for k,v in region_audit[-1].items() if k!='footprintTwd97'},ensure_ascii=False),flush=True)
 audit=[]
-for no in cfg['includedParcelOrder']:
+for no in targets:
  footprint=unary_union([v for v,r,selected,plane in layers[no]])
  assert footprint.is_valid and footprint.difference(lands[no]).area<1e-7
  audit.append(dict(parcelNo=no,occupiedAreaM2=footprint.area,registeredAreaM2=next(p['info']['cadastralAreaM2'] for p in json.loads((root/'viewer-source/src/taoyuan1010Parcels.json').read_text(encoding='utf8')) if p['info']['parcelNo']==no),footprintTwd97=mapping(footprint)))
-dump(a.work/'model-occupancy-preview.json',dict(version=config['version'],regions=region_audit,parcels=audit))
+def merge_rows(old,new,key):
+ updates={r[key]:r for r in new};return [updates.pop(r[key],r) for r in old]+list(updates.values())
+preview_path=a.work/'model-occupancy-preview.json'
+old_preview=json.loads(preview_path.read_text(encoding='utf8')) if a.parcels and preview_path.exists() else dict(regions=[],parcels=[])
+dump(preview_path,dict(version=config['version'],regions=merge_rows(old_preview['regions'],region_audit,'id'),parcels=merge_rows(old_preview['parcels'],audit,'parcelNo')))
 # Paint computed projections on source LAS plots for manual acceptance before publishing.
 for group,meta in group_inventory.items():
+ if group not in group_points:continue
  im=Image.open(a.work/(group+'-top-cad.png')).convert('RGBA');layer=Image.new('RGBA',im.size);draw=ImageDraw.Draw(layer)
  x0,y0,x1,y1=meta['imageBounds'];step=meta['resolution'];pixel=lambda coords:[((x-x0)/step,(y1-y)/step) for x,y in coords]
  for no in meta['numbers']:
@@ -101,11 +115,11 @@ if a.preview_only:sys.exit(0)
 catalog_path=root/'viewer-source/src/taoyuan1010Parcels.json'
 catalog=json.loads(catalog_path.read_text(encoding='utf8'))
 features_by_url={}
-for item in catalog:
+for item in [p for p in catalog if p['info']['parcelNo'] in targets]:
  url=item['overlayUrl']
  if url not in features_by_url:
   old=json.loads((root/'viewer-source/public'/url).read_text(encoding='utf8'))
-  features_by_url[url]=[f for f in old['features'] if f['properties']['kind'] in ['cadastral-fill','cadastral-boundary']]
+  features_by_url[url]=[f for f in old['features'] if f['properties']['kind'] in ['cadastral-fill','cadastral-boundary'] or f['properties']['parcelNo'] not in targets]
 
 def source_anchors(no,polygon,group):
  points=group_points[group][::5]
@@ -135,7 +149,7 @@ def roof_samples(polygon,selected):
 
 font=ImageFont.truetype('C:/Windows/Fonts/msjh.ttc',24)
 small=ImageFont.truetype('C:/Windows/Fonts/msjh.ttc',20)
-for item,record in zip(catalog,audit):
+for item,record in zip([p for p in catalog if p['info']['parcelNo'] in targets],audit):
  no=item['info']['parcelNo'];area=record['occupiedAreaM2'];info=item['info'];registered=info['cadastralAreaM2']
  group=next(g for g,m in group_inventory.items() if no in m['numbers'])
  info.update(analysisStatus='model-derived',analysisVersion=config['version'],occupiedAreaM2=round(area,4),occupancyPercent=round(area/registered*100,5),reviewImageUrl=f'overlays/taoyuan-1010-v1/review/{no}.jpg')
@@ -202,5 +216,6 @@ for group in group_inventory:
 for name in ['20261010CL1','20261010CL2']:
  model=Path(r'D:\DJI\DJITerra\20261006CL')/name/'models/pc/0'
  sources.append(dict(model=name,tilesetSha256=sha(model/'terra_b3dms/tileset.json'),metadataSha256=sha(model/'terra_obj/metadata.xml')))
-dump(out/'occupancy-audit.json',dict(version=config['version'],occupancyComputed=True,sourceDxf=cfg['sourceDxf'],sourceDxfSha256=sha(Path(cfg['sourceDxf'])),sourceCrs='EPSG:3826',sourceVerticalDatum='TWVD2001 (EPSG:8904)',sources=sources,resolutionM=resolution,rasterClosingKernel=3,minimumRoofComponentM2=.05,minimumClippedComponentM2=.01,simplificationToleranceM=.015,method='union(model-supported horizontal roof footprints) intersect supplied cadastral geometry',cadSurveyUsedAsOccupiedFootprint=False,registrationAreaNotRescaled=True,modelCadAccuracyValidated=False,edgeSensitivityNote='plus/minus 0.05 m model-outline buffer; numerical sensitivity only, not survey error bounds',exclusions=['cars','motorcycles','trees','poles','wires'],regions=region_audit,surveyReferences=references,parcels=audit))
-print('Published six local parcel analyses; production deployment and Git push not performed.',flush=True)
+old_audit=json.loads((out/'occupancy-audit.json').read_text(encoding='utf8')) if a.parcels else dict(regions=[],parcels=[])
+dump(out/'occupancy-audit.json',dict(version=config['version'],occupancyComputed=True,sourceDxf=cfg['sourceDxf'],sourceDxfSha256=sha(Path(cfg['sourceDxf'])),sourceCrs='EPSG:3826',sourceVerticalDatum='TWVD2001 (EPSG:8904)',sources=sources,resolutionM=resolution,rasterClosingKernel=3,minimumRoofComponentM2=.05,minimumClippedComponentM2=.01,simplificationToleranceM=.015,method='union(model-supported horizontal roof footprints) intersect supplied cadastral geometry',cadSurveyUsedAsOccupiedFootprint=False,registrationAreaNotRescaled=True,modelCadAccuracyValidated=False,edgeSensitivityNote='plus/minus 0.05 m model-outline buffer; numerical sensitivity only, not survey error bounds',exclusions=['cars','motorcycles','trees','poles','wires'],regions=merge_rows(old_audit['regions'],region_audit,'id'),surveyReferences=references,parcels=merge_rows(old_audit['parcels'],audit,'parcelNo')))
+print(f'Updated {len(targets)} local parcel analyses; production deployment and Git push not performed.',flush=True)

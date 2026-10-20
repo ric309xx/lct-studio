@@ -114,12 +114,12 @@
 
     const stylesheet = document.createElement("link");
     stylesheet.rel = "stylesheet";
-    stylesheet.href = "/3d-viewer/assets/viewer.css?v=20261018-shuangling-cl2";
+    stylesheet.href = "/3d-viewer/assets/viewer.css?v=20261020-case-map-v2";
     document.head.appendChild(stylesheet);
 
     const script = document.createElement("script");
     script.type = "module";
-    script.src = "/3d-viewer/assets/viewer.js?v=20261019-1010-occupancy-v4";
+    script.src = "/3d-viewer/assets/viewer.js?v=20261020-case-map-v2";
     script.dataset.viewerApp = "true";
     document.body.appendChild(script);
   };

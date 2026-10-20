@@ -6,6 +6,10 @@ import taoyuan1013Cl2Parcels from "./taoyuan1013Cl2Parcels.json";
 import taoyuan1010Parcels from "./taoyuan1010Parcels.json";
 import taoyuan1015Parcels from "./taoyuan1015Parcels.json";
 import { roadGround, roadPosition, roadHeightAt, sampleRoadOffset } from "./shuanglingGround";
+import {taoyuan17Ground,taoyuan17Position,taoyuan17HeightAt,sampleTaoyuan17Offset} from './taoyuan17Ground';
+import {caseCaptureDate} from './caseCaptureDate';
+import {CaseOverviewMap} from './CaseOverviewMap';
+import {buildCaseOverview,caseKey,caseTitle} from './caseOverview';
 import { needsFreshShuanglingDocument } from "./cadastralTransition";
 import { PRIVATE_R2_ORIGIN, TAOYUAN_R2_PROJECT, R2AuthorizationRequired, ensureR2Access, hasR2Access, privateR2Resource } from "./r2Access";
 import { CadastralInfoPanel } from "./CadastralInfoPanel";
@@ -344,6 +348,8 @@ const CADASTRAL_PROJECTS: Record<string, CadastralProject> = {
   }
 };
 
+const TAOYUAN_CASES=buildCaseOverview(CADASTRAL_PROJECTS['taoyuan-building-overlay'].parcels);
+
 function activeCadastralConfig(projectId: string): CadastralProject | undefined {
   const config = CADASTRAL_PROJECTS[projectId];
   if (!config || projectId !== "taoyuan-building-overlay") return config;
@@ -356,17 +362,13 @@ function activeCadastralConfig(projectId: string): CadastralProject | undefined 
 }
 
 function cadastralGroup(parcel: CadastralParcel) {
-  return parcel.groupKey ?? (parcel.overlayUrl ? "taoyuan-1006" : "taoyuan-first");
+  return caseKey(parcel);
 }
 
 function cadastralGroupLabel(parcel: CadastralParcel) {
   const members = CADASTRAL_PROJECTS["taoyuan-building-overlay"].parcels
     .filter(item => cadastralGroup(item) === cadastralGroup(parcel));
-  const section = parcel.groupLabel?.split("｜")[0]
-    ?? (parcel.overlayUrl ? "三座屋小段" : "舊社小段");
-  const numbers = members.slice(0, 2).map(item => item.info.parcelNo).join("、");
-  return members.length === 1 ? `${section}｜${numbers}`
-    : `${section}｜${numbers}${members.length > 2 ? "…" : ""} 等${members.length}筆地號`;
+  return caseTitle(members);
 }
 
 function applyCadastralDisplayMode(
@@ -644,6 +646,9 @@ export function App() {
   );
   const [cameraNotice, setCameraNotice] = useState("");
   const [projectId, setProjectId] = useState(readProjectId);
+  const [showCaseMap,setShowCaseMap]=useState(()=>!new URLSearchParams(window.location.search).has('parcel')||new URLSearchParams(window.location.search).get('view')==='cases');
+  const overviewViewRef=useRef<number[]|null>(null);
+  const showingCaseMap=projectId==='taoyuan-building-overlay'&&showCaseMap;
   const [sectionViewer, setSectionViewer] = useState<Viewer | null>(null);
   const [sectionTileset, setSectionTileset] = useState<Cesium3DTileset | null>(null);
   const [projectName, setProjectName] = useState("新北市林口區工廠廠房");
@@ -662,6 +667,7 @@ export function App() {
   >([]);
 
   useEffect(() => {
+    if(showingCaseMap)return;
     if (!containerRef.current) return;
 
     let cancelled = false;
@@ -815,6 +821,11 @@ export function App() {
           terrainProvider: undefined
         });
         viewerRef.current = viewer;
+        // Start at the selected case, not Cesium's default globe, even after a model-source change.
+        if(project.id==='taoyuan-building-overlay'&&project.camera){
+          const pose=project.camera;
+          viewer.camera.setView({destination:Cartesian3.fromDegrees(pose.longitude,pose.latitude,pose.height),orientation:{heading:CesiumMath.toRadians(pose.headingDegrees),pitch:CesiumMath.toRadians(pose.pitchDegrees),roll:CesiumMath.toRadians(pose.rollDegrees)}});
+        }
         if (project.id === "taoyuan-building-overlay") disposeParcelNavigation = tuneParcelNavigation(viewer, () => parcelOrbitTargetRef.current, () => !measurementHandlerRef.current && !clippingHandlerRef.current && !calibrationPickEnabledRef.current && !landmarkEditEnabledRef.current);
         setSectionViewer(viewer);
         viewer.scene.splitPosition = initialSplit;
@@ -1078,8 +1089,11 @@ export function App() {
                   heights[Math.floor((heights.length - 1) * 0.25)] + 0.35;
                 const roadOffset = activeParcel?.groupKey === "shuangling-1013-01"
                   ? await sampleRoadOffset(viewer) : null;
+                const road17Offset = activeParcel?.key === taoyuan17Ground.parcelKey
+                  ? await sampleTaoyuan17Offset(viewer) : null;
                 if (cancelled || viewer.isDestroyed()) return;
-                const heightAt = (latitude: number) => roadOffset !== null ? roadHeightAt(latitude, roadOffset) : groundHeight;
+                const heightAt = (latitude: number) => road17Offset!==null ? taoyuan17HeightAt(latitude,road17Offset)
+                  : roadOffset !== null ? roadHeightAt(latitude, roadOffset) : groundHeight;
                 if (project.id === "taoyuan-building-overlay") {
                   const focus = cadastralConfig!.parcels[0].focus!;
                   parcelOrbitTargetRef.current = Cartesian3.fromDegrees(focus.longitude, focus.latitude, heightAt(CesiumMath.toRadians(focus.latitude)));
@@ -1126,6 +1140,16 @@ export function App() {
                 }
                 fillHierarchies.forEach((hierarchy, index) => {
                   const key = fillEntities[index]?.properties?.parcelKey?.getValue();
+                  const road17Component=key===taoyuan17Ground.parcelKey&&road17Offset!==null
+                    ? taoyuan17Ground.components.find(c=>c.fillEntityId===fillEntities[index].id) : undefined;
+                  if(road17Component&&road17Offset!==null){
+                    road17Component.pieces.forEach((ring,pieceIndex)=>groundEntities.push(viewer!.entities.add({
+                      id:`cadastral-road-ground-17-${index}-${pieceIndex}`,show:initialCadastralMode==='model-ground',
+                      properties:{kind:'cadastral-fill',parcelKey:key},polygon:{hierarchy:new PolygonHierarchy(ring.map(p=>taoyuan17Position(p,road17Offset))),
+                        perPositionHeight:true,material:Color.fromCssColorString('#ef626c').withAlpha(.3)}
+                    })));
+                    return;
+                  }
                   if (key === roadGround.parcelKey && roadOffset !== null) {
                     roadGround.pieces.forEach((ring, pieceIndex) => groundEntities.push(viewer!.entities.add({
                       id: `cadastral-road-ground-${pieceIndex}`, show: initialCadastralMode === "model-ground",
@@ -1150,12 +1174,15 @@ export function App() {
                   }));
                 });
                 boundaryPositionSets.forEach((positions, index) => {
+                  const road17Component=boundaryEntities[index]?.properties?.parcelKey?.getValue()===taoyuan17Ground.parcelKey&&road17Offset!==null
+                    ? taoyuan17Ground.components.find(c=>c.fillEntityId===boundaryEntities[index].id.replace('-boundary','-fill')) : undefined;
                   groundEntities.push(viewer!.entities.add({
                     id: `cadastral-model-ground-boundary-${index + 1}`,
                     show: initialCadastralMode === "model-ground",
                     properties: { kind: "cadastral-boundary", parcelKey: boundaryEntities[index]?.properties?.parcelKey?.getValue() },
                     polyline: {
-                      positions: boundaryEntities[index]?.properties?.parcelKey?.getValue() === roadGround.parcelKey && roadOffset !== null
+                      positions: road17Component&&road17Offset!==null ? road17Component.boundary.map(p=>taoyuan17Position(p,road17Offset))
+                        : boundaryEntities[index]?.properties?.parcelKey?.getValue() === roadGround.parcelKey && roadOffset !== null
                         ? roadGround.boundary.map(p => roadPosition(p, roadOffset)) : positions.map(toGroundPosition),
                       width: 3,
                       material: Color.fromCssColorString("#ffbf47"),
@@ -1514,7 +1541,7 @@ export function App() {
       setSectionTileset(null);
       if (viewer && !viewer.isDestroyed()) viewer.destroy();
     };
-  }, [projectId, reloadKey]);
+  }, [projectId, reloadKey,showingCaseMap]);
 
   const updateModelCalibration = useCallback(
     (updates: Partial<ModelCalibration>) => {
@@ -2479,7 +2506,6 @@ export function App() {
 
   const currentParcel = CADASTRAL_PROJECTS[projectId]?.parcels.find(parcel => parcel.key === selectedCadastralParcelKey);
   const parcelOptions = CADASTRAL_PROJECTS[projectId]?.parcels ?? [];
-  const parcelGroups = [...new Map(parcelOptions.map(parcel => [cadastralGroup(parcel), cadastralGroupLabel(parcel)])).entries()];
   const currentGroup = currentParcel ? cadastralGroup(currentParcel) : "";
   const currentParcelInfo = currentParcel?.info;
   const hasOccupancyAnalysis = currentParcelInfo?.occupiedAreaM2 !== undefined;
@@ -2491,6 +2517,14 @@ export function App() {
   const isEstimatedOccupancy = isDraftOccupancy || isModelOccupancy;
   const isSelectedEstimatedOccupancy = ["interpreted-draft", "model-derived"].includes(selectedCadastral?.analysisStatus ?? "");
 
+  if(showingCaseMap)return <CaseOverviewMap cases={TAOYUAN_CASES} initialKey={currentParcel?cadastralGroup(currentParcel):undefined} savedView={overviewViewRef} onEnter={key=>{
+    const url=new URL(window.location.href);url.searchParams.set('parcel',key);url.searchParams.delete('view');window.history.replaceState({},'',url);
+    setSelectedCadastralParcelKey(key);setSelectedCadastral(null);setShowCaseMap(false);
+  }}/>;
+
+  const returnToCaseMap=()=>{
+    const url=new URL(window.location.href);url.searchParams.delete('parcel');url.searchParams.set('view','cases');window.history.replaceState({},'',url);setShowCaseMap(true);
+  };
   return (
     <main
       className={
@@ -2861,16 +2895,12 @@ export function App() {
             <div className="setting-group cadastral-group">
               <span className="setting-label">地籍圖層</span>
               {projectId === "taoyuan-building-overlay" && (
-                <label className="cadastral-parcel-picker">
+                <div className="cadastral-parcel-picker">
                   <span>案件區塊</span>
-                  <select aria-label="選擇案件區塊" value={currentGroup} disabled={r2Connecting}
-                    onChange={event => {
-                      const first = parcelOptions.find(parcel => cadastralGroup(parcel) === event.currentTarget.value);
-                      if (first) void selectCadastralParcel(first.key);
-                    }}>
-                    {parcelGroups.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-                  </select>
-                </label>
+                  <strong className="current-case-title" title={currentParcel?cadastralGroupLabel(currentParcel):''}>{currentParcel?cadastralGroupLabel(currentParcel):'載入案件中'}</strong>
+                  <button type="button" className="case-return" onClick={returnToCaseMap}><MapIcon size={17}/>在地圖選案件</button>
+                  <span className="overlay-hint">拍攝日期：{caseCaptureDate(currentParcel)}</span>
+                </div>
               )}
               {CADASTRAL_PROJECTS[projectId]?.parcels.length > 0 && (
                 <label className="cadastral-parcel-picker">
@@ -3335,6 +3365,7 @@ export function App() {
           <p className="landmark-card-kicker">CADASTRAL INFO</p>
           <h2>{selectedCadastral.sectionName}</h2>
           <span className="landmark-card-category">地號 {selectedCadastral.parcelNo}</span>
+          {projectId==='taoyuan-building-overlay'&&<p className="overlay-hint">拍攝日期：{caseCaptureDate(CADASTRAL_PROJECTS[projectId]?.parcels.find(p=>p.info.parcelNo===selectedCadastral.parcelNo&&p.info.sectionName===selectedCadastral.sectionName))}</p>}
           {selectedCadastral.analysisStatus === "awaiting-cadastral-boundary" && <p className="cadastral-draft-badge">界線待補・尚未計算占用</p>}
           {["interpreted-draft", "survey-reference", "model-derived"].includes(selectedCadastral.analysisStatus ?? "") && <p className="cadastral-draft-badge">待複核</p>}
           <dl className="cadastral-details">
@@ -3539,7 +3570,7 @@ async function applyBasemap(
         });
 
   viewer.imageryLayers.removeAll();
-  viewer.imageryLayers.addImageryProvider(provider);
+  viewer.imageryLayers.addImageryProvider(provider).show=true;
 }
 
 function pickWorldPosition(
