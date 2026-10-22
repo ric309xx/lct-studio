@@ -7,15 +7,19 @@ import taoyuan1010Parcels from "./taoyuan1010Parcels.json";
 import taoyuan1015Parcels from "./taoyuan1015Parcels.json";
 import { roadGround, roadPosition, roadHeightAt, sampleRoadOffset } from "./shuanglingGround";
 import {taoyuan17Ground,taoyuan17Position,taoyuan17HeightAt,sampleTaoyuan17Offset} from './taoyuan17Ground';
+import {taoyuan255Ground,taoyuan255Position,taoyuan255HeightAt,sampleTaoyuan255Offset} from './taoyuan255Ground';
 import {caseCaptureDate} from './caseCaptureDate';
 import {CaseOverviewMap} from './CaseOverviewMap';
 import {buildCaseOverview,caseKey,caseTitle} from './caseOverview';
+import {nearbyCases,returnCaseContext,readCaseMapSnapshot,saveCaseMapSnapshot,type CaseMapNavigation} from './caseNavigation';
 import { needsFreshShuanglingDocument } from "./cadastralTransition";
 import { PRIVATE_R2_ORIGIN, TAOYUAN_R2_PROJECT, R2AuthorizationRequired, ensureR2Access, hasR2Access, privateR2Resource } from "./r2Access";
 import { CadastralInfoPanel } from "./CadastralInfoPanel";
 import { focusParcelOrbit, tuneParcelNavigation } from "./parcelNavigation";
-import { createOccupancyUnderlay } from "./occupancyUnderlay";
+import { createOccupancyUnderlay,retainsReviewedRoofSkin } from "./occupancyUnderlay";
 import { createOccupancyClassification, showOccupancyClassifications } from "./occupancyClassification";
+import {createMetalRoofRepair} from './metalRoofRepair';
+import {suppressRawRoofAnalysis} from './reviewedRoofDisplay';
 import { taoyuanModelQuality } from "./modelQuality";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -380,6 +384,9 @@ function applyCadastralDisplayMode(
     const kind = entity.properties?.kind?.getValue();
     entity.show =
       ["occupancy-building","occupancy-display"].includes(kind) ? occupancyVisible && !entity.properties?.continuousOccupancy?.getValue() : mode === "original";
+    // Reviewed clean surfaces replace only the visual duplicate. The source
+    // analysis polygons stay intact for XY union/area calculations.
+    if(suppressRawRoofAnalysis(entity))entity.show=false;
     if (entity.polygon) {
       entity.polygon.material = new ColorMaterialProperty(
         ["occupancy-building","occupancy-display"].includes(kind)
@@ -606,6 +613,7 @@ export function App() {
   const [occupancyVisible, setOccupancyVisible] = useState(true);
   const occupancyVisibleRef = useRef(true);
   const occupancyClassificationsRef = useRef<ClassificationPrimitive[]>([]);
+  const metalRoofRepairRef=useRef<ReturnType<typeof createMetalRoofRepair>>(null);
   const [cadastralDisplayMode, setCadastralDisplayMode] =
     useState<CadastralDisplayMode>("original");
   const [projectHasCadastral, setProjectHasCadastral] = useState(false);
@@ -647,7 +655,10 @@ export function App() {
   const [cameraNotice, setCameraNotice] = useState("");
   const [projectId, setProjectId] = useState(readProjectId);
   const [showCaseMap,setShowCaseMap]=useState(()=>!new URLSearchParams(window.location.search).has('parcel')||new URLSearchParams(window.location.search).get('view')==='cases');
-  const overviewViewRef=useRef<number[]|null>(null);
+  const overviewStorageKey=`lct:case-map:${window.location.pathname}:taoyuan-building-overlay`;
+  const overviewSnapshotRef=useRef(readCaseMapSnapshot(window.sessionStorage,overviewStorageKey));
+  const overviewViewRef=useRef<number[]|null>(overviewSnapshotRef.current.view);
+  const overviewNavigationRef=useRef<CaseMapNavigation|null>(overviewSnapshotRef.current.navigation);
   const showingCaseMap=projectId==='taoyuan-building-overlay'&&showCaseMap;
   const [sectionViewer, setSectionViewer] = useState<Viewer | null>(null);
   const [sectionTileset, setSectionTileset] = useState<Cesium3DTileset | null>(null);
@@ -1091,19 +1102,22 @@ export function App() {
                   ? await sampleRoadOffset(viewer) : null;
                 const road17Offset = activeParcel?.key === taoyuan17Ground.parcelKey
                   ? await sampleTaoyuan17Offset(viewer) : null;
+                const road255Offset = activeParcel?.groupKey === taoyuan255Ground.groupKey
+                  ? await sampleTaoyuan255Offset(viewer) : null;
                 if (cancelled || viewer.isDestroyed()) return;
-                const heightAt = (latitude: number) => road17Offset!==null ? taoyuan17HeightAt(latitude,road17Offset)
+                const heightAt = (latitude: number,longitude:number) => road255Offset!==null ? taoyuan255HeightAt(longitude,latitude,road255Offset)
+                  : road17Offset!==null ? taoyuan17HeightAt(latitude,road17Offset)
                   : roadOffset !== null ? roadHeightAt(latitude, roadOffset) : groundHeight;
                 if (project.id === "taoyuan-building-overlay") {
                   const focus = cadastralConfig!.parcels[0].focus!;
-                  parcelOrbitTargetRef.current = Cartesian3.fromDegrees(focus.longitude, focus.latitude, heightAt(CesiumMath.toRadians(focus.latitude)));
+                  parcelOrbitTargetRef.current = Cartesian3.fromDegrees(focus.longitude, focus.latitude, heightAt(CesiumMath.toRadians(focus.latitude),CesiumMath.toRadians(focus.longitude)));
                 }
                 const toGroundPosition = (position: Cartesian3) => {
                   const cartographic = Cartographic.fromCartesian(position);
                   return Cartesian3.fromRadians(
                     cartographic.longitude,
                     cartographic.latitude,
-                    heightAt(cartographic.latitude)
+                    heightAt(cartographic.latitude,cartographic.longitude)
                   );
                 };
                 const groundEntities: Entity[] = [];
@@ -1116,13 +1130,19 @@ export function App() {
                       // 99-1 has low awnings directly below set-back upper walls.
                       // Neighbouring roof rays repair display height only; XY and area stay unchanged.
                       nearbyRoofProbeMeters: building.properties?.parcelKey?.getValue() === "sanzuwu-sanzuwu-99-1" ? 2 : 0,
-                      actualSurface
+                      actualSurface,
+                      projectionGroundHeightAt:(longitude,latitude)=>heightAt(latitude,longitude)
                     });
                     if (cancelled || viewer.isDestroyed()) return;
                     if (!surface.length) continue;
                     for (const entity of surface) {
                       entity.show = initialCadastralMode === "model-ground" && occupancyVisibleRef.current;
-                      if (actualSurface) {
+                      const cleanRoof=building.properties?.displayCleanRoofSurface?.getValue()===true;
+                      if(!metalRoofRepairRef.current&&leftTileset){
+                        metalRoofRepairRef.current=createMetalRoofRepair(viewer,leftTileset,building,entity,viewer.clock.currentTime);
+                        metalRoofRepairRef.current?.setVisible(entity.show);
+                      }
+                      if (actualSurface&&!cleanRoof) {
                         const classification = createOccupancyClassification(building,entity,viewer.clock.currentTime);
                         if (classification) {
                           classification.show = entity.show;
@@ -1130,7 +1150,7 @@ export function App() {
                           occupancyClassificationsRef.current.push(classification);
                           // Keep the calibrated entity as a fallback/control marker,
                           // but never paint a fictitious wall in front of the mesh.
-                          entity.polygon!.show = new ConstantProperty(false);
+                          entity.polygon!.show = new ConstantProperty(retainsReviewedRoofSkin(building));
                         }
                       }
                       groundEntities.push(viewer.entities.add(entity));
@@ -1140,6 +1160,15 @@ export function App() {
                 }
                 fillHierarchies.forEach((hierarchy, index) => {
                   const key = fillEntities[index]?.properties?.parcelKey?.getValue();
+                  const road255Component=road255Offset!==null ? taoyuan255Ground.components.find(c=>c.fillEntityId===fillEntities[index].id) : undefined;
+                  if(road255Component&&road255Offset!==null){
+                    road255Component.pieces.forEach((ring,pieceIndex)=>groundEntities.push(viewer!.entities.add({
+                      id:`cadastral-road-ground-255-${index}-${pieceIndex}`,show:initialCadastralMode==='model-ground',properties:{kind:'cadastral-fill',parcelKey:key},
+                      polygon:{hierarchy:new PolygonHierarchy(ring.map(p=>taoyuan255Position(p,road255Offset))),perPositionHeight:true,
+                        material:Color.fromCssColorString('#ef626c').withAlpha(key===activeParcel?.key? .3:.12)}
+                    })));
+                    return;
+                  }
                   const road17Component=key===taoyuan17Ground.parcelKey&&road17Offset!==null
                     ? taoyuan17Ground.components.find(c=>c.fillEntityId===fillEntities[index].id) : undefined;
                   if(road17Component&&road17Offset!==null){
@@ -1174,6 +1203,7 @@ export function App() {
                   }));
                 });
                 boundaryPositionSets.forEach((positions, index) => {
+                  const road255Component=road255Offset!==null ? taoyuan255Ground.components.find(c=>c.fillEntityId===boundaryEntities[index].id.replace('-boundary','-fill')) : undefined;
                   const road17Component=boundaryEntities[index]?.properties?.parcelKey?.getValue()===taoyuan17Ground.parcelKey&&road17Offset!==null
                     ? taoyuan17Ground.components.find(c=>c.fillEntityId===boundaryEntities[index].id.replace('-boundary','-fill')) : undefined;
                   groundEntities.push(viewer!.entities.add({
@@ -1181,7 +1211,8 @@ export function App() {
                     show: initialCadastralMode === "model-ground",
                     properties: { kind: "cadastral-boundary", parcelKey: boundaryEntities[index]?.properties?.parcelKey?.getValue() },
                     polyline: {
-                      positions: road17Component&&road17Offset!==null ? road17Component.boundary.map(p=>taoyuan17Position(p,road17Offset))
+                      positions: road255Component&&road255Offset!==null ? road255Component.boundary.map(p=>taoyuan255Position(p,road255Offset))
+                        : road17Component&&road17Offset!==null ? road17Component.boundary.map(p=>taoyuan17Position(p,road17Offset))
                         : boundaryEntities[index]?.properties?.parcelKey?.getValue() === roadGround.parcelKey && roadOffset !== null
                         ? roadGround.boundary.map(p => roadPosition(p, roadOffset)) : positions.map(toGroundPosition),
                       width: 3,
@@ -1240,7 +1271,7 @@ export function App() {
                   const anchorPosition = Cartesian3.fromRadians(
                     longitude,
                     latitude,
-                    heightAt(latitude) + 0.6
+                    heightAt(latitude,longitude) + 0.6
                   );
                   const labelPosition = () => {
                     if (!isSelectedLabel()) return anchorPosition;
@@ -1308,7 +1339,7 @@ export function App() {
           // 同區沿用目前 Viewer、模型與地籍；只改選取樣式、資訊與相機。
           selectParcelInPlaceRef.current = (key: string) => {
             const parcel = cadastralConfig!.parcels.find(item => item.key === key);
-            if (!parcel?.groupKey || !parcel.focus || !viewer || viewer.isDestroyed()) return false;
+            if (!parcel?.groupKey || parcel.groupKey!==activeParcel?.groupKey || !parcel.focus || !viewer || viewer.isDestroyed()) return false;
             selectedParcelKeyRef.current = key;
             const url = new URL(window.location.href);
             url.searchParams.set("parcel", key);
@@ -1512,6 +1543,7 @@ export function App() {
 
     return () => {
       cancelled = true;
+      metalRoofRepairRef.current?.destroy();metalRoofRepairRef.current=null;
       disposeParcelNavigation?.();
       clippingHandlerRef.current?.destroy();
       clippingHandlerRef.current = null;
@@ -1868,6 +1900,7 @@ export function App() {
       entity.show = visible;
     }
     showOccupancyClassifications(occupancyClassificationsRef.current,visible && cadastralDisplayMode === "model-ground" && occupancyVisible);
+    metalRoofRepairRef.current?.setVisible(visible && cadastralDisplayMode === 'model-ground' && occupancyVisible);
     viewerRef.current?.scene.requestRender();
     if (!visible) setSelectedCadastral(null);
   }, [cadastralDisplayMode, occupancyVisible]);
@@ -1885,6 +1918,7 @@ export function App() {
           cadastralVisible && mode === "model-ground" && (kind !== "occupancy-roof-underlay" || occupancyVisible);
       }
       showOccupancyClassifications(occupancyClassificationsRef.current,cadastralVisible && mode === "model-ground" && occupancyVisible);
+      metalRoofRepairRef.current?.setVisible(cadastralVisible && mode === 'model-ground' && occupancyVisible);
       viewerRef.current?.scene.requestRender();
     },
     [cadastralVisible, occupancyVisible]
@@ -1902,6 +1936,7 @@ export function App() {
       }
     }
     showOccupancyClassifications(occupancyClassificationsRef.current,cadastralVisible && cadastralDisplayMode === "model-ground" && visible);
+    metalRoofRepairRef.current?.setVisible(cadastralVisible && cadastralDisplayMode === 'model-ground' && visible);
     viewerRef.current?.scene.requestRender();
   };
 
@@ -1921,6 +1956,7 @@ export function App() {
     url.searchParams.set("parcel", parcel.key);
     if (needsFreshShuanglingDocument(config.parcels.find(item => item.key === previous), parcel)) {
       // Preserve share/admin pathname and the same tab's login session.
+      saveCaseMapSnapshot(window.sessionStorage,overviewStorageKey,{navigation:overviewNavigationRef.current,view:overviewViewRef.current});
       window.location.assign(url.href);
       return;
     }
@@ -1951,7 +1987,7 @@ export function App() {
         )
       });
     }
-  }, [projectId]);
+  }, [projectId,overviewStorageKey]);
 
 
   const changeLandmarksVisibility = useCallback((visible: boolean) => {
@@ -2517,12 +2553,16 @@ export function App() {
   const isEstimatedOccupancy = isDraftOccupancy || isModelOccupancy;
   const isSelectedEstimatedOccupancy = ["interpreted-draft", "model-derived"].includes(selectedCadastral?.analysisStatus ?? "");
 
-  if(showingCaseMap)return <CaseOverviewMap cases={TAOYUAN_CASES} initialKey={currentParcel?cadastralGroup(currentParcel):undefined} savedView={overviewViewRef} onEnter={key=>{
+  const nearbyCaseOptions=nearbyCases(TAOYUAN_CASES,currentParcel?cadastralGroup(currentParcel):'',overviewNavigationRef.current);
+  if(showingCaseMap)return <CaseOverviewMap cases={TAOYUAN_CASES} initialKey={currentParcel?cadastralGroup(currentParcel):undefined} savedView={overviewViewRef} savedNavigation={overviewNavigationRef} onEnter={key=>{
     const url=new URL(window.location.href);url.searchParams.set('parcel',key);url.searchParams.delete('view');window.history.replaceState({},'',url);
     setSelectedCadastralParcelKey(key);setSelectedCadastral(null);setShowCaseMap(false);
   }}/>;
 
   const returnToCaseMap=()=>{
+    const context=returnCaseContext(TAOYUAN_CASES,currentParcel?cadastralGroup(currentParcel):'',overviewNavigationRef.current);
+    if(context!==overviewNavigationRef.current)overviewViewRef.current=null;
+    overviewNavigationRef.current=context;
     const url=new URL(window.location.href);url.searchParams.delete('parcel');url.searchParams.set('view','cases');window.history.replaceState({},'',url);setShowCaseMap(true);
   };
   return (
@@ -2898,7 +2938,16 @@ export function App() {
                 <div className="cadastral-parcel-picker">
                   <span>案件區塊</span>
                   <strong className="current-case-title" title={currentParcel?cadastralGroupLabel(currentParcel):''}>{currentParcel?cadastralGroupLabel(currentParcel):'載入案件中'}</strong>
-                  <button type="button" className="case-return" onClick={returnToCaseMap}><MapIcon size={17}/>在地圖選案件</button>
+                  <button type="button" className="case-return" onClick={returnToCaseMap}><ArrowLeft size={17}/>返回上一層</button>
+                  {nearbyCaseOptions.length>1&&<label className="cadastral-parcel-picker">
+                    <span>切換附近案件</span>
+                    <select aria-label="切換附近案件" value={currentParcel?cadastralGroup(currentParcel):''} disabled={r2Connecting} onChange={event=>{
+                      const item=nearbyCaseOptions.find(candidate=>candidate.key===event.currentTarget.value);
+                      if(!item)return;
+                      overviewNavigationRef.current={...overviewNavigationRef.current,selected:item.key,query:'',nearbyKeys:nearbyCaseOptions.map(candidate=>candidate.key)};
+                      selectCadastralParcel(item.parcels[0].key);
+                    }}>{nearbyCaseOptions.map(item=><option key={item.key} value={item.key}>{item.title}</option>)}</select>
+                  </label>}
                   <span className="overlay-hint">拍攝日期：{caseCaptureDate(currentParcel)}</span>
                 </div>
               )}

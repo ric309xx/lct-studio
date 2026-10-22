@@ -1,5 +1,5 @@
 {
-  "version": "20261020-1010-17-roof-v5",
+  "version": "20261022-1010-255-149-front-v6",
   "resolutionM": 0.05,
   "notes": "Search ROIs are manually reviewed on LAS top/side plots. DXF is a comparison only, never the occupied footprint. Each outline is reconstructed from supported model cells.",
   "regions": [
@@ -11,6 +11,7 @@
     {"id":"179-corner-low-awning","image":"junction-roof","group":"cl2-north","targets":["179-71"],"pixels":[[0,15],[205,5],[400,45],[400,150],[200,125],[75,200],[20,175]],"heightRange":[133.6,135.3],"category":"街角低雨遮"},
     {"id":"255-south-low-sheds","image":"south-sheds","group":"cl2-south","targets":["255-149","255-39"],"pixels":[[55,140],[205,45],[330,160],[285,240],[150,220]],"heightRange":[137.7,139.3],"category":"低棚與雨遮","requirePlane":true},
     {"id":"255-south-lower-gray-awning","image":"south-sheds","group":"cl2-south","targets":["255-149","255-39"],"pixels":[[210,115],[258,78],[303,132],[260,174],[235,153]],"heightRange":[137.2,138.25],"category":"較低灰色雨遮","requirePlane":true},
+    {"id":"255-149-gray-awning-front-extension","image":"south-sheds","group":"cl2-south","targets":["255-149"],"pixels":[[253,78],[275,58],[304,85],[323,117],[302,133]],"heightRange":[136.9,137.7],"category":"已複核鐵皮前緣延伸","requirePlane":true},
     {"id":"255-corner-main-roof","image":"south-corner","group":"cl2-south","targets":["255-42","255-39"],"pixels":[[75,175],[210,45],[445,45],[590,265],[520,345],[200,360]],"heightRange":[136.5,138.5],"category":"街角建物及雨遮","requirePlane":true},
     {"id":"255-north-flat-roof","image":"north-flat-roof","group":"cl2-south","targets":["255-41","255-39"],"pixels":[[110,0],[580,0],[610,110],[555,220],[215,275],[110,245]],"heightRange":[148.8,150.4],"category":"北側建物屋簷","requirePlane":true}
   ]

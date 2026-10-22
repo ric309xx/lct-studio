@@ -5,7 +5,7 @@ import p1013 from './taoyuan1013Parcels.json';
 import p1013cl2 from './taoyuan1013Cl2Parcels.json';
 import p1015 from './taoyuan1015Parcels.json';
 import geometry from './caseMapGeometry.json';
-import {buildCaseOverview,clusterMapMarkers} from './caseOverview';
+import {buildCaseOverview,clusterMapMarkers,caseMapBounds} from './caseOverview';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -39,5 +39,27 @@ describe('map-first cases',()=>{
     const grouped=clusterMapMarkers([{x:20,y:20,items:[cases[0]]},{x:25,y:25,items:[cases[1]]},{x:200,y:200,items:[cases[2]]}]);
     expect(grouped.map(g=>g.items.length)).toEqual([2,1]);
     expect(cases[0].parcels).toHaveLength(1);
+  });
+  it('reclusters previously opened cases on zoom out and expands again on zoom in without stale exemptions',()=>{
+    const cases=buildCaseOverview(p1006);
+    const points=(spacing:number)=>cases.slice(0,3).map((item,i)=>({x:100+i*spacing,y:100,items:[item]}));
+    const close=clusterMapMarkers(points(300));
+    expect(close).toHaveLength(3);
+    expect(close.every(marker=>marker.items.length===1)).toBe(true);
+    const far=clusterMapMarkers(points(20));
+    expect(far).toHaveLength(1);expect(far[0].items).toHaveLength(3);
+    expect(far[0].items.map(item=>item.key)).toEqual(cases.slice(0,3).map(item=>item.key));
+    expect(clusterMapMarkers(points(300))).toEqual(close);
+    expect(cases.slice(0,3).every(item=>item.parcels.length===1)).toBe(true);
+  });
+  it('zooms closer on cluster drill-down while retaining both cadastral bounds',()=>{
+    const pair=buildCaseOverview(p1006).filter(item=>['221','239-1'].includes(item.parcels[0].info.parcelNo));
+    const overview=caseMapBounds(pair),detail=caseMapBounds(pair,true);
+    expect(detail[2]-detail[0]).toBeLessThan(overview[2]-overview[0]);
+    expect(detail[3]-detail[1]).toBeLessThan(overview[3]-overview[1]);
+    for(const item of pair){
+      expect(detail[0]).toBeLessThan(item.bounds[0]);expect(detail[1]).toBeLessThan(item.bounds[1]);
+      expect(detail[2]).toBeGreaterThan(item.bounds[2]);expect(detail[3]).toBeGreaterThan(item.bounds[3]);
+    }
   });
 });

@@ -26,6 +26,13 @@ export function buildCaseOverview(parcels:OverviewParcel[]):CaseOverviewItem[]{
 }
 
 export type MapMarker={x:number;y:number;items:CaseOverviewItem[]};
+export function caseMapBounds(items:CaseOverviewItem[],detail=false):[number,number,number,number]{
+  const west=Math.min(...items.map(c=>c.bounds[0])),east=Math.max(...items.map(c=>c.bounds[2]));
+  const south=Math.min(...items.map(c=>c.bounds[1])),north=Math.max(...items.map(c=>c.bounds[3]));
+  const padding=detail ? 0.12 : 0.22,minimum=detail ? 0.00012 : 0.0008;
+  const dx=Math.max((east-west)*padding,minimum),dy=Math.max((north-south)*padding,minimum);
+  return [west-dx,south-dy,east+dx,north+dy];
+}
 // Screen-space clusters only: never combines legal parcels or their areas.
 export function clusterMapMarkers(points:MapMarker[],distance=64):MapMarker[]{
   const groups:MapMarker[]=[];

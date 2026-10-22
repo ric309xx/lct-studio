@@ -3,6 +3,7 @@ import {
   Color, ColorGeometryInstanceAttribute, Entity, GeometryInstance,
   PerInstanceColorAppearance, PolygonGeometry, PolygonHierarchy, type JulianDate
 } from "cesium";
+import {reviewedRoofHierarchy} from './reviewedRoofDisplay';
 
 /** Colour existing mesh, not an artificial curtain in front of the facade.
  * The watertight volume is only a stencil: its walls/caps are never drawn.
@@ -12,7 +13,7 @@ export function createOccupancyClassification(building: Entity, calibrated: Enti
   const floor=Number(calibrated.properties?.classificationFloorHeight?.getValue());
   const ceiling=Number(calibrated.properties?.classificationCeilingHeight?.getValue());
   if (!Number.isFinite(floor) || !Number.isFinite(ceiling) || floor>=ceiling) return null;
-  const input=building.polygon!.hierarchy!.getValue(time) as PolygonHierarchy;
+  const input=reviewedRoofHierarchy(building,time);
   const flatten=(ring:PolygonHierarchy):PolygonHierarchy=>new PolygonHierarchy(ring.positions.map(p=>{
     const c=Cartographic.fromCartesian(p);return Cartesian3.fromRadians(c.longitude,c.latitude,0);
   }),ring.holes.map(flatten));

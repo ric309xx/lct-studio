@@ -1,0 +1,56 @@
+{
+  "version": "20261022-255-clean-prism-v6",
+  "displayOnly": true,
+  "measurementGeometryAndAreasUnchanged": true,
+  "geometryAndAreaSha256": "e5946448b4a0fa05a449944a4ee43c89ef3792becd6eb13205b6cea9801393c8",
+  "method": "fitted roof sheets, one user-requested transparent projection prism to the road/cadastral display surface; no native-mesh recolouring; suppress duplicate raw analysis polygons, preserving their XY and area",
+  "prismIsIllustrationNotBuildingVolume": true,
+  "prismHasOnlyExternalUnionWalls": true,
+  "smoothingToleranceM": 0.085,
+  "roundingRadiusM": 0.06,
+  "maxAllowedBoundaryDriftM": 0.16,
+  "hiddenFragmentThresholdM2": 0.12,
+  "suppressedRawAnalysisCount": 7,
+  "patches": [
+    {
+      "id": "display-1010-255-149-1",
+      "hiddenDisplayFragment": false,
+      "originalAreaM2": 0.410580611898658,
+      "displayAreaM2": 0.38007655338348906,
+      "originalVertices": 54,
+      "displayVertices": 5,
+      "maxBoundaryDriftM": 0.0791664362456264,
+      "roofPlaneMaxResidualM": 0.0161440038960734
+    },
+    {
+      "id": "display-1010-255-149-3",
+      "hiddenDisplayFragment": true,
+      "originalAreaM2": 0.0843656772203192,
+      "displayAreaM2": 0.06924283899765589,
+      "originalVertices": 16,
+      "displayVertices": 5,
+      "maxBoundaryDriftM": 0.05733895238283845,
+      "roofPlaneMaxResidualM": 2.842170943040401e-14
+    },
+    {
+      "id": "display-1010-255-149-7",
+      "hiddenDisplayFragment": false,
+      "originalAreaM2": 3.4535528021705577,
+      "displayAreaM2": 3.4989332209240565,
+      "originalVertices": 96,
+      "displayVertices": 12,
+      "maxBoundaryDriftM": 0.08002966935859979,
+      "roofPlaneMaxResidualM": 0.056804966892769926
+    },
+    {
+      "id": "display-1010-255-149-10",
+      "hiddenDisplayFragment": false,
+      "originalAreaM2": 0.971460111174873,
+      "displayAreaM2": 0.9931696849856164,
+      "originalVertices": 65,
+      "displayVertices": 10,
+      "maxBoundaryDriftM": 0.07281482871738174,
+      "roofPlaneMaxResidualM": 0.011327060865369276
+    }
+  ]
+}

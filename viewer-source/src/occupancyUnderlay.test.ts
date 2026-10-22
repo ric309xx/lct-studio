@@ -1,12 +1,23 @@
 import {expect,it} from "vitest";
 import {Cartesian3,Cartographic,Entity,JulianDate,PolygonHierarchy,type Viewer} from "cesium";
-import {createOccupancyUnderlay} from "./occupancyUnderlay";
+import {createOccupancyUnderlay,retainsReviewedRoofSkin} from "./occupancyUnderlay";
 const time=JulianDate.now();
 const ring=(x:number,y:number,size:number)=>Cartesian3.fromDegreesArray([x,y,x+size,y,x+size,y+size,x,y+size]);
 const hierarchy=()=>new PolygonHierarchy(ring(121.217,24.962,.0001),[new PolygonHierarchy(ring(121.21703,24.96203,.00002))]);
 const building=(continuous=false)=>new Entity({id:"roof",properties:{displayWallContinuity:continuous},polygon:{hierarchy:hierarchy()}});
 const viewer=(fn:(points:Cartographic[])=>(Cartographic|undefined)[])=>({clock:{currentTime:time},isDestroyed:()=>false,
   scene:{sampleHeightMostDetailed:async(points:Cartographic[])=>fn(points)}} as unknown as Viewer);
+it('keeps reviewed thin roof skins with mesh classification, without lifting them to a tree canopy',async()=>{
+  const b=new Entity({id:'255-roof',polygon:{hierarchy:hierarchy()},properties:{displayWallContinuity:true,displayRoofOnly:true,displayContinuousRoofSkin:true,displayMeshHeightRepair:true,
+    modelGroundAnchors:[[121.217,24.962,100],[121.2171,24.962,100],[121.217,24.9621,100]],modelRoofSamples:[[121.217,24.962,104],[121.2171,24.9621,104]]}});
+  const result=await createOccupancyUnderlay(viewer(points=>points.map(p=>{p.height=points.length===3?120:150;return p;})),b,120,()=>false,{actualSurface:true});
+  expect(retainsReviewedRoofSkin(b)).toBe(true);
+  const skin=result[0].polygon!,h=skin.hierarchy!.getValue(time) as PolygonHierarchy;
+  expect(h.holes).toHaveLength(1);
+  for(const p of h.positions)expect(Cartographic.fromCartesian(p).height).toBeCloseTo(124.2,4);
+  expect(skin.extrudedHeight!.getValue(time)).toBeCloseTo(123.82,4);
+  expect(retainsReviewedRoofSkin(new Entity({properties:{displayContinuousRoofSkin:true,displayRoofOnly:false}}))).toBe(false);
+});
 it("keeps pole exclusion holes empty in the repair volume",async()=>{
   const result=await createOccupancyUnderlay(viewer(points=>points.map(p=>{p.height=138;return p;})),building(),128,()=>false);
   const polygon=result[0].polygon!,h=polygon.hierarchy!.getValue(time) as PolygonHierarchy;
@@ -156,4 +167,20 @@ it("rejects inverted display ranges and falls back to calibrated supported heigh
   const result=await createOccupancyUnderlay(viewer(points=>points.map(p=>{p.height=140;return p;})),b,140,()=>false,{actualSurface:true});
   expect(result[0].properties!.classificationFloorHeight.getValue()).toBeCloseTo(141.1,4);
   expect(result[0].properties!.classificationCeilingHeight.getValue()).toBeCloseTo(142.8,4);
+});
+it('lowers only the reviewed fascia stencil, not its roof skin or horizontal hierarchy',async()=>{
+  const b=building(true);
+  b.properties!.addProperty('displayRoofOnly',true);
+  b.properties!.addProperty('modelRoofSamples',[[121.217,24.962,137.5]]);
+  b.properties!.addProperty('modelGroundAnchors',[[121.216,24.961,135.28],[121.2161,24.961,135.28]]);
+  b.properties!.addProperty('displayHeightRangeSourceZ',[135.6,138.7]);
+  const result=await createOccupancyUnderlay(viewer(points=>points.map(p=>{p.height=135.3;return p;})),b,135.3,()=>false,{actualSurface:true});
+  expect(result[0].properties!.classificationFloorHeight.getValue()).toBeCloseTo(135.62,4);
+  expect(result[0].properties!.classificationCeilingHeight.getValue()).toBeCloseTo(138.72,4);
+  const polygon=result[0].polygon!,h=polygon.hierarchy!.getValue(time) as PolygonHierarchy;
+  expect(polygon.extrudedHeight!.getValue(time)).toBeCloseTo(137.34,4);
+  expect(h.holes).toHaveLength(1);
+  const original=b.polygon!.hierarchy!.getValue(time) as PolygonHierarchy;
+  const a=Cartographic.fromCartesian(h.positions[0]),before=Cartographic.fromCartesian(original.positions[0]);
+  expect(a.longitude).toBeCloseTo(before.longitude,12);expect(a.latitude).toBeCloseTo(before.latitude,12);
 });

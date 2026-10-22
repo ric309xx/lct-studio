@@ -2,26 +2,27 @@ import {useEffect,useRef,useState} from 'react';
 import {Cartesian3,Color,Ion,OpenStreetMapImageryProvider,Rectangle,SceneMode,Viewer} from 'cesium';
 import {MapPin,LocateFixed,ArrowRight,Search} from 'lucide-react';
 import {parseConfig} from './config';
-import {clusterMapMarkers,type CaseOverviewItem,type MapMarker} from './caseOverview';
+import {caseMapBounds,clusterMapMarkers,type CaseOverviewItem,type MapMarker} from './caseOverview';
+import type {CaseMapNavigation} from './caseNavigation';
 
-type Props={cases:CaseOverviewItem[];initialKey?:string;onEnter:(parcelKey:string)=>void;savedView:{current:number[]|null}};
-export function CaseOverviewMap({cases,initialKey,onEnter,savedView}:Props){
+type Props={cases:CaseOverviewItem[];initialKey?:string;onEnter:(parcelKey:string)=>void;savedView:{current:number[]|null};savedNavigation:{current:CaseMapNavigation|null}};
+export function CaseOverviewMap({cases,initialKey,onEnter,savedView,savedNavigation}:Props){
   const host=useRef<HTMLDivElement>(null),map=useRef<Viewer|null>(null);
-  const [selected,setSelected]=useState(initialKey??'');
+  const [selected,setSelected]=useState(savedNavigation.current?.selected??initialKey??'');
   const [markers,setMarkers]=useState<MapMarker[]>([]);
   const [error,setError]=useState('');
-  const [query,setQuery]=useState('');
-  const [nearby,setNearby]=useState<CaseOverviewItem[]>([]);
+  const [query,setQuery]=useState(savedNavigation.current?.query??'');
+  const [nearby,setNearby]=useState<CaseOverviewItem[]>(()=>cases.filter(item=>savedNavigation.current?.nearbyKeys.includes(item.key)));
+  const expandedKeysRef=useRef(savedNavigation.current?.expandedKeys??[]);
+  const [expandedKeys,setExpandedKeys]=useState(expandedKeysRef.current);
+  useEffect(()=>{savedNavigation.current={selected,query,nearbyKeys:nearby.map(item=>item.key),...(expandedKeys.length?{expandedKeys}:{})};},[selected,query,nearby,expandedKeys,savedNavigation]);
   const active=cases.find(c=>c.key===selected);
   const matches=query.trim()?cases.filter(c=>`${c.title} ${c.parcels.map(p=>p.info.parcelNo).join(' ')}`.includes(query.trim())):[];
-  function fit(items:CaseOverviewItem[],duration=.65){
+  function fit(items:CaseOverviewItem[],duration=.65,detail=false){
     const viewer=map.current;if(!viewer)return;
-    const west=Math.min(...items.map(c=>c.bounds[0])),east=Math.max(...items.map(c=>c.bounds[2]));
-    const south=Math.min(...items.map(c=>c.bounds[1])),north=Math.max(...items.map(c=>c.bounds[3]));
-    const dx=Math.max((east-west)*.22,.0008),dy=Math.max((north-south)*.22,.0008);
-    viewer.camera.flyTo({destination:Rectangle.fromDegrees(west-dx,south-dy,east+dx,north+dy),duration});
+    viewer.camera.flyTo({destination:Rectangle.fromDegrees(...caseMapBounds(items,detail)),duration});
   }
-  function choose(item:CaseOverviewItem){setSelected(item.key);setNearby([]);setQuery('');fit([item]);}
+  function choose(item:CaseOverviewItem){setSelected(item.key);setNearby(items=>items.some(candidate=>candidate.key===item.key)?items:[]);setQuery('');fit([item],.65,expandedKeysRef.current.includes(item.key));}
   useEffect(()=>{
     let viewer:Viewer|undefined,remove:undefined|(()=>void),frame=0,previous='';
     try{
@@ -34,7 +35,7 @@ export function CaseOverviewMap({cases,initialKey,onEnter,savedView}:Props){
         viewer.entities.add({polyline:{positions:Cartesian3.fromDegreesArray(ring.flat()),width:2,material:Color.fromCssColorString('#087e80')}});
       }
       if(savedView.current){const [w,s,e,n]=savedView.current;viewer.camera.setView({destination:new Rectangle(w,s,e,n)});}
-      else fit(cases,0);
+      else fit(nearby.length?nearby:cases,0);
       const update=()=>{
         if(frame)return;
         frame=requestAnimationFrame(()=>{
@@ -43,6 +44,8 @@ export function CaseOverviewMap({cases,initialKey,onEnter,savedView}:Props){
             const p=viewer!.scene.cartesianToCanvasCoordinates(Cartesian3.fromDegrees(item.longitude,item.latitude));
             return p&&p.x>=-40&&p.y>=-40&&p.x<=host.current!.clientWidth+40&&p.y<=host.current!.clientHeight+40?[{x:Math.round(p.x),y:Math.round(p.y),items:[item]}]:[];
           });
+          // Always derive aggregation from the CURRENT screen scale. Selection
+          // and previous drill-down affect camera/navigation, never exemptions.
           const grouped=clusterMapMarkers(points);
           const signature=JSON.stringify(grouped.map(g=>[g.x,g.y,g.items.map(i=>i.key)]));
           if(signature!==previous){previous=signature;setMarkers(grouped);}
@@ -67,12 +70,18 @@ export function CaseOverviewMap({cases,initialKey,onEnter,savedView}:Props){
       <div className="case-map-markers">{markers.map(marker=>{
         const single=marker.items.length===1,item=marker.items[0];
         return <button key={marker.items.map(i=>i.key).join(',')} className={`case-map-marker ${single?'':'cluster'} ${single&&selected===item.key?'selected':''}`} style={{left:marker.x,top:marker.y}} title={marker.items.map(i=>i.title).join('\n')} aria-label={single?`選取案件 ${item.title}`:`放大 ${marker.items.length} 個案件`}
-          onClick={()=>{if(single)choose(item);else{setNearby(marker.items);setSelected('');fit(marker.items);}}}>
+          onClick={()=>{if(single)choose(item);else{
+            const keys=marker.items.map(candidate=>candidate.key);
+            // Remember only the close camera preference for this pair. It must
+            // not bypass normal clustering when the user zooms back out.
+            if(keys.length===2){expandedKeysRef.current=[...new Set([...expandedKeysRef.current,...keys])];setExpandedKeys(expandedKeysRef.current);}
+            setNearby(marker.items);setSelected('');setQuery('');fit(marker.items,.65,true);map.current?.scene.requestRender();
+          }}}>
           <span className="map-pin">{single?<MapPin size={19}/>:marker.items.length}</span>
           <span className="map-pin-label">{single?item.title:`${new Set(marker.items.map(i=>i.section)).size===1?item.title.split('｜')[0]:'鄰近案件'} · ${marker.items.length} 案`}</span>
         </button>;
       })}</div>
-      <button className="case-map-fit" onClick={()=>{setNearby([]);fit(cases);}}><LocateFixed size={18}/>全部案件</button>
+      <button className="case-map-fit" onClick={()=>{expandedKeysRef.current=[];setExpandedKeys([]);setNearby([]);setSelected('');setQuery('');fit(cases);map.current?.scene.requestRender();}}><LocateFixed size={18}/>全部案件</button>
       <div className="case-map-legend"><i/>案件位置與地籍界線 <span>鄰近標記會聚合，點選可放大</span></div>
     </div>
     <aside className="case-overview-panel">

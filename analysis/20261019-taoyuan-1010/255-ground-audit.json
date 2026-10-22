@@ -1,0 +1,33 @@
+{
+  "version": "20261020-255-road-v1",
+  "displayOnly": true,
+  "xyAndAreaUnchanged": true,
+  "sourceDxfSha256": "488062a180ce38ab9d9c12fa79b3ec80e920867df7e2d1ed8112bb3d1ff418ac",
+  "method": "2 m local cells; lowest supported 0.2 m mode, road-level consensus, 8-node inverse-distance interpolation",
+  "sourceRoadHeightRange": [
+    133.33480000000003,
+    135.42510000000001
+  ],
+  "nodeCount": 434,
+  "probes": 37,
+  "components": 6,
+  "pieces": 313,
+  "areas": {
+    "255-41": {
+      "originalAreaM2": 77.80563237215183,
+      "partitionAreaM2": 77.80563237220905
+    },
+    "255-42": {
+      "originalAreaM2": 177.12971190752933,
+      "partitionAreaM2": 177.12971190736127
+    },
+    "255-39": {
+      "originalAreaM2": 539.6826610146187,
+      "partitionAreaM2": 539.6826610136777
+    },
+    "255-149": {
+      "originalAreaM2": 82.46399352663994,
+      "partitionAreaM2": 82.46399352565996
+    }
+  }
+}

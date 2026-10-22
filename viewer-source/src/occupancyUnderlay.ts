@@ -1,4 +1,6 @@
 import { Cartesian3, Cartographic, Color, Entity, PolygonHierarchy, type Viewer } from "cesium";
+import {reviewedRoofHierarchy,reviewedRoofHeight} from './reviewedRoofDisplay';
+import {roofProjectionPrism} from './roofProjectionPrism';
 
 function densifyRing(ring: Cartesian3[], spacing = 0.5): Cartesian3[] {
   return ring.flatMap((a, index) => {
@@ -8,11 +10,18 @@ function densifyRing(ring: Cartesian3[], spacing = 0.5): Cartesian3[] {
   });
 }
 
+/** Only explicit, reviewed roof targets may cover gaps in the tile mesh. */
+export function retainsReviewedRoofSkin(building:Entity):boolean{
+  return building.properties?.displayContinuousRoofSkin?.getValue()===true && building.properties?.displayRoofOnly?.getValue()===true;
+}
+
 /** Original model classification plus a closed hole-filling underlay. */
 export async function createOccupancyUnderlay(viewer: Viewer, building: Entity,
   groundHeight: number, cancelled: () => boolean,
-  options: { nearbyRoofProbeMeters?: number; actualSurface?: boolean } = {}): Promise<Entity[]> {
-  const hierarchy = building.polygon!.hierarchy!.getValue(viewer.clock.currentTime) as PolygonHierarchy;
+  options: { nearbyRoofProbeMeters?: number; actualSurface?: boolean; projectionGroundHeightAt?:(lonRadians:number,latRadians:number)=>number } = {}): Promise<Entity[]> {
+  if(building.properties?.displaySuppressSmallFragment?.getValue()===true)return [];
+  const hierarchy = reviewedRoofHierarchy(building,viewer.clock.currentTime);
+  const cleanSurface=building.properties?.displayCleanRoofSurface?.getValue()===true;
   const continuous = building.properties?.displayWallContinuity?.getValue() === true;
   const sourceRoof = building.properties?.modelRoofSamples?.getValue() as number[][] | undefined;
   const sourceAnchors = building.properties?.modelGroundAnchors?.getValue() as number[][] | undefined;
@@ -43,7 +52,7 @@ export async function createOccupancyUnderlay(viewer: Viewer, building: Entity,
     const explicitRange = sourceDisplayRange?.length === 2 && sourceDisplayRange.every(Number.isFinite) &&
       sourceDisplayRange[0] < sourceDisplayRange[1] && sourceDisplayRange[1] - sourceDisplayRange[0] <= 10
       ? sourceDisplayRange : null;
-    const repairMeshHeight = !options.actualSurface && building.properties?.displayMeshHeightRepair?.getValue() === true;
+    const repairMeshHeight = !cleanSurface && (!options.actualSurface||retainsReviewedRoofSkin(building)) && building.properties?.displayMeshHeightRepair?.getValue() === true;
     // LAS and tiled mesh are different surface representations. A fitted LAS
     // plane can be slightly below the mesh and disappear behind it. Only for
     // reviewed targets, reconcile display Z with nearby mesh hits; never move
@@ -59,7 +68,7 @@ export async function createOccupancyUnderlay(viewer: Viewer, building: Entity,
       const nearest = sourcePositions.reduce((best, candidate) => {
         return distance(candidate)<distance(best) ? candidate : best;
       });
-      let height = nearest.height + offset;
+      let height = (reviewedRoofHeight(building,point)??nearest.height) + offset;
       const hit = mesh[vertexIndex++]?.height;
       if (repairMeshHeight) {
         const nearby = sourcePositions.filter(p => distance(p) <= 0.8 && Math.abs(p.height-nearest.height) <= (roofOnly ? 0.35 : 0.8));
@@ -71,7 +80,7 @@ export async function createOccupancyUnderlay(viewer: Viewer, building: Entity,
       return Cartesian3.fromRadians(point.longitude, point.latitude, height + (repairMeshHeight ? 0.2 : 0.12));
     }),ring.holes.map(lift));
     return [new Entity({id:`occupancy-roof-underlay-${building.id}`,
-      properties:{kind:"occupancy-roof-underlay",parcelKey:building.properties?.parcelKey?.getValue(),
+      properties:{kind:"occupancy-roof-underlay",parcelKey:building.properties?.parcelKey?.getValue(),sourceHeightOffset:offset,
         // Display-only clipping Z. Low eaves include fascia/undersides but
         // never extend to the ground; walls use their confirmed full height.
         classificationFloorHeight:explicitRange ? explicitRange[0]+offset : roofOnly ? Math.min(...sourceRoof.map(p=>p[2]+offset))-.9
@@ -80,9 +89,10 @@ export async function createOccupancyUnderlay(viewer: Viewer, building: Entity,
       polygon:{hierarchy:lift(dense),perPositionHeight:true,
         // Confirmed awnings/projections get a closed, thin roof skin rather
         // than a ground-to-roof volume that would colour the wall/cars below.
-        extrudedHeight:roofOnly ? Math.min(...sourceRoof.map(p => p[2]+offset)) - 0.18
+        extrudedHeight:cleanSurface&&roofOnly ? undefined : roofOnly ? Math.min(...sourceRoof.map(p => p[2]+offset)) - 0.18
           : Math.min(groundHeight, ...sourceAnchors.map(p => p[2]+offset)),closeTop:true,closeBottom:true,
-        material:Color.fromCssColorString("#43ee82").withAlpha(0.58)}})];
+        material:Color.fromCssColorString("#43ee82").withAlpha(0.58)}}),
+      ...roofProjectionPrism(building,offset,options.projectionGroundHeightAt??(()=>groundHeight))];
   }
   // A narrow frontage footprint may contain only a low awning: the upper
   // roof is behind the parcel edge. Probe its height, but never use probe XY

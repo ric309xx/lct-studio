@@ -1,11 +1,16 @@
 import {render,screen,fireEvent} from '@testing-library/react';
 import {expect,it,vi} from 'vitest';
-vi.hoisted(()=>window.history.replaceState({},'', '/3d-viewer/p/H4mT8qP2vK6x/?project=taoyuan-building-overlay'));
-vi.mock('cesium',()=>({Viewer:vi.fn(),Ion:{},Cesium3DTileset:{fromUrl:vi.fn()}}));
-vi.mock('./CaseOverviewMap',()=>({CaseOverviewMap:({cases,onEnter}:any)=><main aria-label="案件總覽地圖"><span>{cases.length} 個案件</span><button onClick={()=>onEnter('sanzuwu-sanzuwu-99-1')}>測試選案</button></main>}));
+vi.hoisted(()=>{
+  window.history.replaceState({},'', '/3d-viewer/p/H4mT8qP2vK6x/?project=taoyuan-building-overlay');
+  sessionStorage.setItem('lct-3d-viewer-role','viewer');
+  sessionStorage.setItem('lct-3d-viewer-projects',JSON.stringify(['taoyuan-building-overlay']));
+});
+vi.mock('cesium',()=>({Viewer:vi.fn(function(){throw Error('Synthetic renderer unavailable');}),Ion:{},Cesium3DTileset:{fromUrl:vi.fn()}}));
+vi.mock('./CaseOverviewMap',()=>({CaseOverviewMap:({cases,onEnter,savedNavigation}:any)=><main aria-label="案件總覽地圖"><span>{cases.length} 個案件</span><output aria-label="返回層級">{JSON.stringify(savedNavigation.current)}</output><button onClick={()=>onEnter('sanzuwu-sanzuwu-99-1')}>測試選案</button></main>}));
 import {App} from './App';
 import {Cesium3DTileset,Viewer} from 'cesium';
-it('opens case map before any 3D viewer or private model is requested',()=>{
+it('opens case map before any 3D viewer or private model is requested',async()=>{
+  vi.stubEnv('VITE_CESIUM_ION_ACCESS_TOKEN','synthetic-public-token');
   render(<App/>);
   expect(screen.getByLabelText('案件總覽地圖')).toBeInTheDocument();
   expect(screen.getByText('18 個案件')).toBeInTheDocument();
@@ -15,4 +20,13 @@ it('opens case map before any 3D viewer or private model is requested',()=>{
   fireEvent.click(screen.getByText('測試選案'));
   expect(new URLSearchParams(window.location.search).get('parcel')).toBe('sanzuwu-sanzuwu-99-1');
   expect(screen.queryByLabelText('案件總覽地圖')).not.toBeInTheDocument();
+  expect(await screen.findByRole('combobox',{name:'切換附近案件'})).toHaveValue('sanzuwu-sanzuwu-99-1');
+  expect(screen.queryByRole('button',{name:'在地圖選案件'})).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button',{name:'返回上一層'}));
+  expect(screen.getByLabelText('案件總覽地圖')).toBeInTheDocument();
+  const context=JSON.parse(screen.getByLabelText('返回層級').textContent!);
+  expect(context.selected).toBe('sanzuwu-sanzuwu-99-1');
+  expect(context.nearbyKeys).toHaveLength(6);
+  expect(new URLSearchParams(window.location.search).get('view')).toBe('cases');
+  expect(window.location.pathname).toBe('/3d-viewer/p/H4mT8qP2vK6x/');
 });

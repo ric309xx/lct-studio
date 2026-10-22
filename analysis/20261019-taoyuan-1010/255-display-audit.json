@@ -1,0 +1,25 @@
+{
+  "version": "20261022-255-display-v4",
+  "displayOnly": true,
+  "footprintsAndAreasUnchanged": true,
+  "geometryAndAreaSha256": "2304b925823740e3d1a7866193d439367c0f276dae56d433bff0d8fbde1ae360",
+  "targets": [
+    "display-1010-255-42-1",
+    "display-1010-255-149-1",
+    "display-1010-255-149-3",
+    "display-1010-255-149-7",
+    "display-1010-255-149-10"
+  ],
+  "method": "display preparation preserves the preceding v6 LAS analysis; thin roof skins plus neutral-metal-only repair of distorted upper facets; the newly measured front extension includes its user-reviewed metal side as existing-mesh classification, not a synthetic wall",
+  "metalRepairTarget": "display-1010-255-149-7",
+  "metalRepairSourceHeightRange": [
+    137.1,
+    140.8
+  ],
+  "lowerFasciaRegion": "255-149-gray-awning-front-extension",
+  "lowerFasciaClassificationSourceHeightRange": [
+    135.6,
+    138.3
+  ],
+  "lowerFasciaReview": "20261022 white metal picked at 121.214839069048,24.953373551853,137.374 m: outside old roof by 0.385 m but inside original CAD; added LAS-supported front region in model-regions v6 and recomputed measured union separately"
+}
