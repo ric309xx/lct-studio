@@ -133,11 +133,11 @@
   {
     "parcelNo": "239-1",
     "analysisStatus": "interpreted-draft",
-    "analysisVersion": "20261010-draft-v2-user-review",
+    "analysisVersion": "20261024-user-cap-review",
     "registeredAreaM2": 228,
-    "occupiedAreaM2": 18.226,
-    "occupancyPercent": 7.9941,
-    "targetCount": 3,
+    "occupiedAreaM2": 18.872,
+    "occupancyPercent": 8.277,
+    "targetCount": 4,
     "targets": [
       {
         "id": "239-1-west-canopy",
@@ -222,16 +222,52 @@
         ],
         "note": "東南側相接鐵皮屋頂前緣。",
         "selectedProjectionAreaM2": 4.537
+      },
+      {
+        "id": "239-1-reviewed-cap",
+        "category": "使用者複核之雨遮北端",
+        "selectedProjectionAreaM2": 0.645026,
+        "capPixelRing": [
+          [
+            205,
+            228
+          ],
+          [
+            213,
+            231
+          ],
+          [
+            247,
+            251
+          ],
+          [
+            244,
+            260
+          ],
+          [
+            234,
+            263
+          ],
+          [
+            205,
+            244
+          ],
+          [
+            199,
+            239
+          ]
+        ],
+        "note": "依使用者俯視箭頭與側視紅圈補入雨遮端部；排除樹冠與白車。僅新增與地籍相交且未重複計算的水平投影。"
       }
     ],
-    "pending": "西北棚架靠近樹木，已保守限制北端；三處屋頂邊緣仍待使用者複核。",
+    "pending": "北端低雨遮已依2026-10-24使用者紅圈與箭頭補入；樹冠遮蔽區及其他三處屋緣仍待複核。",
     "excluded": "北側貨車、零散設備及樹冠不計入。",
     "boundarySensitivity15cmM2": [
       12.16,
       22.716
     ],
     "sensitivityWarning": "Only +/- 0.15 m selected outline buffering; not positional accuracy or a confidence interval.",
-    "analysisNote": "AI 初步判讀／待複核：僅計入已判讀之建物、棚架與雨遮投影聯集；西北棚架靠近樹木，已保守限制北端；三處屋頂邊緣仍待使用者複核。 已排除樹木、車輛與號誌電線。比例以登記面積為分母，不是正式鑑界或完整占用認定。"
+    "analysisNote": "AI 初步判讀／待複核：僅計入已判讀之建物、棚架與雨遮投影聯集；西北棚架靠近樹木，已保守限制北端；三處屋頂邊緣仍待使用者複核。 已排除樹木、車輛與號誌電線。比例以登記面積為分母，不是正式鑑界或完整占用認定。 2026-10-24 已依紅圈／箭頭補入北端低雨遮，樹木與車輛不計入。"
   },
   {
     "parcelNo": "646-2",

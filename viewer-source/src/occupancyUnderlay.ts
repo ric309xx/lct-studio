@@ -48,6 +48,7 @@ export async function createOccupancyUnderlay(viewer: Viewer, building: Entity,
     const offset = consensus[Math.floor(consensus.length / 2)];
     const sourcePositions = sourceRoof.map(p => Cartographic.fromDegrees(p[0], p[1], p[2]));
     const roofOnly = building.properties?.displayRoofOnly?.getValue() === true;
+    const classifyToGround = building.properties?.displayClassifyToGround?.getValue() === true;
     const sourceDisplayRange = building.properties?.displayHeightRangeSourceZ?.getValue() as number[] | undefined;
     const explicitRange = sourceDisplayRange?.length === 2 && sourceDisplayRange.every(Number.isFinite) &&
       sourceDisplayRange[0] < sourceDisplayRange[1] && sourceDisplayRange[1] - sourceDisplayRange[0] <= 10
@@ -81,9 +82,10 @@ export async function createOccupancyUnderlay(viewer: Viewer, building: Entity,
     }),ring.holes.map(lift));
     return [new Entity({id:`occupancy-roof-underlay-${building.id}`,
       properties:{kind:"occupancy-roof-underlay",parcelKey:building.properties?.parcelKey?.getValue(),sourceHeightOffset:offset,
-        // Display-only clipping Z. Low eaves include fascia/undersides but
-        // never extend to the ground; walls use their confirmed full height.
-        classificationFloorHeight:explicitRange ? explicitRange[0]+offset : roofOnly ? Math.min(...sourceRoof.map(p=>p[2]+offset))-.9
+        // Display-only clipping Z. Low eaves normally include fascia/undersides;
+        // only an explicitly reviewed ground projection extends down to ground.
+        classificationFloorHeight:classifyToGround ? Math.min(groundHeight,...sourceAnchors.map(p=>p[2]+offset))+.02
+          : explicitRange ? explicitRange[0]+offset : roofOnly ? Math.min(...sourceRoof.map(p=>p[2]+offset))-.9
           : Math.min(groundHeight,...sourceAnchors.map(p=>p[2]+offset))+1.5,
         classificationCeilingHeight:explicitRange ? explicitRange[1]+offset : Math.max(...sourceRoof.map(p=>p[2]+offset))+.8},
       polygon:{hierarchy:lift(dense),perPositionHeight:true,

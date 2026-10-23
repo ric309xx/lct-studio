@@ -184,3 +184,17 @@ it('lowers only the reviewed fascia stencil, not its roof skin or horizontal hie
   const a=Cartographic.fromCartesian(h.positions[0]),before=Cartographic.fromCartesian(original.positions[0]);
   expect(a.longitude).toBeCloseTo(before.longitude,12);expect(a.latitude).toBeCloseTo(before.latitude,12);
 });
+it('includes the lower building only for an explicitly reviewed ground projection, keeping roof and XY unchanged',async()=>{
+  const b=building(true);
+  b.properties!.addProperty('displayClassifyToGround',true);
+  b.properties!.addProperty('modelRoofSamples',[[121.217,24.962,120]]);
+  b.properties!.addProperty('modelGroundAnchors',[[121.216,24.961,118],[121.2161,24.961,118]]);
+  const before=b.polygon!.hierarchy!.getValue(time) as PolygonHierarchy;
+  const result=await createOccupancyUnderlay(viewer(points=>points.map(p=>{p.height=140;return p;})),b,140,()=>false,{actualSurface:true});
+  expect(result[0].properties!.classificationFloorHeight.getValue()).toBeCloseTo(140.02,4);
+  expect(result[0].properties!.classificationCeilingHeight.getValue()).toBeCloseTo(142.8,4);
+  const after=result[0].polygon!.hierarchy!.getValue(time) as PolygonHierarchy;
+  const a=Cartographic.fromCartesian(before.positions[0]),c=Cartographic.fromCartesian(after.positions[0]);
+  expect(c.longitude).toBeCloseTo(a.longitude,12);expect(c.latitude).toBeCloseTo(a.latitude,12);
+  expect(c.height).toBeCloseTo(142.12,4);
+});

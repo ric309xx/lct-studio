@@ -3,6 +3,20 @@ import { readFileSync } from "node:fs";
 import catalog from "./taoyuan1006Parcels.json";
 
 describe("桃園 1006 六筆地號匯入", () => {
+  it('includes only the user-reviewed low canopy tip and keeps display area separate',()=>{
+    const parcel=catalog.find(p=>p.key==='sanzuwu-sanzuwu-239-1')!;
+    const geo=JSON.parse(readFileSync(new URL('../public/'+parcel.overlayUrl,import.meta.url),'utf8'));
+    const analysis=geo.features.find((f:any)=>f.id==='239-1-reviewed-cap-analysis');
+    const display=geo.features.find((f:any)=>f.id==='239-1-reviewed-cap-display');
+    expect(analysis.properties.projectedAreaM2).toBeCloseTo(.64502602,6);
+    expect(analysis.properties.analysisOnly).toBe(true);
+    expect(display.properties.projectedAreaM2).toBe(0);
+    expect(display.properties.displayContinuousRoofSkin).toBe(false);
+    expect(display.properties.displayActualSurface).toBe(true);
+    expect(display.properties.modelRoofSamples.every((v:number[])=>v[2]>131.6&&v[2]<132)).toBe(true);
+    expect(parcel.info.occupiedAreaM2).toBeCloseTo(18.872,3);
+    expect(parcel.info.cadastralAreaM2).toBe(228);
+  });
   it("keeps registered area separate and explicitly marks interpreted occupancy provisional", () => {
     expect(catalog.map(p => p.info.parcelNo)).toEqual(["471-7", "99-1", "221", "239-1", "646-2", "1051-1"]);
     expect(catalog.map(p => p.info.cadastralAreaM2)).toEqual([102, 180, 127, 228, 221, 84]);

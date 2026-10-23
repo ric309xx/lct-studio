@@ -50,6 +50,11 @@ describe('1015 兩批模型八地號', () => {
     expect(Math.max(...heights)-Math.min(...heights)).toBeLessThan(.5);
     expect(buildings[0].properties.continuousOccupancy).toBe(true);
     expect(buildings[0].properties.projectedAreaM2).toBeCloseTo(1.372,3);
+    const display=fc.features.find((f:any)=>f.properties.parcelKey==='dongliao-617-1'&&f.properties.kind==='occupancy-display');
+    expect(display.properties.displayGroundProjectionVolume).toBe(true);
+    expect(display.properties.displayClassifyToGround).toBe(true);
+    expect(display.properties.projectedAreaM2).toBe(0);
+    expect(display.properties.displayGroundProjectionRings[0].map((p:number[])=>p.slice(0,2))).toEqual(buildings[0].geometry.coordinates[0]);
   });
   it('includes the reviewed corner low awnings but not a ground-to-wall volume',()=>{
     const parcel=catalog.find(p=>p.key==='dongliao-1507-1')!;

@@ -1,0 +1,47 @@
+{
+  "version": "20261024-239-cap-617-projection",
+  "cadastreUnchanged": true,
+  "added239HorizontalAreaM2": 0.6450260222075757,
+  "previous239AreaM2": 18.22648097893175,
+  "new239AreaM2": 18.871507001035994,
+  "capPixels": [
+    [
+      205,
+      228
+    ],
+    [
+      213,
+      231
+    ],
+    [
+      247,
+      251
+    ],
+    [
+      244,
+      260
+    ],
+    [
+      234,
+      263
+    ],
+    [
+      205,
+      244
+    ],
+    [
+      199,
+      239
+    ]
+  ],
+  "capRoofSourceZRange": [
+    131.67938720733576,
+    131.991618496755
+  ],
+  "roofSupportingCells": 301,
+  "treeReturnsExcludedAboveGroundM": 4.1,
+  "capWithinCadastre": true,
+  "projection617AreaUnchanged": true,
+  "projection617NotBuildingVolume": true,
+  "sourceRasterSha256": "09b107bee428ef879480fd9d59b88768facdfff6c370e3d4dfa5733a9d40103a"
+}
