@@ -298,10 +298,10 @@
       "cadastralAreaM2": 1028.72,
       "geometryAreaM2": 1028.722,
       "analysisStatus": "model-derived",
-      "analysisNote": "依更新控制點之新版模型判讀建物／棚架／雨遮投影，與原 TWD97 地籍求交；CAD 房屋線僅供參考，待複核。1121 僅已判讀目標，不代表全路段清查。",
-      "occupiedAreaM2": 21.255,
-      "occupancyPercent": 2.06616,
-      "analysisVersion": "20261017-control-update-v2"
+      "analysisNote": "保留原樹下低棚，另依使用者圈選補入尖角雨遮及屋簷與原 TWD97 地籍交集；分層顯示、水平重疊只計一次，模型初估待複核，非全筆清查或實地鑑界。",
+      "occupiedAreaM2": 27.6132,
+      "occupancyPercent": 2.68423,
+      "analysisVersion": "20261025-704-tip-review"
     },
     "overlayUrl": "overlays/taoyuan-1013-v2/block-03.geojson",
     "tilesetPath": "1013-v2/tileset.json",

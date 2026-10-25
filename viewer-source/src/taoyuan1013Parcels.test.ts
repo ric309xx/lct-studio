@@ -41,16 +41,46 @@ describe("雙嶺段三區七地號", () => {
     const parcel=catalog.find(p=>p.info.parcelNo==='704-1')!;
     const geo=JSON.parse(readFileSync('public/'+parcel.overlayUrl,'utf8'));
     const features=geo.features.filter((f:{properties:{kind:string}})=>f.properties.kind==="occupancy-building");
-    expect(features).toHaveLength(1);
-    expect(features[0].properties.continuousOccupancy).toBe(true);
-    expect(features[0].properties.modelGroundAnchors).toHaveLength(3);
-    for(const p of features[0].properties.modelRoofSamples)expect(p[2]).toBeLessThan(121);
+    expect(features).toHaveLength(3);
+    const low=features.find((f:any)=>f.id==='model-low-t-shed-704-1-0');
+    expect(low.properties.continuousOccupancy).toBe(true);
+    expect(low.properties.modelGroundAnchors).toHaveLength(3);
+    for(const p of low.properties.modelRoofSamples)expect(p[2]).toBeLessThan(121);
+    expect(low.properties.projectedAreaM2).toBeCloseTo(21.25500683,6);
+    const tips=features.filter((f:any)=>f.id.startsWith('704-1-tip-'));
+    expect(tips.every((f:any)=>f.properties.analysisOnly===true)).toBe(true);
+    const displays=geo.features.filter((f:any)=>f.properties.kind==='occupancy-display');
+    expect(displays).toHaveLength(2);
+    for(const f of displays){
+      expect(f.properties.projectedAreaM2).toBe(0);
+      expect(f.properties.displayActualSurface).toBe(true);
+      expect(f.properties.displayRoofOnly).toBe(true);
+      expect(f.properties.displayContinuousRoofSkin).toBe(false);
+      expect(f.properties.displayGroundProjectionVolume).toBe(true);
+      expect(f.properties.displayClassifyToGround).toBe(true);
+      expect(f.properties.displayGroundProjectionRings.map((ring:number[][])=>ring.map(p=>p.slice(0,2)))).toEqual(f.geometry.coordinates);
+      for(const ring of f.properties.displayGroundProjectionRings){
+        expect(ring[0]).toEqual(ring.at(-1));
+        for(const p of ring)expect(p[2]).toBeGreaterThan(120);
+      }
+      expect(f.properties.displayHeightRangeSourceZ[1]-f.properties.displayHeightRangeSourceZ[0]).toBeLessThan(2);
+    }
+    const audit=JSON.parse(readFileSync('../analysis/20261025-704-tip-review/tip-audit.json','utf8'));
+    expect(audit.cadastreUnchanged).toBe(true);
+    expect(audit.overlapCountedOnce).toBe(true);
+    expect(audit.verticalProjectionRequested).toBe(true);
+    expect(audit.verticalProjectionIsMeasuredVolume).toBe(false);
+    expect(audit.projectionAreaUnchanged).toBe(true);
+    expect(audit.addedUnionAreaM2).toBeCloseTo(6.35824,4);
+    expect(parcel.info.occupiedAreaM2).toBeCloseTo(audit.newUnionAreaM2,4);
+    expect(features.reduce((sum:number,f:any)=>sum+f.properties.projectedAreaM2,0)).toBeCloseTo(audit.newUnionAreaM2,6);
+    expect(readFileSync('public/'+parcel.overlayUrl,'utf8')).toBe(readFileSync('../3d-viewer/'+parcel.overlayUrl,'utf8'));
   });
   it("每區保留各地號界線與可點選鍵值，共用模型並可獨立定位", () => {
     for (const parcel of catalog) {
       const geo = JSON.parse(readFileSync(new URL("../public/" + parcel.overlayUrl, import.meta.url), "utf8"));
       const members = catalog.filter(p => p.groupKey === parcel.groupKey);
-      expect(geo.features.filter((f: {properties: {kind: string}}) => f.properties.kind !== "occupancy-building").length).toBe(members.length * 2);
+      expect(geo.features.filter((f: {properties: {kind: string}}) => ['cadastral-fill','cadastral-boundary'].includes(f.properties.kind)).length).toBe(members.length * 2);
       for (const member of members) {
         const fill = geo.features.find((f: {id: string}) => f.id === member.fillEntityId);
         expect(fill.properties.parcelKey).toBe(member.key);
@@ -75,7 +105,7 @@ describe("雙嶺段三區七地號", () => {
       for(const f of updated.features.filter((f:any)=>['cadastral-fill','cadastral-boundary'].includes(f.properties.kind))) {
         expect(f.geometry).toEqual(legacy.features.find((o:any)=>o.id===f.id).geometry);
       }
-      if(parcel.info.analysisStatus==='model-derived')expect(parcel.info.analysisVersion).toBe('20261017-control-update-v2');
+      if(parcel.info.analysisStatus==='model-derived')expect(parcel.info.analysisVersion).toBe(parcel.key==='shuangling-704-1'?'20261025-704-tip-review':'20261017-control-update-v2');
     }
   });
 });

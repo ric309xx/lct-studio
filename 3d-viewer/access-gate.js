@@ -114,12 +114,12 @@
 
     const stylesheet = document.createElement("link");
     stylesheet.rel = "stylesheet";
-    stylesheet.href = "/3d-viewer/assets/viewer.css?v=20261024-green239617-v1";
+    stylesheet.href = "/3d-viewer/assets/viewer.css?v=20261025-704-projection-v1";
     document.head.appendChild(stylesheet);
 
     const script = document.createElement("script");
     script.type = "module";
-    script.src = "/3d-viewer/assets/viewer.js?v=20261024-green239617-v1";
+    script.src = "/3d-viewer/assets/viewer.js?v=20261025-704-projection-v1";
     script.dataset.viewerApp = "true";
     document.body.appendChild(script);
   };
