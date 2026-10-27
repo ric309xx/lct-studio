@@ -22,12 +22,14 @@ import { App } from "./App";
 it("shared viewer hides home and management controls despite a stale admin role", async () => {
   vi.stubEnv("VITE_CESIUM_ION_ACCESS_TOKEN", "synthetic-public-token");
   render(<App />);
-  await screen.findByRole("option", { name: "桃園建物套繪" });
+  await screen.findByRole("option", { name: "115年桃園開闢專案" });
   expect(screen.queryByRole("link", { name: "返回 LCT Studio 首頁" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "切換身分" })).not.toBeInTheDocument();
   expect(screen.getByText(/一般觀看/)).toBeInTheDocument();
   expect(screen.queryByRole("checkbox", {name:"顯示背景底圖"})).not.toBeInTheDocument();
   expect(screen.queryByText(/可隱藏背景檢查模型/)).not.toBeInTheDocument();
+  expect(screen.queryByRole("region", { name: "占用物件視角工具" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /展開視角工具|收合視角工具/ })).not.toBeInTheDocument();
   const selector = screen.getByRole("combobox", { name: "選擇專案" }) as HTMLSelectElement;
   expect([...selector.options].map(option => option.value)).toEqual(["taoyuan-building-overlay"]);
 });

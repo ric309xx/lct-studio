@@ -1,9 +1,61 @@
 import { describe, expect, it, vi } from "vitest";
-import { CameraEventType, Cartesian3, Ellipsoid, Event as CesiumEvent, Matrix4, Transforms, type Camera, type Viewer } from "cesium";
+import { Camera as CesiumCamera, CameraEventType, Cartesian3, Ellipsoid, Event as CesiumEvent, GeographicProjection, Matrix4, OrthographicFrustum, SceneMode, Transforms, type Camera, type Viewer } from "cesium";
 import { focusParcelOrbit, keepCameraLevel, tuneParcelNavigation } from "./parcelNavigation";
 const basis = () => ({positionWC:Cartesian3.fromDegrees(121.217,24.962,160),directionWC:new Cartesian3(1,0,0),transform:Matrix4.IDENTITY,right:new Cartesian3(),up:new Cartesian3()});
 
 describe("parcel orbit navigation", () => {
+  it('zooms the first and subsequent wheel ticks consistently without native depth recalibration',()=>{
+    const canvas=document.createElement('canvas');document.body.appendChild(canvas);
+    canvas.getBoundingClientRect=()=>({left:0,top:0,width:1000,height:800} as DOMRect);
+    const camera=new CesiumCamera({mode:SceneMode.SCENE3D,drawingBufferWidth:1000,drawingBufferHeight:800,pixelRatio:1,mapProjection:new GeographicProjection()} as any);
+    camera.setView({destination:Cartesian3.fromDegrees(121.217,24.962,400),orientation:{heading:0,pitch:-Math.PI/3,roll:0}});
+    camera.frustum=new OrthographicFrustum({width:120,aspectRatio:1.25});
+    const direction=Cartesian3.clone(camera.directionWC);
+    const point=Cartesian3.add(camera.positionWC,Cartesian3.add(Cartesian3.multiplyByScalar(camera.rightWC,12,new Cartesian3()),Cartesian3.multiplyByScalar(direction,200,new Cartesian3()),new Cartesian3()),new Cartesian3());
+    const controller={enableInputs:true,enableZoom:true};
+    const manual=vi.fn(),native=vi.fn();
+    const viewer={canvas,camera,scene:{postUpdate:new CesiumEvent(),screenSpaceCameraController:controller,requestRender:vi.fn()}} as unknown as Viewer;
+    const dispose=tuneParcelNavigation(viewer,()=>null,()=>true,manual);
+    canvas.addEventListener('wheel',native);
+    const widths:number[]=[120];
+    for(let i=0;i<2;i++){
+      const event=new WheelEvent('wheel',{deltaY:-100,clientX:600,clientY:400,bubbles:true,cancelable:true});
+      canvas.dispatchEvent(event);expect(event.defaultPrevented).toBe(true);
+      const width=(camera.frustum as OrthographicFrustum).width!;widths.push(width);
+      const local=Matrix4.multiplyByPoint(camera.viewMatrix,point,new Cartesian3());
+      expect(500+local.x/width*1000).toBeCloseTo(600,6);
+      expect(Cartesian3.distance(camera.directionWC,direction)).toBeLessThan(1e-7);
+    }
+    expect(widths[1]/widths[0]).toBeCloseTo(Math.exp(-.15),12);
+    expect(widths[2]/widths[1]).toBeCloseTo(widths[1]/widths[0],12);
+    expect(manual).toHaveBeenCalledTimes(2);expect(native).not.toHaveBeenCalled();
+    controller.enableZoom=false;
+    canvas.dispatchEvent(new WheelEvent('wheel',{deltaY:-100,bubbles:true,cancelable:true}));
+    expect((camera.frustum as OrthographicFrustum).width).toBe(widths[2]);
+    dispose();canvas.dispatchEvent(new WheelEvent('wheel',{deltaY:-100,bubbles:true,cancelable:true}));
+    expect(native).toHaveBeenCalledTimes(2);canvas.remove();
+  });
+  it('keeps the real orthographic camera pose and zoom on the very first middle press and release',()=>{
+    const canvas=document.createElement('canvas');document.body.appendChild(canvas);
+    const camera=new CesiumCamera({mode:SceneMode.SCENE3D,drawingBufferWidth:1000,drawingBufferHeight:800,pixelRatio:1,mapProjection:new GeographicProjection()} as any);
+    camera.setView({destination:Cartesian3.fromDegrees(121.217,24.962,400),orientation:{heading:0,pitch:-Math.PI/3,roll:0}});
+    camera.frustum=new OrthographicFrustum({width:120,aspectRatio:1.25});
+    const position=Cartesian3.clone(camera.positionWC),direction=Cartesian3.clone(camera.directionWC);
+    const controller={enableInputs:true,rotateEventTypes:CameraEventType.LEFT_DRAG,tiltEventTypes:CameraEventType.MIDDLE_DRAG,inertiaSpin:.9};
+    const viewer={canvas,camera,scene:{postUpdate:new CesiumEvent(),screenSpaceCameraController:controller,requestRender:vi.fn()}} as unknown as Viewer;
+    const target=Cartesian3.fromDegrees(121.217,24.962,135);
+    const dispose=tuneParcelNavigation(viewer,()=>target);
+    // No preceding left/right click or picked surface.
+    canvas.dispatchEvent(new MouseEvent('mousedown',{button:1,bubbles:true}));
+    expect((camera.frustum as OrthographicFrustum).width).toBe(120);
+    expect(Cartesian3.distance(camera.positionWC,position)).toBeLessThan(1e-7);
+    expect(Cartesian3.distance(camera.directionWC,direction)).toBeLessThan(1e-7);
+    document.dispatchEvent(new MouseEvent('mouseup',{button:1,bubbles:true}));
+    expect((camera.frustum as OrthographicFrustum).width).toBe(120);
+    expect((camera.frustum as OrthographicFrustum).aspectRatio).toBe(1.25);
+    expect(Cartesian3.distance(camera.positionWC,position)).toBeLessThan(1e-7);
+    dispose();canvas.remove();
+  });
   it("centers a clicked surface and uses it as the next middle-button pivot", () => {
     const canvas = document.createElement("canvas");
     document.body.appendChild(canvas);

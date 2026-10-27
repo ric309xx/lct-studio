@@ -33,6 +33,11 @@ describe("project sharing", () => {
     );
   });
 
+  it("renames Taoyuan without changing its project identity or model source",()=>{
+    const project=createProjectCatalog({type:'cesium-ion',assetId:5094702}).find(p=>p.id==='taoyuan-building-overlay');
+    expect(project).toMatchObject({name:'115年桃園開闢專案',sharePath:'/3d-viewer/p/H4mT8qP2vK6x/',modelSource:{type:'cesium-ion',assetId:6000372}});
+  });
+
   it("defines the OBJ and B3DMS comparison and its hidden share path", () => {
     const comparisons = createComparisonCatalog();
     expect(comparisons[0]).toMatchObject({

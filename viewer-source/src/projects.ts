@@ -191,7 +191,7 @@ export function createProjectCatalog(primarySource: ModelSource): ViewerProject[
     },
     {
       id: "taoyuan-building-overlay",
-      name: "桃園建物套繪",
+      name: "115年桃園開闢專案",
       location: "桃園市｜三座屋段舊社小段",
       sharePath: "/3d-viewer/p/H4mT8qP2vK6x/",
       modelSource: { type: "cesium-ion", assetId: 6000372 },

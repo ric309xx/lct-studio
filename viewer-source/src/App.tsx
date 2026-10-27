@@ -6,12 +6,14 @@ import taoyuan1013Cl2Parcels from "./taoyuan1013Cl2Parcels.json";
 import taoyuan1010Parcels from "./taoyuan1010Parcels.json";
 import taoyuan1015Parcels from "./taoyuan1015Parcels.json";
 import { roadGround, roadPosition, roadHeightAt, sampleRoadOffset } from "./shuanglingGround";
+import {fitParcel174Ground} from './parcel174Ground';
 import {taoyuan17Ground,taoyuan17Position,taoyuan17HeightAt,sampleTaoyuan17Offset} from './taoyuan17Ground';
 import {taoyuan255Ground,taoyuan255Position,taoyuan255HeightAt,sampleTaoyuan255Offset} from './taoyuan255Ground';
 import {caseCaptureDate} from './caseCaptureDate';
 import {CaseOverviewMap} from './CaseOverviewMap';
 import {buildCaseOverview,caseKey,caseTitle} from './caseOverview';
-import {nearbyCases,returnCaseContext,readCaseMapSnapshot,saveCaseMapSnapshot,type CaseMapNavigation} from './caseNavigation';
+import {nearbyCases,returnCaseContext,readCaseMapSnapshot,saveCaseMapSnapshot,type CaseMapNavigation,type CaseMapView} from './caseNavigation';
+import {alignCaseEntryToMap,caseEntryOrbitTarget,placeCaseEntryCamera,tiltCaseEntryCamera,useCaseEntryPerspective,CASE_ENTRY_FADE_MS,type CaseEntrySource,type CaseEntryPhase} from './caseEntry';
 import { needsFreshShuanglingDocument } from "./cadastralTransition";
 import { PRIVATE_R2_ORIGIN, TAOYUAN_R2_PROJECT, R2AuthorizationRequired, ensureR2Access, hasR2Access, privateR2Resource } from "./r2Access";
 import { CadastralInfoPanel } from "./CadastralInfoPanel";
@@ -657,9 +659,12 @@ export function App() {
   const [showCaseMap,setShowCaseMap]=useState(()=>!new URLSearchParams(window.location.search).has('parcel')||new URLSearchParams(window.location.search).get('view')==='cases');
   const overviewStorageKey=`lct:case-map:${window.location.pathname}:taoyuan-building-overlay`;
   const overviewSnapshotRef=useRef(readCaseMapSnapshot(window.sessionStorage,overviewStorageKey));
-  const overviewViewRef=useRef<number[]|null>(overviewSnapshotRef.current.view);
+  const overviewViewRef=useRef<CaseMapView|null>(overviewSnapshotRef.current.view);
   const overviewNavigationRef=useRef<CaseMapNavigation|null>(overviewSnapshotRef.current.navigation);
   const showingCaseMap=projectId==='taoyuan-building-overlay'&&showCaseMap;
+  const caseEntryRef=useRef<{key:string;source:CaseEntrySource}|null>(null);
+  const [caseEntryPhase,setCaseEntryPhase]=useState<CaseEntryPhase|null>(null);
+  const [caseEntryError,setCaseEntryError]=useState('');
   const [sectionViewer, setSectionViewer] = useState<Viewer | null>(null);
   const [sectionTileset, setSectionTileset] = useState<Cesium3DTileset | null>(null);
   const [projectName, setProjectName] = useState("新北市林口區工廠廠房");
@@ -684,6 +689,8 @@ export function App() {
     let cancelled = false;
     let viewer: Viewer | null = null;
     let disposeParcelNavigation: (() => void) | undefined;
+    let disposeEntryTilt: (() => void) | undefined;
+    let entryManualInput=false;
 
     async function initialize() {
       try {
@@ -727,6 +734,7 @@ export function App() {
           : projects.find((item) => item.id === projectId) ?? projects[0];
         if (!catalogProject) throw new Error("找不到對比使用的左側專案。");
         const activeParcel = !comparison ? activeCadastralConfig(catalogProject.id)?.parcels[0] : undefined;
+        const enteringCase=caseEntryRef.current?.key===activeParcel?.key?caseEntryRef.current:null;
         const project = activeParcel?.overlayUrl ? {
           ...catalogProject,
           camera: activeParcel.focus,
@@ -837,7 +845,7 @@ export function App() {
           const pose=project.camera;
           viewer.camera.setView({destination:Cartesian3.fromDegrees(pose.longitude,pose.latitude,pose.height),orientation:{heading:CesiumMath.toRadians(pose.headingDegrees),pitch:CesiumMath.toRadians(pose.pitchDegrees),roll:CesiumMath.toRadians(pose.rollDegrees)}});
         }
-        if (project.id === "taoyuan-building-overlay") disposeParcelNavigation = tuneParcelNavigation(viewer, () => parcelOrbitTargetRef.current, () => !measurementHandlerRef.current && !clippingHandlerRef.current && !calibrationPickEnabledRef.current && !landmarkEditEnabledRef.current);
+        if (project.id === "taoyuan-building-overlay") disposeParcelNavigation = tuneParcelNavigation(viewer, () => parcelOrbitTargetRef.current, () => !measurementHandlerRef.current && !clippingHandlerRef.current && !calibrationPickEnabledRef.current && !landmarkEditEnabledRef.current,()=>{entryManualInput=true;disposeEntryTilt?.();});
         setSectionViewer(viewer);
         viewer.scene.splitPosition = initialSplit;
 
@@ -1104,8 +1112,10 @@ export function App() {
                   ? await sampleTaoyuan17Offset(viewer) : null;
                 const road255Offset = activeParcel?.groupKey === taoyuan255Ground.groupKey
                   ? await sampleTaoyuan255Offset(viewer) : null;
+                const road174HeightAt=activeParcel?.key==='shuangling-174'?fitParcel174Ground(sampled):null;
                 if (cancelled || viewer.isDestroyed()) return;
-                const heightAt = (latitude: number,longitude:number) => road255Offset!==null ? taoyuan255HeightAt(longitude,latitude,road255Offset)
+                const heightAt = (latitude: number,longitude:number) => road174HeightAt ? road174HeightAt(latitude,longitude)
+                  : road255Offset!==null ? taoyuan255HeightAt(longitude,latitude,road255Offset)
                   : road17Offset!==null ? taoyuan17HeightAt(latitude,road17Offset)
                   : roadOffset !== null ? roadHeightAt(latitude, roadOffset) : groundHeight;
                 if (project.id === "taoyuan-building-overlay") {
@@ -1501,19 +1511,31 @@ export function App() {
           }, ScreenSpaceEventType.LEFT_CLICK);
           landmarkHandlerRef.current = landmarkHandler;
         }
-        focusModels(
-          viewer,
-          [leftTileset, rightTileset].filter(
-            (item): item is Cesium3DTileset => item !== null
-          ),
-          project.camera,
-          parcelOrbitTargetRef.current ?? undefined
-        );
+        let initialParcelRange=85;
         if (activeParcel?.groupKey && parcelOrbitTargetRef.current) {
           const fill = cadastralDataSourceRef.current?.entities.getById(activeParcel.fillEntityId);
           const positions = fill?.polygon?.hierarchy?.getValue(viewer.clock.currentTime)?.positions as Cartesian3[] | undefined;
-          const range = positions?.length ? Math.max(85, BoundingSphere.fromPoints(positions).radius * 3) : 100;
-          focusParcelOrbit(viewer, parcelOrbitTargetRef.current, 0, -65, range);
+          initialParcelRange=positions?.length ? Math.max(85, BoundingSphere.fromPoints(positions).radius * 3) : 100;
+        }
+        if(enteringCase){
+          if(cancelled||viewer.isDestroyed())return;
+          if(!alignCaseEntryToMap(viewer,enteringCase.source,parcelOrbitTargetRef.current??undefined))
+            placeCaseEntryCamera(viewer,project.camera,parcelOrbitTargetRef.current??undefined,initialParcelRange);
+          setCaseEntryPhase('revealing');
+          // Keep the map mounted for its opacity fade; the 3D camera is stationary.
+          if(!enteringCase.source.reducedMotion)await new Promise<void>(resolve=>window.setTimeout(resolve,CASE_ENTRY_FADE_MS));
+          if(cancelled||viewer.isDestroyed())return;
+          const entryTarget=caseEntryOrbitTarget(enteringCase.source,parcelOrbitTargetRef.current??undefined);
+          useCaseEntryPerspective(viewer,entryTarget);
+          caseEntryRef.current=null;setCaseEntryPhase(null);
+          // Render perspective before starting the turn on the next frame.
+          if(!enteringCase.source.reducedMotion)requestAnimationFrame(()=>{
+            if(cancelled||entryManualInput||!viewer||viewer.isDestroyed())return;
+            disposeEntryTilt=tiltCaseEntryCamera(viewer,entryTarget,enteringCase.key);
+          });
+        }else{
+          focusModels(viewer,[leftTileset,rightTileset].filter((item):item is Cesium3DTileset=>item!==null),project.camera,parcelOrbitTargetRef.current??undefined);
+          if(activeParcel?.groupKey&&parcelOrbitTargetRef.current)focusParcelOrbit(viewer,parcelOrbitTargetRef.current,0,-65,initialParcelRange);
         }
         if (!cancelled) {
           const partialFailure = comparison && (!leftTileset || !rightTileset);
@@ -1535,6 +1557,10 @@ export function App() {
               : /404/.test(message) ? "R2 模型檔案尚未就緒，請待上傳完成後重新載入。"
                 : /登入|網路/.test(message) ? message : "私人模型載入失敗，請檢查網路後重試。"
             : toViewerError(error) });
+          if(caseEntryRef.current){
+            caseEntryRef.current=null;setCaseEntryPhase(null);setCaseEntryError('模型尚未載入成功');setShowCaseMap(true);
+            const url=new URL(window.location.href);url.searchParams.delete('parcel');url.searchParams.set('view','cases');window.history.replaceState({},'',url);
+          }
         }
       }
     }
@@ -1543,6 +1569,7 @@ export function App() {
 
     return () => {
       cancelled = true;
+      disposeEntryTilt?.();
       metalRoofRepairRef.current?.destroy();metalRoofRepairRef.current=null;
       disposeParcelNavigation?.();
       clippingHandlerRef.current?.destroy();
@@ -2554,19 +2581,29 @@ export function App() {
   const isSelectedEstimatedOccupancy = ["interpreted-draft", "model-derived"].includes(selectedCadastral?.analysisStatus ?? "");
 
   const nearbyCaseOptions=nearbyCases(TAOYUAN_CASES,currentParcel?cadastralGroup(currentParcel):'',overviewNavigationRef.current);
-  if(showingCaseMap)return <CaseOverviewMap cases={TAOYUAN_CASES} initialKey={currentParcel?cadastralGroup(currentParcel):undefined} savedView={overviewViewRef} savedNavigation={overviewNavigationRef} onEnter={key=>{
-    const url=new URL(window.location.href);url.searchParams.set('parcel',key);url.searchParams.delete('view');window.history.replaceState({},'',url);
-    setSelectedCadastralParcelKey(key);setSelectedCadastral(null);setShowCaseMap(false);
-  }}/>;
-
   const returnToCaseMap=()=>{
+    caseEntryRef.current=null;setCaseEntryPhase(null);
     const context=returnCaseContext(TAOYUAN_CASES,currentParcel?cadastralGroup(currentParcel):'',overviewNavigationRef.current);
     if(context!==overviewNavigationRef.current)overviewViewRef.current=null;
     overviewNavigationRef.current=context;
+    saveCaseMapSnapshot(window.sessionStorage,overviewStorageKey,{navigation:context,view:overviewViewRef.current});
     const url=new URL(window.location.href);url.searchParams.delete('parcel');url.searchParams.set('view','cases');window.history.replaceState({},'',url);setShowCaseMap(true);
   };
+  const cancelCaseEntry=()=>{caseEntryRef.current=null;setCaseEntryPhase(null);setShowCaseMap(true);const url=new URL(window.location.href);url.searchParams.delete('parcel');url.searchParams.set('view','cases');window.history.replaceState({},'',url);};
   return (
+    <>
+    {(showingCaseMap||caseEntryPhase)&&<div className="case-map-layer"><CaseOverviewMap cases={TAOYUAN_CASES} initialKey={currentParcel?cadastralGroup(currentParcel):undefined} savedView={overviewViewRef} savedNavigation={overviewNavigationRef}
+      entryPhase={caseEntryPhase} entryError={caseEntryError} onCancelEntry={cancelCaseEntry} onEnter={(key,source)=>{
+        saveCaseMapSnapshot(window.sessionStorage,overviewStorageKey,{navigation:overviewNavigationRef.current,view:overviewViewRef.current});
+        caseEntryRef.current=source?{key,source}:null;setCaseEntryPhase(source?'loading':null);setCaseEntryError('');
+        const url=new URL(window.location.href);url.searchParams.set('parcel',key);url.searchParams.delete('view');window.history.replaceState({},'',url);
+        setSelectedCadastralParcelKey(key);setSelectedCadastral(null);setShowCaseMap(false);
+      }}/></div>}
     <main
+      data-case-entry={showingCaseMap?'map':caseEntryPhase??undefined}
+      style={{'--case-entry-duration':`${CASE_ENTRY_FADE_MS}ms`} as React.CSSProperties}
+      aria-hidden={showingCaseMap||caseEntryPhase==='loading'?true:undefined}
+      inert={showingCaseMap||caseEntryPhase==='loading'}
       className={
         clipMode === "drawing" ||
         measureMode === "distance" ||
@@ -3602,6 +3639,7 @@ export function App() {
         </div>
       )}
     </main>
+    </>
   );
 }
 

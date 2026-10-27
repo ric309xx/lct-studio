@@ -5,7 +5,7 @@ import "./cadastralInfoPanel.css";
 export function CadastralInfoPanel({ parcelNo, onClose, children }: {
   parcelNo: string; onClose: () => void; children: ReactNode;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   return <>
     <aside id="cadastral-info-panel" className="landmark-card cadastral-card" aria-label="地籍資訊" hidden={collapsed}>
       <div className="cadastral-panel-actions">

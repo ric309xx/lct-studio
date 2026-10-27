@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {buildCaseOverview} from './caseOverview';
-import {nearbyCases,returnCaseContext,readCaseMapSnapshot,saveCaseMapSnapshot} from './caseNavigation';
+import {nearbyCases,returnCaseContext,readCaseMapSnapshot,saveCaseMapSnapshot,captureCaseMapCamera} from './caseNavigation';
 import p1006 from './taoyuan1006Parcels.json';
 import p1010 from './taoyuan1010Parcels.json';
 
@@ -36,5 +36,18 @@ describe('case navigation context',()=>{
     expect(readCaseMapSnapshot({getItem:()=>'{bad'},'x')).toEqual({navigation:null,view:null});
     expect(readCaseMapSnapshot({getItem:()=>JSON.stringify({navigation:{selected:2},view:[1,2]})},'x')).toEqual({navigation:null,view:null});
     expect(()=>saveCaseMapSnapshot({setItem:()=>{throw Error('blocked');}},'x',{navigation:null,view:null})).not.toThrow();
+  });
+  it('stores a precise 2D camera span and rejects invalid camera snapshots',()=>{
+    const camera={positionCartographic:{longitude:2.115,latitude:.435,height:140}};
+    const view=captureCaseMapCamera(camera);
+    expect(view).toEqual({kind:'camera-2d',longitude:2.115,latitude:.435,span:140});
+    const snapshot={navigation:{selected:cases[1].key,query:'',nearbyKeys:[]},view};
+    saveCaseMapSnapshot(sessionStorage,'precise-map-camera',snapshot);
+    camera.positionCartographic.height=4e7;
+    expect(readCaseMapSnapshot(sessionStorage,'precise-map-camera')).toEqual(snapshot);
+    expect(captureCaseMapCamera({positionCartographic:{longitude:NaN,latitude:0,height:100}})).toBeNull();
+    expect(captureCaseMapCamera({positionCartographic:{longitude:2.1,latitude:.4,height:0}})).toBeNull();
+    expect(readCaseMapSnapshot({getItem:()=>JSON.stringify({view:{kind:'camera-2d',longitude:2.1,latitude:.4,span:-1}})},'x').view).toBeNull();
+    sessionStorage.removeItem('precise-map-camera');
   });
 });

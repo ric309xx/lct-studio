@@ -1,4 +1,14 @@
-import { BoundingSphere, CameraEventType, Cartesian3, Ellipsoid, HeadingPitchRange, Math as CesiumMath, Matrix4, ScreenSpaceEventHandler, ScreenSpaceEventType, Transforms, type Camera, type Viewer } from "cesium";
+import { BoundingSphere, CameraEventType, Cartesian3, Ellipsoid, HeadingPitchRange, Math as CesiumMath, Matrix4, OrthographicFrustum, ScreenSpaceEventHandler, ScreenSpaceEventType, Transforms, type Camera, type Viewer } from "cesium";
+
+/** Cesium recalculates orthographic width when switching orbit frames. Keep
+ * the current zoom on both middle-down and release, including the first use.
+ */
+export function setOrbitFrame(camera:Camera,frame:Matrix4):void{
+  const frustum=camera.frustum;
+  const width=frustum instanceof OrthographicFrustum?frustum.width:undefined;
+  camera.lookAtTransform(frame);
+  if(width!==undefined&&(frustum instanceof OrthographicFrustum))frustum.width=width;
+}
 
 /** Remove roll without changing position, look direction, pitch or orbit pivot.
  * Use world geodetic up, then convert back into the current camera frame.
@@ -32,7 +42,7 @@ export function focusParcelOrbit(viewer: Viewer, target: Cartesian3, heading = 0
   });
 }
 
-export function tuneParcelNavigation(viewer: Viewer, getTarget: () => Cartesian3 | null = () => null, canFocus: () => boolean = () => true) {
+export function tuneParcelNavigation(viewer: Viewer, getTarget: () => Cartesian3 | null = () => null, canFocus: () => boolean = () => true, onManualInput:()=>void=()=>{}) {
   const controller = viewer.scene.screenSpaceCameraController;
   const original = { rotate: controller.rotateEventTypes, tilt: controller.tiltEventTypes, inertia: controller.inertiaSpin, axis: viewer.camera.constrainedAxis };
   const handler = new ScreenSpaceEventHandler(viewer.canvas);
@@ -40,13 +50,34 @@ export function tuneParcelNavigation(viewer: Viewer, getTarget: () => Cartesian3
   // correction otherwise pushes the inspection camera above these surfaces.
   const collision = controller.enableCollisionDetection;
   controller.enableCollisionDetection = false;
+  const wheel=(event:WheelEvent)=>{
+    const camera=viewer.camera,frustum=camera.frustum;
+    if(!(frustum instanceof OrthographicFrustum)||!controller.enableInputs||controller.enableZoom===false||!frustum.width||!frustum.aspectRatio)return;
+    const rect=viewer.canvas.getBoundingClientRect();
+    if(!rect.width||!rect.height||!Number.isFinite(event.deltaY)||event.deltaY===0)return;
+    // Native orthographic zoom re-estimates width from roof/ground depth on
+    // the first wheel tick. Change only the existing frustum instead, so no
+    // intermediate pose, roof-height snap, or competing native inertia occurs.
+    event.preventDefault();event.stopImmediatePropagation();onManualInput();camera.cancelFlight();
+    const pixels=event.deltaY*(event.deltaMode===1?16:event.deltaMode===2?rect.height:1);
+    const width=Math.max(2,Math.min(1e7,frustum.width*Math.exp(Math.max(-.35,Math.min(.35,pixels*.0015)))));
+    const delta=frustum.width-width;
+    const x=(event.clientX-rect.left)/rect.width-.5,y=.5-(event.clientY-rect.top)/rect.height;
+    const shift=Cartesian3.add(Cartesian3.multiplyByScalar(camera.rightWC,x*delta,new Cartesian3()),
+      Cartesian3.multiplyByScalar(camera.upWC,y*delta/frustum.aspectRatio,new Cartesian3()),new Cartesian3());
+    const local=Matrix4.multiplyByPointAsVector(Matrix4.inverseTransformation(camera.transform,new Matrix4()),shift,new Cartesian3());
+    Cartesian3.add(camera.position,local,camera.position);frustum.width=width;
+    viewer.scene.requestRender();
+  };
+  viewer.canvas.addEventListener('wheel',wheel,{capture:true,passive:false});
+  viewer.canvas.addEventListener('pointerdown',onManualInput);
   let selectedTarget: Cartesian3 | null = null;
   let selectedParcelTarget = getTarget();
   let orbiting = false;
   const removeLevelListener = viewer.scene.postUpdate.addEventListener(() => keepCameraLevel(viewer.camera));
   const releaseOrbit = () => {
     if (!orbiting) return;
-    viewer.camera.lookAtTransform(Matrix4.IDENTITY);
+    setOrbitFrame(viewer.camera,Matrix4.IDENTITY);
     viewer.camera.constrainedAxis = original.axis;
     controller.rotateEventTypes = original.rotate;
     controller.tiltEventTypes = original.tilt;
@@ -82,10 +113,10 @@ export function tuneParcelNavigation(viewer: Viewer, getTarget: () => Cartesian3
     const target = selectedTarget ?? getTarget();
     if (!target || !controller.enableInputs) return;
     viewer.camera.cancelFlight();
-    viewer.camera.lookAtTransform(Transforms.eastNorthUpToFixedFrame(target));
+    setOrbitFrame(viewer.camera,Transforms.eastNorthUpToFixedFrame(target));
     viewer.camera.constrainedAxis = Cartesian3.UNIT_Z;
-    // Only middle-drag uses the parcel frame. Left drag, right drag, wheel,
-    // touch and their speeds otherwise retain Cesium's original controls.
+    // Only middle-drag uses the parcel frame. Orthographic wheel zoom above
+    // preserves the projection; other input modes retain native controls.
     controller.rotateEventTypes = CameraEventType.MIDDLE_DRAG;
     controller.tiltEventTypes = undefined;
     controller.inertiaSpin = 0;
@@ -93,6 +124,8 @@ export function tuneParcelNavigation(viewer: Viewer, getTarget: () => Cartesian3
   }, ScreenSpaceEventType.MIDDLE_DOWN);
   handler.setInputAction(releaseOrbit, ScreenSpaceEventType.MIDDLE_UP);
   return () => {
+    viewer.canvas.removeEventListener('wheel',wheel,true);
+    viewer.canvas.removeEventListener('pointerdown',onManualInput);
     removeLevelListener();
     window.removeEventListener("mouseup", releaseOutside);
     window.removeEventListener("blur", releaseOrbit);
