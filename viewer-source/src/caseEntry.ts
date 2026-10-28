@@ -1,4 +1,4 @@
-import {Cartesian3,Cartographic,Ellipsoid,HeadingPitchRange,Math as CesiumMath,Matrix4,OrthographicFrustum,PerspectiveFrustum,Transforms,type Viewer} from 'cesium';
+import {Cartesian3,Cartographic,Ellipsoid,HeadingPitchRange,Math as CesiumMath,Matrix4,OrthographicFrustum,PerspectiveFrustum,Transforms,type Camera,type Viewer} from 'cesium';
 import type {CaseMapCamera} from './caseNavigation';
 import type {CameraPreset} from './projects';
 import {caseMapBounds,type CaseOverviewItem} from './caseOverview';
@@ -81,16 +81,15 @@ export function useCaseEntryPerspective(viewer:Viewer,target:Cartesian3|undefine
  * Keep the parcel at its existing screen anchor; no flight arc or zoom.
  * User input always wins.
  */
-export function tiltCaseEntryCamera(viewer:Viewer,target:Cartesian3|undefined,parcelKey?:string):()=>void{
-  if(viewer.isDestroyed()||!target)return ()=>{};
-  const camera=viewer.camera,canvas=viewer.canvas;
-  if(!Matrix4.equals(camera.transform,Matrix4.IDENTITY))return ()=>{};
-  const frustum=camera.frustum,frustumWidth=frustum instanceof OrthographicFrustum?frustum.width:undefined;
+function caseEntryCameraPlan(viewer:Viewer,target:Cartesian3|undefined,parcelKey?:string){
+  if(viewer.isDestroyed()||!target)return null;
+  const camera=viewer.camera;
+  if(!Matrix4.equals(camera.transform,Matrix4.IDENTITY))return null;
   const start=Cartesian3.clone(camera.positionWC),direction=Cartesian3.clone(camera.directionWC),up=Cartesian3.clone(camera.upWC),right=Cartesian3.clone(camera.rightWC);
   const normal=Ellipsoid.WGS84.geodeticSurfaceNormal(target,new Cartesian3());
   const relative=Cartesian3.subtract(target,start,new Cartesian3());
   const range=Cartesian3.dot(relative,direction),anchorX=Cartesian3.dot(relative,right),anchorY=Cartesian3.dot(relative,up);
-  if(!Number.isFinite(range)||range<=0)return ()=>{};
+  if(!Number.isFinite(range)||range<=0)return null;
   const view=caseEntryViewForParcel(parcelKey);
   const measuredTilt=CesiumMath.acosClamped(-Cartesian3.dot(direction,normal));
   // Heading at the camera's geodetic footpoint drifts slightly after sidebar
@@ -110,6 +109,46 @@ export function tiltCaseEntryCamera(viewer:Viewer,target:Cartesian3|undefined,pa
       Cartesian3.multiplyByScalar(Cartesian3.cross(normal,v,new Cartesian3()),s,new Cartesian3()),new Cartesian3()),
       Cartesian3.multiplyByScalar(normal,Cartesian3.dot(normal,v)*(1-c),new Cartesian3()),new Cartesian3());
   };
+  const poseAt=(progress:number)=>{
+    const angle=tiltDelta*progress,c=Math.cos(angle),s=Math.sin(angle),yaw=-CesiumMath.toRadians(yawDegrees)*progress;
+    const d=turn(Cartesian3.add(Cartesian3.multiplyByScalar(direction,c,new Cartesian3()),Cartesian3.multiplyByScalar(up,s,new Cartesian3()),new Cartesian3()),yaw);
+    const u=turn(Cartesian3.subtract(Cartesian3.multiplyByScalar(up,c,new Cartesian3()),Cartesian3.multiplyByScalar(direction,s,new Cartesian3()),new Cartesian3()),yaw);
+    const r=Cartesian3.normalize(Cartesian3.cross(d,u,new Cartesian3()),new Cartesian3());
+    const offset=Cartesian3.add(Cartesian3.add(Cartesian3.multiplyByScalar(d,range,new Cartesian3()),Cartesian3.multiplyByScalar(r,anchorX,new Cartesian3()),new Cartesian3()),Cartesian3.multiplyByScalar(u,anchorY,new Cartesian3()),new Cartesian3());
+    return {position:Cartesian3.subtract(target,offset,new Cartesian3()),direction:d,up:u};
+  };
+  return {poseAt,yawDegrees,duration};
+}
+
+export type CaseInspectionView={position:Cartesian3;direction:Cartesian3;up:Cartesian3;target:Cartesian3;frustum:Camera['frustum']};
+
+/** Save the intended END pose, even if the user interrupts the entry turn.
+ * Retain perspective/zoom and the sidebar's off-center anchor, not just HPR.
+ */
+export function caseEntryInspectionView(viewer:Viewer,target:Cartesian3|undefined,key?:string):CaseInspectionView|null{
+  const plan=caseEntryCameraPlan(viewer,target,key);
+  return plan&&target?{...plan.poseAt(1),target:Cartesian3.clone(target),frustum:viewer.camera.frustum.clone()}:null;
+}
+
+/** No bounding-sphere flight: it can zoom out and replace the saved framing. */
+export function restoreCaseInspectionView(viewer:Viewer,view:CaseInspectionView):boolean{
+  if(viewer.isDestroyed())return false;
+  const camera=viewer.camera;
+  camera.cancelFlight();camera.lookAtTransform(Matrix4.IDENTITY);
+  camera.frustum=view.frustum.clone();
+  if(camera.frustum instanceof PerspectiveFrustum||camera.frustum instanceof OrthographicFrustum){
+    const rect=viewer.canvas.getBoundingClientRect();
+    if(rect.width>0&&rect.height>0)camera.frustum.aspectRatio=rect.width/rect.height;
+  }
+  camera.setView({destination:Cartesian3.clone(view.position),orientation:{direction:Cartesian3.clone(view.direction),up:Cartesian3.clone(view.up)}});
+  viewer.scene.requestRender();return true;
+}
+
+export function tiltCaseEntryCamera(viewer:Viewer,target:Cartesian3|undefined,parcelKey?:string):()=>void{
+  const plan=caseEntryCameraPlan(viewer,target,parcelKey);
+  if(!plan)return ()=>{};
+  const {poseAt,yawDegrees,duration}=plan,camera=viewer.camera,canvas=viewer.canvas;
+  const frustum=camera.frustum,frustumWidth=frustum instanceof OrthographicFrustum?frustum.width:undefined;
   let frame=0,started:number|undefined,stopped=false;
   canvas.dataset.caseEntryYawDegrees=yawDegrees.toFixed(6);
   canvas.dataset.cameraMotion='turning';
@@ -122,12 +161,8 @@ export function tiltCaseEntryCamera(viewer:Viewer,target:Cartesian3|undefined,pa
     if(stopped)return;if(viewer.isDestroyed()){stop();return;}
     started??=time;
     const progress=Math.min(1,(time-started)/duration),eased=progress*progress*(3-2*progress);
-    const angle=tiltDelta*eased,c=Math.cos(angle),s=Math.sin(angle),yaw=-CesiumMath.toRadians(yawDegrees)*eased;
-    const d=turn(Cartesian3.add(Cartesian3.multiplyByScalar(direction,c,new Cartesian3()),Cartesian3.multiplyByScalar(up,s,new Cartesian3()),new Cartesian3()),yaw);
-    const u=turn(Cartesian3.subtract(Cartesian3.multiplyByScalar(up,c,new Cartesian3()),Cartesian3.multiplyByScalar(direction,s,new Cartesian3()),new Cartesian3()),yaw);
-    const r=Cartesian3.normalize(Cartesian3.cross(d,u,new Cartesian3()),new Cartesian3());
-    const offset=Cartesian3.add(Cartesian3.add(Cartesian3.multiplyByScalar(d,range,new Cartesian3()),Cartesian3.multiplyByScalar(r,anchorX,new Cartesian3()),new Cartesian3()),Cartesian3.multiplyByScalar(u,anchorY,new Cartesian3()),new Cartesian3());
-    camera.setView({destination:Cartesian3.subtract(target,offset,new Cartesian3()),orientation:{direction:d,up:u}});
+    const pose=poseAt(eased);
+    camera.setView({destination:pose.position,orientation:{direction:pose.direction,up:pose.up}});
     if(frustumWidth!==undefined&&frustum instanceof OrthographicFrustum)frustum.width=frustumWidth;
     viewer.scene.requestRender();
     if(progress<1)frame=requestAnimationFrame(step);else stop();

@@ -46,10 +46,11 @@ describe("App controls", () => {
     ).toBeDisabled();
     expect(screen.getByRole("button", { name: "重新載入" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "切換全螢幕" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "衛星航照" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "國土正射" })).toHaveAttribute(
       "aria-pressed",
       "true"
     );
+    expect(screen.getByRole("button", { name: "衛星航照" })).toHaveAttribute("aria-pressed","false");
     expect(screen.queryByText("地形")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "平面" })).not.toBeInTheDocument();
     expect(

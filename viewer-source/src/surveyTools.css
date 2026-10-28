@@ -1,0 +1,20 @@
+/* The launcher participates in the main dock. Anchor only the expanded panel
+   against the whole dock so its right edge remains within narrow viewports. */
+.survey-tools{display:flex;min-width:0;font-size:13px;line-height:1.5;}
+.control-dock .survey-tools-toggle[aria-expanded="true"]{color:#09262b;background:#8ae6d4;}
+.survey-tools-body{position:absolute;right:0;bottom:calc(100% + 12px);width:min(320px,calc(100vw - 24px));box-sizing:border-box;z-index:3;padding:14px;max-height:calc(100dvh - 150px);overflow:auto;border:1px solid #53686d;border-radius:12px;color:#e5f0f2;background:#10232bf7;box-shadow:0 8px 28px #0005;}
+.survey-tools-body[hidden]{display:none;}
+.survey-tools .survey-tools-body button{display:inline-flex;flex:none;flex-direction:row;min-width:0;min-height:34px;color:inherit;font:inherit;padding:7px 9px;border:1px solid #647d82;border-radius:7px;background:#1e3941;cursor:pointer;}
+.survey-tools .survey-tools-body button:hover:not(:disabled){background:#31525b;color:#e5f0f2;}
+.survey-tools button:focus-visible{outline:2px solid #8ae6d4;outline-offset:2px;}
+.survey-tools button:disabled{opacity:.45;cursor:not-allowed;}
+.survey-tools .survey-tools-body .primary{background:#8ae6d4;color:#09262b;border-color:#8ae6d4;}
+.survey-tools p{margin:0 0 8px;}.survey-tools small{display:block;color:#b3c6cb;font-size:11px;line-height:1.5;margin:7px 0;}
+.survey-grid-name{color:#8ae6d4;font-size:12px;}
+.survey-tools dl{margin:7px 0;font-variant-numeric:tabular-nums;}.survey-tools dl>div{display:flex;justify-content:space-between;gap:10px;margin:4px 0;}
+.survey-tools dt{color:#b9cbd0;}.survey-tools dd{margin:0;user-select:text;}.survey-coordinate{min-height:70px;}
+.survey-measure-actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:12px;padding-top:10px;border-top:1px solid #476067;}
+.survey-distance-results section{margin-top:10px;padding-top:8px;border-top:1px solid #476067;}
+.survey-measure-notice{color:#f7d58b;}
+@media(min-width:761px) and (max-width:1100px){.control-dock:has(.survey-tools)>button,.control-dock .survey-tools-toggle{flex-direction:column;min-width:72px;padding:8px;gap:4px;}.control-dock:has(.survey-tools)>button>span,.control-dock .survey-tools-toggle>span{font-size:12px;}}
+@media(max-width:760px){.control-dock .survey-tools{flex:1;}.control-dock .survey-tools-toggle{flex:1;flex-direction:column;gap:3px;padding:8px 4px;}.control-dock .survey-tools-toggle span{font-size:12px;line-height:1.25;}.survey-tools-body{max-height:calc(100dvh - 180px);}}

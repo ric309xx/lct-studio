@@ -1,10 +1,16 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import { viteStaticCopy } from "vite-plugin-static-copy";
+import {fileURLToPath} from 'node:url';
 
 const cesiumStaticDirectory = "cesium-1.143.0";
 
 export default defineConfig({
+  // Exclude raw control coordinates even if Rollup emits an unreachable
+  // dynamic-import chunk after removing the local diagnostic branch.
+  resolve: {alias: process.env.VITE_LOCAL_HEIGHT_AUDIT==='1'?[]:[{
+    find:'./heightFrameAudit',replacement:fileURLToPath(new URL('./src/disabledHeightAudit.ts',import.meta.url))
+  }]},
   base: process.env.VITE_BASE_PATH ?? "/",
   build: {
     rollupOptions: {

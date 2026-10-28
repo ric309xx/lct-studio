@@ -12,6 +12,8 @@ if(fs.existsSync(envPath)) {
 }
 if(!process.env.VITE_CESIUM_ION_ACCESS_TOKEN)throw Error('An authorized local viewer .env is required; credentials are never printed.');
 process.env.VITE_BASE_PATH='/3d-viewer/';
+// Production/general-entry builds never package local control-point audits.
+process.env.VITE_LOCAL_HEIGHT_AUDIT='0';
 for(const args of [[path.join(root,'scripts/prepare_case_map.mjs')],['node_modules/typescript/bin/tsc','-b'],['node_modules/vite/bin/vite.js','build']]) {
   const result=spawnSync(process.execPath,args,{cwd:source,env:process.env,stdio:'inherit'});
   if(result.status!==0)process.exit(result.status??1);
@@ -19,6 +21,7 @@ for(const args of [[path.join(root,'scripts/prepare_case_map.mjs')],['node_modul
 const assets=path.join(source,'dist/assets'),target=path.join(root,'3d-viewer/assets');
 const files=fs.readdirSync(assets),entry=files.find(x=>/^viewer-.*\.js$/.test(x)),css=files.find(x=>/^viewer-.*\.css$/.test(x));
 if(!entry||!css)throw Error('Missing generated viewer bundle');
+if(files.some(file=>file.startsWith('heightFrameAudit-')))throw Error('Local height audit must not be published');
 const backup=path.join(root,'.codex-tmp','viewer-backup-'+new Date().toISOString().replaceAll(':','-'));
 fs.mkdirSync(backup,{recursive:true});
 for(const name of ['viewer.js','viewer.css'])if(fs.existsSync(path.join(target,name)))fs.copyFileSync(path.join(target,name),path.join(backup,name));

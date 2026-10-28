@@ -5,9 +5,12 @@ import {parseConfig} from './config';
 import {caseMapBounds,clusterMapMarkers,type CaseOverviewItem,type MapMarker} from './caseOverview';
 import {captureCaseMapCamera,isCaseMapCamera,type CaseMapNavigation,type CaseMapView} from './caseNavigation';
 import {caseEntryMapBounds,type CaseEntryPhase,type CaseEntrySource} from './caseEntry';
+import {ControlPointsLayer} from './ControlPointsLayer';
+import {heightProfileForPath} from './heightReference';
 
 type Props={cases:CaseOverviewItem[];initialKey?:string;onEnter:(parcelKey:string,source?:CaseEntrySource)=>void;savedView:{current:CaseMapView|null};savedNavigation:{current:CaseMapNavigation|null};entryPhase?:CaseEntryPhase|null;entryError?:string;onCancelEntry?:()=>void};
 export function CaseOverviewMap({cases,initialKey,onEnter,savedView,savedNavigation,entryPhase,entryError,onCancelEntry}:Props){
+  const [controlViewer,setControlViewer]=useState<Viewer|null>(null);
   const host=useRef<HTMLDivElement>(null),map=useRef<Viewer|null>(null);
   const [selected,setSelected]=useState(savedNavigation.current?.selected??initialKey??'');
   const [markers,setMarkers]=useState<MapMarker[]>([]);
@@ -85,6 +88,7 @@ export function CaseOverviewMap({cases,initialKey,onEnter,savedView,savedNavigat
       Ion.defaultAccessToken=parseConfig(import.meta.env).accessToken;
       viewer=new Viewer(host.current!,{sceneMode:SceneMode.SCENE2D,animation:false,timeline:false,baseLayerPicker:false,baseLayer:false,geocoder:false,homeButton:false,fullscreenButton:false,infoBox:false,selectionIndicator:false,sceneModePicker:false,navigationHelpButton:false,requestRenderMode:true});
       map.current=viewer;
+      setControlViewer(viewer);
       viewer.imageryLayers.addImageryProvider(new OpenStreetMapImageryProvider({url:'https://tile.openstreetmap.org/'}));
       viewer.scene.backgroundColor=Color.fromCssColorString('#e0e6e1');
       for(const item of cases)for(const ring of item.rings){
@@ -129,6 +133,7 @@ export function CaseOverviewMap({cases,initialKey,onEnter,savedView,savedNavigat
         viewer.destroy();
       }
       map.current=null;
+      setControlViewer(null);
     };
   },[cases,savedView]);
   return <main className={`case-overview ${entryPhase?`case-entry-${entryPhase}`:preparing?'case-entry-positioning':''}`} aria-label="案件總覽地圖" aria-busy={busy} aria-hidden={entryPhase==='revealing'?true:undefined}>
@@ -154,6 +159,7 @@ export function CaseOverviewMap({cases,initialKey,onEnter,savedView,savedNavigat
     </div>
     <aside className="case-overview-panel" inert={busy}>
       <header><p className="case-eyebrow">LCT · DRONE SURVEY</p><h1>案件總覽</h1><p className="case-intro">先看位置，再進入現地模型。</p><span className="case-count">{cases.length} 個案件 · {cases.reduce((n,c)=>n+c.parcels.length,0)} 筆地號</span></header>
+      <ControlPointsLayer viewer={controlViewer} mode="map" disabled={busy} profileId={active?(active.parcels[0].key==='sanzuwu-jiushe-102-45'?'1007-ion-6000372':heightProfileForPath(active.parcels[0].tilesetPath)?.id):null}/>
       <label className="case-map-search"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="搜尋地段或地號" aria-label="搜尋案件地段或地號"/></label>
       {query&&<div className="case-map-results">{matches.length?matches.map(item=><button key={item.key} onClick={()=>choose(item)}>{item.title}</button>):<p>沒有符合的案件</p>}</div>}
       {active?<section className="case-detail-card" aria-label="選取案件資訊">

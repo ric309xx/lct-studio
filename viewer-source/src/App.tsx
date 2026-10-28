@@ -7,13 +7,25 @@ import taoyuan1010Parcels from "./taoyuan1010Parcels.json";
 import taoyuan1015Parcels from "./taoyuan1015Parcels.json";
 import { roadGround, roadPosition, roadHeightAt, sampleRoadOffset } from "./shuanglingGround";
 import {fitParcel174Ground} from './parcel174Ground';
+import {auditSurfaceHeights} from './surfaceHeightAudit';
+import {heightProfileForModel,resolveModelHeight,orthometricToRenderHeight,renderToOrthometricHeight,sha256ArrayBuffer,type HeightResolution} from './heightReference';
+import {HeightReferenceStatus} from './HeightReferenceStatus';
+import {HelpHint} from './HelpHint';
+import {ControlPointsLayer} from './ControlPointsLayer';
+import {SurveyToolsPanel} from './SurveyToolsPanel';
+import {measureModelPath,type DistanceResult,type DistanceSummary} from './surveyMeasurement';
+import {pickSurveyPosition} from './surveyPicking';
+import {areaLabelPosition,measurementColor} from './measurementLabels';
+import {createMeasurementOverlay,type MeasurementOverlay} from './measurementOverlay';
+import {createMeasurementEditor,type MeasurementEditor} from './measurementEditor';
+import {applyBasemap,DEFAULT_BASEMAP,type Basemap} from './basemaps';
 import {taoyuan17Ground,taoyuan17Position,taoyuan17HeightAt,sampleTaoyuan17Offset} from './taoyuan17Ground';
 import {taoyuan255Ground,taoyuan255Position,taoyuan255HeightAt,sampleTaoyuan255Offset} from './taoyuan255Ground';
 import {caseCaptureDate} from './caseCaptureDate';
 import {CaseOverviewMap} from './CaseOverviewMap';
 import {buildCaseOverview,caseKey,caseTitle} from './caseOverview';
 import {nearbyCases,returnCaseContext,readCaseMapSnapshot,saveCaseMapSnapshot,type CaseMapNavigation,type CaseMapView} from './caseNavigation';
-import {alignCaseEntryToMap,caseEntryOrbitTarget,placeCaseEntryCamera,tiltCaseEntryCamera,useCaseEntryPerspective,CASE_ENTRY_FADE_MS,type CaseEntrySource,type CaseEntryPhase} from './caseEntry';
+import {alignCaseEntryToMap,caseEntryOrbitTarget,caseEntryInspectionView,restoreCaseInspectionView,placeCaseEntryCamera,tiltCaseEntryCamera,useCaseEntryPerspective,CASE_ENTRY_FADE_MS,type CaseEntrySource,type CaseEntryPhase,type CaseInspectionView} from './caseEntry';
 import { needsFreshShuanglingDocument } from "./cadastralTransition";
 import { PRIVATE_R2_ORIGIN, TAOYUAN_R2_PROJECT, R2AuthorizationRequired, ensureR2Access, hasR2Access, privateR2Resource } from "./r2Access";
 import { CadastralInfoPanel } from "./CadastralInfoPanel";
@@ -40,7 +52,6 @@ import {
   ColorMaterialProperty,
   ConstantPositionProperty,
   ConstantProperty,
-  createWorldImageryAsync,
   createWorldTerrainAsync,
   EllipsoidTangentPlane,
   Entity,
@@ -48,13 +59,11 @@ import {
   HeadingPitchRange,
   HorizontalOrigin,
   Ion,
-  IonWorldImageryStyle,
   JulianDate,
   LabelStyle,
   Matrix3,
   Matrix4,
   Math as CesiumMath,
-  OpenStreetMapImageryProvider,
   PolygonHierarchy,
   PolylineDashMaterialProperty,
   ScreenSpaceEventHandler,
@@ -582,20 +591,22 @@ export function App() {
   const appliedCoordinatesRef = useRef<ClipCoordinate[]>([]);
   const clippingStorageKeyRef = useRef("");
   const measurementHandlerRef = useRef<ScreenSpaceEventHandler | null>(null);
-  const measurementDragHandlerRef = useRef<ScreenSpaceEventHandler | null>(null);
+  const measurementEditorRef = useRef<MeasurementEditor | null>(null);
   const measurementDraftEntitiesRef = useRef<Entity[]>([]);
+  const measurementDraftOverlayRef = useRef<MeasurementOverlay|null>(null);
+  const completedMeasurementOverlaysRef = useRef<Record<MeasureKind,MeasurementOverlay[]>>({distance:[],area:[]});
   const completedMeasurementsRef = useRef<Record<MeasureKind, Entity[][]>>({
     distance: [],
     area: []
   });
   const areaCameraViewsRef = useRef<AreaCameraView[]>([]);
   const measurementPositionsRef = useRef<Cartesian3[]>([]);
-  const distancePositionsRef = useRef<Cartesian3[][]>([]);
-  const distancePointLookupRef = useRef(
-    new globalThis.Map<string, { measurementIndex: number; pointIndex: number }>()
-  );
+  const heightResolutionRef=useRef<HeightResolution|null>(null);
+  const [heightResolution,setHeightResolution]=useState<HeightResolution|null>(null);
+  const completedMeasurementPositionsRef = useRef<Record<MeasureKind,Cartesian3[][]>>({distance:[],area:[]});
   const measurementKindRef = useRef<MeasureKind>("distance");
   const cameraPresetRef = useRef<CameraPreset | null>(null);
+  const returnCaseViewRef = useRef<(() => boolean) | null>(null);
   const overlayVisibleRef = useRef(true);
   const overlayXrayRef = useRef(false);
   const landmarksVisibleRef = useRef(true);
@@ -608,7 +619,8 @@ export function App() {
   const [status, setStatus] = useState<ViewerStatus>(INITIAL_STATUS);
   const [reloadKey, setReloadKey] = useState(0);
   const [r2Connecting, setR2Connecting] = useState(false);
-  const [basemap, setBasemap] = useState<"aerial" | "road">("aerial");
+  const [basemap, setBasemap] = useState<Basemap>(DEFAULT_BASEMAP);
+  const basemapChanging=useRef(false);
   const [overlayVisible, setOverlayVisible] = useState(true);
   const [overlayXray, setOverlayXray] = useState(false);
   const [cadastralVisible, setCadastralVisible] = useState(true);
@@ -649,6 +661,11 @@ export function App() {
   const [measurePointCount, setMeasurePointCount] = useState(0);
   const [measureNotice, setMeasureNotice] = useState("");
   const [distanceMeasureCount, setDistanceMeasureCount] = useState(0);
+  const [distanceResults,setDistanceResults]=useState<DistanceResult[]>([]);
+  const [distanceDraft,setDistanceDraft]=useState<DistanceSummary|null>(null);
+  const surveyModels=useCallback(()=>getLoadedTilesets(tilesetRef.current,secondaryTilesetRef.current),[]);
+  const surveySelectionActiveRef=useRef(false);
+  const onSurveyModeChange=useCallback((active:boolean)=>{surveySelectionActiveRef.current=active;},[]);
   const [areaMeasureCount, setAreaMeasureCount] = useState(0);
   const [areaResults, setAreaResults] = useState<AreaResult[]>([]);
   const [selectedAreaIndex, setSelectedAreaIndex] = useState<number | null>(
@@ -688,15 +705,24 @@ export function App() {
 
     let cancelled = false;
     let viewer: Viewer | null = null;
-    let disposeParcelNavigation: (() => void) | undefined;
+    let disposeParcelNavigation: ReturnType<typeof tuneParcelNavigation> | undefined;
     let disposeEntryTilt: (() => void) | undefined;
+    let initialCaseView: CaseInspectionView | null = null;
     let entryManualInput=false;
 
     async function initialize() {
       try {
         setStatus(INITIAL_STATUS);
-        distancePositionsRef.current = [];
-        distancePointLookupRef.current.clear();
+        measurementDraftOverlayRef.current?.dispose();measurementDraftOverlayRef.current=null;
+        Object.values(completedMeasurementOverlaysRef.current).flat().forEach(overlay=>overlay.dispose());
+        completedMeasurementOverlaysRef.current={distance:[],area:[]};
+        completedMeasurementPositionsRef.current={distance:[],area:[]};
+        completedMeasurementsRef.current={distance:[],area:[]};
+        measurementDraftEntitiesRef.current=[];measurementPositionsRef.current=[];
+        areaCameraViewsRef.current=[];
+        setDistanceResults([]);setDistanceDraft(null);setDistanceMeasureCount(0);
+        setAreaResults([]);setAreaMeasureCount(0);setSelectedAreaIndex(null);
+        setMeasureMode('idle');setMeasurePointCount(0);setMeasureNotice('');
         const config = parseConfig(import.meta.env);
         const allProjects = createProjectCatalog(config.modelSource);
         const allComparisons = createComparisonCatalog();
@@ -749,6 +775,9 @@ export function App() {
               (item) => item.id === selectedComparison?.rightProjectId
             )
           : undefined;
+        let renderCamera=project.camera;
+        heightResolutionRef.current=null;setHeightResolution(null);
+        setBasemap(DEFAULT_BASEMAP);
         if (comparison && !rightProject) {
           throw new Error("找不到對比使用的右側專案。");
         }
@@ -845,21 +874,21 @@ export function App() {
           const pose=project.camera;
           viewer.camera.setView({destination:Cartesian3.fromDegrees(pose.longitude,pose.latitude,pose.height),orientation:{heading:CesiumMath.toRadians(pose.headingDegrees),pitch:CesiumMath.toRadians(pose.pitchDegrees),roll:CesiumMath.toRadians(pose.rollDegrees)}});
         }
-        if (project.id === "taoyuan-building-overlay") disposeParcelNavigation = tuneParcelNavigation(viewer, () => parcelOrbitTargetRef.current, () => !measurementHandlerRef.current && !clippingHandlerRef.current && !calibrationPickEnabledRef.current && !landmarkEditEnabledRef.current,()=>{entryManualInput=true;disposeEntryTilt?.();});
+        if (project.id === "taoyuan-building-overlay") disposeParcelNavigation = tuneParcelNavigation(viewer, () => parcelOrbitTargetRef.current, () => !measurementHandlerRef.current && !measurementEditorRef.current?.isDragging() && !clippingHandlerRef.current && !calibrationPickEnabledRef.current && !landmarkEditEnabledRef.current,()=>{entryManualInput=true;disposeEntryTilt?.();});
         setSectionViewer(viewer);
         viewer.scene.splitPosition = initialSplit;
 
+        const terrainReady=createWorldTerrainAsync({ requestVertexNormals: true });
+        const fallbackBasemap=()=>{
+          if(cancelled||!viewer||viewer.isDestroyed()||viewerRef.current!==viewer)return;
+          setBasemap('road');setMapNotice('國土正射無法載入，已切回道路圖。請檢查網路或稍後再試。');
+          void applyBasemap(viewer,'road').catch(()=>{
+            if(!cancelled)setMapNotice('背景底圖無法載入，請檢查網路；模型與地籍仍可操作。');
+          });
+        };
         void Promise.all([
-          applyBasemap(viewer, "aerial").catch(() => {
-            if (!cancelled) {
-              setBasemap("road");
-              setMapNotice(
-                "衛星底圖無法載入，已切回道路圖。請確認 token 可讀取 Cesium World Imagery。"
-              );
-              return applyBasemap(viewer!, "road");
-            }
-          }),
-          createWorldTerrainAsync({ requestVertexNormals: true })
+          applyBasemap(viewer,DEFAULT_BASEMAP,fallbackBasemap).catch(fallbackBasemap),
+          terrainReady
             .then((provider) => {
               if (!cancelled && viewer && !viewer.isDestroyed()) {
                 viewer.terrainProvider = provider;
@@ -898,6 +927,32 @@ export function App() {
             : new Error("兩側模型皆無法載入。");
         }
         if (leftTileset) {
+          if(project.id==='taoyuan-building-overlay'){
+            const profile=heightProfileForModel(project.modelSource,activeParcel?.tilesetPath);
+            let sourceHash:string|null=null;
+            try{
+              if(profile){
+                // Reuse the exact authenticated resource Cesium loaded, including
+                // ion assets. Never expose its signed URL or access token.
+                const bytes=await leftTileset.resource.fetchArrayBuffer();
+                if(bytes)sourceHash=await sha256ArrayBuffer(bytes);
+              }
+            }catch{/* Display the model with an explicit unverified-height warning. */}
+            if(cancelled||viewer.isDestroyed()){
+              if(!leftTileset.isDestroyed())leftTileset.destroy();
+              return;
+            }
+            const resolution=resolveModelHeight(leftTileset,profile,sourceHash);
+            heightResolutionRef.current=resolution;setHeightResolution(resolution);
+            viewer.canvas.dataset.heightReference=JSON.stringify(resolution);
+            viewer.canvas.dataset.heightModelRootSha256=sourceHash??'';
+            if(project.camera){
+              const height=orthometricToRenderHeight(project.camera.height,resolution);
+              if(height!==null)renderCamera={...project.camera,height};
+            }
+            // The reset button must use the same render-frame preset as entry.
+            cameraPresetRef.current=renderCamera??null;
+          }
           tilesetRef.current = leftTileset;
           setSectionTileset(leftTileset);
           if (project.id === "gongliao-longdong-rock") {
@@ -1031,12 +1086,14 @@ export function App() {
           if (activeParcel?.boundaryStatus === "missing") {
             cadastral.entities.values.forEach(entity => { entity.show = false; });
             const members = cadastralConfig!.parcels;
-            const samples = members.map(parcel => Cartographic.fromDegrees(parcel.focus!.longitude, parcel.focus!.latitude, parcel.focus!.height - 100));
+            const samples = members.map(parcel => Cartographic.fromDegrees(parcel.focus!.longitude, parcel.focus!.latitude,
+              orthometricToRenderHeight(parcel.focus!.height-100,heightResolutionRef.current)??parcel.focus!.height-100));
             try { await viewer.scene.sampleHeightMostDetailed(samples); } catch { /* use documented DEM fallback */ }
             if (cancelled || viewer.isDestroyed()) return;
             members.forEach((parcel, index) => {
               const focus = parcel.focus!;
-              const height = Number.isFinite(samples[index]?.height) ? samples[index].height : focus.height - 100;
+              const height = Number.isFinite(samples[index]?.height) ? samples[index].height :
+                orthometricToRenderHeight(focus.height-100,heightResolutionRef.current)??focus.height-100;
               const anchor = Cartesian3.fromDegrees(focus.longitude, focus.latitude, height + 0.6);
               if (parcel.key === activeParcel.key) parcelOrbitTargetRef.current = anchor;
               cadastralLabelEntitiesRef.current.push(viewer!.entities.add({
@@ -1372,7 +1429,8 @@ export function App() {
             const anchor = (labelEntity?.polyline?.positions?.getValue(viewer.clock.currentTime)?.[0]
               ?? labelEntity?.position?.getValue(viewer.clock.currentTime)) as Cartesian3 | undefined;
             const target = anchor ?? Cartesian3.fromDegrees(parcel.focus.longitude, parcel.focus.latitude,
-              parcelOrbitTargetRef.current ? Cartographic.fromCartesian(parcelOrbitTargetRef.current).height : parcel.focus.height - 100);
+              parcelOrbitTargetRef.current ? Cartographic.fromCartesian(parcelOrbitTargetRef.current).height :
+                orthometricToRenderHeight(parcel.focus.height-100,heightResolutionRef.current)??parcel.focus.height-100);
             parcelOrbitTargetRef.current = target;
             const ring = cadastral.entities.getById(parcel.fillEntityId)?.polygon?.hierarchy?.getValue(viewer.clock.currentTime)?.positions as Cartesian3[] | undefined;
             const range = ring?.length ? Math.max(65, BoundingSphere.fromPoints(ring).radius * 3) : 85;
@@ -1382,6 +1440,7 @@ export function App() {
           };
           const cadastralHandler = new ScreenSpaceEventHandler(viewer.scene.canvas);
           cadastralHandler.setInputAction((event: { position: Cartesian2 }) => {
+            if(surveySelectionActiveRef.current||measurementHandlerRef.current||measurementEditorRef.current?.isDragging()||clippingHandlerRef.current)return;
             const picked = viewer!.scene.pick(event.position) as
               | { id?: Entity }
               | undefined;
@@ -1403,12 +1462,15 @@ export function App() {
           if (!activeViewer || activeViewer.isDestroyed()) return;
           const landmarksByEntityId = new globalThis.Map<string, ProjectLandmark>();
           for (const landmark of projectLandmarks) {
+            const landmarkHeight=heightResolutionRef.current
+              ? orthometricToRenderHeight(landmark.height,heightResolutionRef.current):landmark.height;
+            if(landmarkHeight===null)continue;
             const entity = activeViewer.entities.add({
               id: `landmark-${landmark.id}`,
               position: Cartesian3.fromDegrees(
                 landmark.longitude,
                 landmark.latitude,
-                landmark.height
+                landmarkHeight
               ),
               point: {
                 pixelSize: 12,
@@ -1447,11 +1509,14 @@ export function App() {
             if (!draggedEntity || !draggedLandmark) return;
             const position = activeViewer.scene.pickPosition(screenPosition);
             if (!position) return;
-            draggedEntity.position = new ConstantPositionProperty(position);
             const cartographic = Cartographic.fromCartesian(position);
+            const publicHeight=heightResolutionRef.current
+              ? renderToOrthometricHeight(cartographic.height,heightResolutionRef.current):cartographic.height;
+            if(publicHeight===null)return;
+            draggedEntity.position = new ConstantPositionProperty(position);
             draggedLandmark.longitude = CesiumMath.toDegrees(cartographic.longitude);
             draggedLandmark.latitude = CesiumMath.toDegrees(cartographic.latitude);
-            draggedLandmark.height = cartographic.height;
+            draggedLandmark.height = publicHeight;
             setSelectedLandmark({ ...draggedLandmark });
           };
           if (IS_ADMIN) {
@@ -1488,6 +1553,7 @@ export function App() {
             }, ScreenSpaceEventType.LEFT_UP);
           }
           landmarkHandler.setInputAction((event: { position: Cartesian2 }) => {
+            if(surveySelectionActiveRef.current||measurementHandlerRef.current||measurementEditorRef.current?.isDragging()||clippingHandlerRef.current)return;
             if (suppressNextLandmarkClick) {
               suppressNextLandmarkClick = false;
               return;
@@ -1520,24 +1586,51 @@ export function App() {
         if(enteringCase){
           if(cancelled||viewer.isDestroyed())return;
           if(!alignCaseEntryToMap(viewer,enteringCase.source,parcelOrbitTargetRef.current??undefined))
-            placeCaseEntryCamera(viewer,project.camera,parcelOrbitTargetRef.current??undefined,initialParcelRange);
+            placeCaseEntryCamera(viewer,renderCamera,parcelOrbitTargetRef.current??undefined,initialParcelRange);
           setCaseEntryPhase('revealing');
           // Keep the map mounted for its opacity fade; the 3D camera is stationary.
           if(!enteringCase.source.reducedMotion)await new Promise<void>(resolve=>window.setTimeout(resolve,CASE_ENTRY_FADE_MS));
           if(cancelled||viewer.isDestroyed())return;
           const entryTarget=caseEntryOrbitTarget(enteringCase.source,parcelOrbitTargetRef.current??undefined);
           useCaseEntryPerspective(viewer,entryTarget);
+          initialCaseView=caseEntryInspectionView(viewer,entryTarget,enteringCase.key);
+          if(entryTarget)parcelOrbitTargetRef.current=Cartesian3.clone(entryTarget);
           caseEntryRef.current=null;setCaseEntryPhase(null);
           // Render perspective before starting the turn on the next frame.
           if(!enteringCase.source.reducedMotion)requestAnimationFrame(()=>{
             if(cancelled||entryManualInput||!viewer||viewer.isDestroyed())return;
             disposeEntryTilt=tiltCaseEntryCamera(viewer,entryTarget,enteringCase.key);
           });
+          else if(initialCaseView)restoreCaseInspectionView(viewer,initialCaseView);
+        }else if(project.id==='taoyuan-building-overlay'&&parcelOrbitTargetRef.current){
+          // Direct links/reloads use the same case angle, not a generic north view.
+          const key=activeParcel?.groupKey?cadastralConfig?.parcels.find(p=>p.groupKey===activeParcel.groupKey)?.key:activeParcel?.key;
+          placeCaseEntryCamera(viewer,renderCamera,parcelOrbitTargetRef.current,initialParcelRange);
+          initialCaseView=caseEntryInspectionView(viewer,parcelOrbitTargetRef.current,key);
+          disposeEntryTilt=tiltCaseEntryCamera(viewer,parcelOrbitTargetRef.current,key);
         }else{
-          focusModels(viewer,[leftTileset,rightTileset].filter((item):item is Cesium3DTileset=>item!==null),project.camera,parcelOrbitTargetRef.current??undefined);
+          focusModels(viewer,[leftTileset,rightTileset].filter((item):item is Cesium3DTileset=>item!==null),renderCamera,parcelOrbitTargetRef.current??undefined);
           if(activeParcel?.groupKey&&parcelOrbitTargetRef.current)focusParcelOrbit(viewer,parcelOrbitTargetRef.current,0,-65,initialParcelRange);
         }
+        returnCaseViewRef.current=()=>{
+          if(cancelled||!viewer||viewer.isDestroyed()||!initialCaseView)return false;
+          entryManualInput=true;disposeEntryTilt?.();
+          parcelOrbitTargetRef.current=Cartesian3.clone(initialCaseView.target);
+          disposeParcelNavigation?.resetFocus();
+          return restoreCaseInspectionView(viewer,initialCaseView);
+        };
         if (!cancelled) {
+          if(import.meta.env.VITE_LOCAL_HEIGHT_AUDIT==='1'&&project.id==='taoyuan-building-overlay'&&window.location.hostname==='127.0.0.1'&&new URLSearchParams(window.location.search).get('heightFrameAudit')==='1'){
+            const profile=heightProfileForModel(project.modelSource,activeParcel?.tilesetPath);
+            const auditViewer=viewer,auditTileset=leftTileset;
+            if(profile&&auditTileset)void import('./heightFrameAudit').then(({auditModelHeightFrame})=>{
+              if(!cancelled&&!auditViewer.isDestroyed())void auditModelHeightFrame(auditViewer,auditTileset,profile,()=>cancelled);
+            });
+          }
+          if(project.id==='taoyuan-building-overlay'&&project.camera&&window.location.hostname==='127.0.0.1'&&new URLSearchParams(window.location.search).get('heightAudit')==='1'){
+            const currentViewer=viewer,focus=project.camera;
+            void terrainReady.then(provider=>auditSurfaceHeights(currentViewer,provider,focus.longitude,focus.latitude,()=>cancelled)).catch(()=>{});
+          }
           const partialFailure = comparison && (!leftTileset || !rightTileset);
           setStatus({
             phase: "ready",
@@ -1569,6 +1662,7 @@ export function App() {
 
     return () => {
       cancelled = true;
+      returnCaseViewRef.current=null;
       disposeEntryTilt?.();
       metalRoofRepairRef.current?.destroy();metalRoofRepairRef.current=null;
       disposeParcelNavigation?.();
@@ -1576,8 +1670,11 @@ export function App() {
       clippingHandlerRef.current = null;
       measurementHandlerRef.current?.destroy();
       measurementHandlerRef.current = null;
-      measurementDragHandlerRef.current?.destroy();
-      measurementDragHandlerRef.current = null;
+      measurementEditorRef.current?.dispose();
+      measurementEditorRef.current = null;
+      measurementDraftOverlayRef.current?.dispose();measurementDraftOverlayRef.current=null;
+      Object.values(completedMeasurementOverlaysRef.current).flat().forEach(overlay=>overlay.dispose());
+      completedMeasurementOverlaysRef.current={distance:[],area:[]};
       landmarkHandlerRef.current?.destroy();
       landmarkHandlerRef.current = null;
       calibrationHandlerRef.current?.destroy();
@@ -1585,7 +1682,7 @@ export function App() {
       cadastralHandlerRef.current?.destroy();
       cadastralHandlerRef.current = null;
       landmarkEntitiesRef.current = [];
-      distancePositionsRef.current = [];
+      completedMeasurementPositionsRef.current={distance:[],area:[]};
       longdongLocalCenterRef.current = null;
       tilesetRef.current = null;
       secondaryTilesetRef.current = null;
@@ -1636,6 +1733,7 @@ export function App() {
   }, []);
 
   const returnToModel = useCallback(async () => {
+    if(returnCaseViewRef.current?.())return;
     const viewer = viewerRef.current;
     const tileset = tilesetRef.current;
     const secondaryTileset = secondaryTilesetRef.current;
@@ -1826,22 +1924,27 @@ export function App() {
   );
 
   const changeBasemap = useCallback(
-    async (nextBasemap: "aerial" | "road") => {
+    async (nextBasemap: Basemap) => {
       const viewer = viewerRef.current;
-      if (!viewer) return;
+      if (!viewer||viewer.isDestroyed()||basemapChanging.current) return;
+      basemapChanging.current=true;
       setMapNotice("");
       try {
-        await applyBasemap(viewer, nextBasemap);
+        const previous=basemap;
+        await applyBasemap(viewer, nextBasemap,()=>{
+          setBasemap(previous);setMapNotice('新底圖圖磚載入失敗，已保留先前背景。請檢查網路或稍後再試。');
+        });
+        if(viewer.isDestroyed()||viewer!==viewerRef.current)return;
         setBasemap(nextBasemap);
       } catch {
         setMapNotice(
-          nextBasemap === "aerial"
+          nextBasemap==='nlsc'?'國土測繪中心正射影像無法載入，已保留原底圖。':nextBasemap === "aerial"
             ? "衛星底圖無法載入。請確認 token 可讀取 Cesium World Imagery。"
             : "道路圖無法載入，請檢查網路連線。"
         );
-      }
+      } finally {basemapChanging.current=false;}
     },
-    []
+    [basemap]
   );
 
   const applySunSimulation = useCallback(
@@ -2171,6 +2274,8 @@ export function App() {
   }, [clearDrawingPreview]);
 
   const clearMeasurementDraft = useCallback(() => {
+    measurementEditorRef.current?.cancel();
+    measurementDraftOverlayRef.current?.dispose();measurementDraftOverlayRef.current=null;
     const viewer = viewerRef.current;
     measurementHandlerRef.current?.destroy();
     measurementHandlerRef.current = null;
@@ -2181,6 +2286,7 @@ export function App() {
     }
     measurementDraftEntitiesRef.current = [];
     measurementPositionsRef.current = [];
+    setDistanceDraft(null);
     setMeasurePointCount(0);
     setMeasureMode("idle");
   }, []);
@@ -2188,6 +2294,8 @@ export function App() {
   const clearAllMeasurements = useCallback(() => {
     const viewer = viewerRef.current;
     clearMeasurementDraft();
+    Object.values(completedMeasurementOverlaysRef.current).flat().forEach(overlay=>overlay.dispose());
+    completedMeasurementOverlaysRef.current={distance:[],area:[]};
     if (viewer) {
       for (const records of Object.values(completedMeasurementsRef.current)) {
         for (const entities of records) {
@@ -2196,10 +2304,10 @@ export function App() {
       }
     }
     completedMeasurementsRef.current = { distance: [], area: [] };
-    distancePositionsRef.current = [];
-    distancePointLookupRef.current.clear();
+    completedMeasurementPositionsRef.current={distance:[],area:[]};
     areaCameraViewsRef.current = [];
     setDistanceMeasureCount(0);
+    setDistanceResults([]);
     setAreaMeasureCount(0);
     setAreaResults([]);
     setSelectedAreaIndex(null);
@@ -2228,17 +2336,19 @@ export function App() {
       setMeasureMode(kind);
       setMeasureNotice(
         kind === "distance"
-          ? "在模型表面依序點選，至少兩點後可完成量測。"
+          ? "在無人機模型表面依序點選，至少兩點後按完成量距；三維距離不是貼地表長度。"
           : "沿著範圍逐點點選，至少三點後可完成面積量測。"
       );
 
       const positions = measurementPositionsRef.current;
+      measurementDraftOverlayRef.current=createMeasurementOverlay(viewer,kind);
       measurementDraftEntitiesRef.current.push(
         viewer.entities.add({
           polyline: {
-            positions: new CallbackProperty(() => [...positions], false),
+            show: false,
+            positions: new CallbackProperty(() => kind === 'area' && positions.length >= 3 ? [...positions, positions[0]] : [...positions], false),
             width: 3,
-            material: Color.fromCssColorString("#ffcf66"),
+            material: measurementColor(kind),
             clampToGround: false
           }
         })
@@ -2247,6 +2357,7 @@ export function App() {
         measurementDraftEntitiesRef.current.push(
           viewer.entities.add({
             polygon: {
+              show: false,
               hierarchy: new CallbackProperty(
                 () =>
                   positions.length >= 3
@@ -2254,7 +2365,8 @@ export function App() {
                     : undefined,
                 false
               ),
-              material: Color.fromCssColorString("#ffcf66").withAlpha(0.2)
+              material: measurementColor(kind).withAlpha(0.2),
+              perPositionHeight: true
             }
           })
         );
@@ -2262,18 +2374,21 @@ export function App() {
 
       const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
       handler.setInputAction((event: { position: Cartesian2 }) => {
-        const position = pickWorldPosition(viewer, event.position);
+        const position = pickSurveyPosition(viewer,event.position,getLoadedTilesets(tilesetRef.current,secondaryTilesetRef.current),true)?.position;
         if (!position) {
-          setMeasureNotice("這個位置無法定位，請點選模型或地表。");
+          setMeasureNotice("未命中無人機模型，請點選模型表面，不在天空或背景底圖量測。");
           return;
         }
+        if(positions.length&&Cartesian3.distance(positions.at(-1)!,position)<.005){setMeasureNotice('與上一點重合，請選擇另一個位置。');return;}
         positions.push(position);
+        measurementDraftOverlayRef.current?.update(positions);
+        if(kind==='distance')setDistanceDraft(measureModelPath(positions));
         measurementDraftEntitiesRef.current.push(
           viewer.entities.add({
             position,
             point: {
               pixelSize: 9,
-              color: Color.fromCssColorString("#ffcf66"),
+              color: measurementColor(kind),
               outlineColor: Color.fromCssColorString("#071019"),
               outlineWidth: 2,
               disableDepthTestDistance: Number.POSITIVE_INFINITY
@@ -2306,9 +2421,11 @@ export function App() {
     const viewer = viewerRef.current;
     if (!viewer || measurementPositionsRef.current.length === 0) return;
     measurementPositionsRef.current.pop();
+    measurementDraftOverlayRef.current?.update(measurementPositionsRef.current);
     const pointEntity = measurementDraftEntitiesRef.current.pop();
     if (pointEntity) viewer.entities.remove(pointEntity);
     const count = measurementPositionsRef.current.length;
+    if(measurementKindRef.current==='distance')setDistanceDraft(measureModelPath(measurementPositionsRef.current));
     setMeasurePointCount(count);
     setMeasureNotice(count === 0 ? "請在模型表面點選起點。" : `目前已選 ${count} 點。`);
   }, []);
@@ -2319,6 +2436,7 @@ export function App() {
     const kind = measurementKindRef.current;
     const minimum = kind === "distance" ? 2 : 3;
     if (!viewer || positions.length < minimum) return;
+    const measurementId = completedMeasurementsRef.current[kind].length + 1;
 
     measurementHandlerRef.current?.destroy();
     measurementHandlerRef.current = null;
@@ -2332,145 +2450,53 @@ export function App() {
       );
       if (polygon?.polygon) {
         polygon.polygon.material = new ColorMaterialProperty(
-          Color.fromCssColorString("#ffcf66").withAlpha(0.25)
+          measurementColor(kind).withAlpha(0.25)
         );
       }
-    } else {
-      measurementDraftEntitiesRef.current.push(
-        viewer.entities.add({
-          position: new ConstantPositionProperty(
-            positions[positions.length - 1]
-          ),
-          label: {
-            text: new CallbackProperty(
-              () => formatDistance(calculateDistance(positions)),
-              false
-            ),
-            font: "700 16px sans-serif",
-            fillColor: Color.fromCssColorString("#071019"),
-            backgroundColor: Color.fromCssColorString("#ffcf66"),
-            showBackground: true,
-            backgroundPadding: new Cartesian2(10, 7),
-            pixelOffset: new Cartesian2(0, -28),
-            horizontalOrigin: HorizontalOrigin.CENTER,
-            verticalOrigin: VerticalOrigin.CENTER,
-            style: LabelStyle.FILL,
-            disableDepthTestDistance: Number.POSITIVE_INFINITY
-          }
-        })
-      );
     }
+    measurementDraftOverlayRef.current?.annotate(
+      () => kind === 'area' ? areaLabelPosition(positions) : positions[positions.length - 1],
+      () => kind === 'area' ? `平面面積 ${measurementId}\n${formatArea(calculateArea(positions))}` : `距離 ${formatDistance(calculateDistance(positions))}`
+    );
 
     const completedEntities = [...measurementDraftEntitiesRef.current];
+    completedMeasurementPositionsRef.current[kind].push(positions);
     if (kind === "distance") {
-      const measurementIndex = distancePositionsRef.current.length;
-      distancePositionsRef.current.push(positions);
-      completedEntities
-        .filter((entity) => entity.point)
-        .forEach((entity, pointIndex) => {
-          distancePointLookupRef.current.set(entity.id, {
-            measurementIndex,
-            pointIndex
-          });
-        });
-
-      if (!measurementDragHandlerRef.current) {
-        const dragHandler = new ScreenSpaceEventHandler(viewer.scene.canvas);
-        let draggedPoint: Entity | null = null;
-        let draggedReference: { measurementIndex: number; pointIndex: number } | null = null;
-        let previousInertiaSpin = viewer.scene.screenSpaceCameraController.inertiaSpin;
-        let previousInertiaTranslate =
-          viewer.scene.screenSpaceCameraController.inertiaTranslate;
-        let dragCameraView: AreaCameraView | null = null;
-
-        const restoreDragCamera = () => {
-          if (!dragCameraView) return;
-          viewer.camera.setView({
-            destination: dragCameraView.destination,
-            orientation: {
-              heading: dragCameraView.heading,
-              pitch: dragCameraView.pitch,
-              roll: dragCameraView.roll
-            }
-          });
-        };
-
-        const updateDraggedPoint = (screenPosition: Cartesian2) => {
-          if (!draggedPoint || !draggedReference) return;
-          const nextPosition = pickWorldPosition(viewer, screenPosition);
-          if (!nextPosition) return;
-          const activePositions =
-            distancePositionsRef.current[draggedReference.measurementIndex];
-          if (!activePositions) return;
-          activePositions[draggedReference.pointIndex] = nextPosition;
-          draggedPoint.position = new ConstantPositionProperty(nextPosition);
-          restoreDragCamera();
-          viewer.scene.requestRender();
-        };
-
-        dragHandler.setInputAction((event: { position: Cartesian2 }) => {
-          if (measurementHandlerRef.current || clippingHandlerRef.current) return;
-          const picked = viewer.scene.pick(event.position) as
-            | { id?: Entity }
-            | undefined;
-          const entity = picked?.id;
-          if (!(entity instanceof Entity)) return;
-          const reference = distancePointLookupRef.current.get(entity.id);
-          if (!reference) return;
-          draggedPoint = entity;
-          draggedReference = reference;
-          dragCameraView = {
-            destination: viewer.camera.positionWC.clone(),
-            heading: viewer.camera.heading,
-            pitch: viewer.camera.pitch,
-            roll: viewer.camera.roll
-          };
-          const controller = viewer.scene.screenSpaceCameraController;
-          previousInertiaSpin = controller.inertiaSpin;
-          previousInertiaTranslate = controller.inertiaTranslate;
-          controller.inertiaSpin = 0;
-          controller.inertiaTranslate = 0;
-          controller.enableInputs = false;
-          viewer.canvas.style.cursor = "grabbing";
-        }, ScreenSpaceEventType.LEFT_DOWN);
-
-        dragHandler.setInputAction((event: { endPosition: Cartesian2 }) => {
-          updateDraggedPoint(event.endPosition);
-        }, ScreenSpaceEventType.MOUSE_MOVE);
-
-        dragHandler.setInputAction((event: { position: Cartesian2 }) => {
-          if (!draggedPoint || !draggedReference) return;
-          updateDraggedPoint(event.position);
-          const activePositions =
-            distancePositionsRef.current[draggedReference.measurementIndex];
-          const updatedDistance = activePositions
-            ? formatDistance(calculateDistance(activePositions))
-            : "";
-          restoreDragCamera();
-          draggedPoint = null;
-          draggedReference = null;
-          dragCameraView = null;
-          const controller = viewer.scene.screenSpaceCameraController;
-          controller.enableInputs = true;
-          window.requestAnimationFrame(() => {
-            if (viewer.isDestroyed()) return;
-            controller.inertiaSpin = previousInertiaSpin;
-            controller.inertiaTranslate = previousInertiaTranslate;
-          });
-          viewer.canvas.style.cursor = "";
-          setMeasureNotice(`距離端點已更新：${updatedDistance}`);
-        }, ScreenSpaceEventType.LEFT_UP);
-
-        measurementDragHandlerRef.current = dragHandler;
-      }
+      const summary=measureModelPath(positions);
+      if(summary)setDistanceResults(current=>[...current,{id:measurementId,...summary}]);
+    }
+    if(!measurementEditorRef.current){
+      measurementEditorRef.current=createMeasurementEditor(viewer,{
+        records:()=>Object.entries(completedMeasurementPositionsRef.current).flatMap(([key,records])=>records.map((points,index)=>({
+          kind:key as MeasureKind,index,positions:points,
+          points:(completedMeasurementsRef.current[key as MeasureKind][index]??[]).filter(entity=>entity.point)
+        }))),
+        enabled:()=>!measurementHandlerRef.current&&!clippingHandlerRef.current&&!landmarkEditEnabledRef.current&&!calibrationPickEnabledRef.current,
+        pick:screen=>pickSurveyPosition(viewer,screen,getLoadedTilesets(tilesetRef.current,secondaryTilesetRef.current),true)?.position,
+        onChange:record=>{
+          completedMeasurementOverlaysRef.current[record.kind][record.index]?.update(record.positions);
+          const id=record.index+1;
+          if(record.kind==='distance'){
+            const summary=measureModelPath(record.positions);
+            if(summary)setDistanceResults(current=>current.map(value=>value.id===id?{id,...summary}:value));
+          }else setAreaResults(current=>current.map(value=>value.id===id?{id,value:formatArea(calculateArea(record.positions))}:value));
+        },
+        onFinish:record=>setMeasureNotice(`${record.kind==='area'?'面積頂點':'距離端點'}已更新：${record.kind==='area'?formatArea(calculateArea(record.positions)):formatDistance(calculateDistance(record.positions))}`),
+        onInvalid:()=>setMeasureNotice('點位不可重疊，面積範圍不可自交；保留上一個有效位置。')
+      });
     }
 
     completedMeasurementsRef.current[kind].push([
       ...completedEntities
     ]);
+    if(measurementDraftOverlayRef.current){
+      completedMeasurementOverlaysRef.current[kind].push(measurementDraftOverlayRef.current);
+      measurementDraftOverlayRef.current=null;
+    }
     viewer.scene.requestRender();
     measurementDraftEntitiesRef.current = [];
     measurementPositionsRef.current = [];
+    setDistanceDraft(null);
     const count = completedMeasurementsRef.current[kind].length;
     if (kind === "distance") setDistanceMeasureCount(count);
     else {
@@ -2491,7 +2517,7 @@ export function App() {
     setMeasureNotice(
       kind === "distance"
         ? `距離標註 ${count}/3：${result}。可拖曳黃色端點調整。`
-        : `面積標註 ${count}/3：${result}`
+        : `面積標註 ${count}/3：${result}。可拖曳藍色頂點調整。`
     );
   }, []);
 
@@ -2501,6 +2527,7 @@ export function App() {
     if (!viewer || !areas[index]) return;
 
     areas.forEach((entities, areaIndex) => {
+      completedMeasurementOverlaysRef.current.area[areaIndex]?.highlight(areaIndex===index);
       const polygon = entities.find((entity) => entity.polygon);
       if (polygon?.polygon) {
         polygon.polygon.material = new ColorMaterialProperty(
@@ -2533,7 +2560,8 @@ export function App() {
     const view = {
       longitude: Number(CesiumMath.toDegrees(position.longitude).toFixed(8)),
       latitude: Number(CesiumMath.toDegrees(position.latitude).toFixed(8)),
-      height: Number(position.height.toFixed(2)),
+      height: heightResolutionRef.current ? (()=>{const h=renderToOrthometricHeight(position.height,heightResolutionRef.current);return h===null?null:Number(h.toFixed(2));})() : Number(position.height.toFixed(2)),
+      ...(heightResolutionRef.current?{heightDatum:heightResolutionRef.current.status==='pending'?'待確認':'TWVD2001',heightConversionRevision:heightResolutionRef.current.revision}:{}),
       heading: Number(CesiumMath.toDegrees(camera.heading).toFixed(3)),
       pitch: Number(CesiumMath.toDegrees(camera.pitch).toFixed(3)),
       roll: Number(CesiumMath.toDegrees(camera.roll).toFixed(3))
@@ -2570,6 +2598,7 @@ export function App() {
   const currentParcel = CADASTRAL_PROJECTS[projectId]?.parcels.find(parcel => parcel.key === selectedCadastralParcelKey);
   const parcelOptions = CADASTRAL_PROJECTS[projectId]?.parcels ?? [];
   const currentGroup = currentParcel ? cadastralGroup(currentParcel) : "";
+  const visibleCadastralParcels=(CADASTRAL_PROJECTS[projectId]?.parcels??[]).filter(parcel=>projectId!=='taoyuan-building-overlay'||cadastralGroup(parcel)===currentGroup);
   const currentParcelInfo = currentParcel?.info;
   const hasOccupancyAnalysis = currentParcelInfo?.occupiedAreaM2 !== undefined;
   const hasOccupancyDisplay = hasOccupancyAnalysis || Boolean(currentParcel?.groupKey && parcelOptions.some(
@@ -2794,7 +2823,7 @@ export function App() {
         </button>
         <div className="settings-content">
           <div className="setting-group project-group">
-          <span className="setting-label">專案</span>
+          <span className="setting-label">專案 <HelpHint label="專案瀏覽說明">{projectName} · {IS_ADMIN?'管理員模式':'一般觀看'}。{currentParcel?.overlayUrl?'私人共用模型隨網站登入自動載入與更新授權。':'顯示目前所選專案的三維模型。'}</HelpHint></span>
           <select
             value={projectId}
             aria-label="選擇專案"
@@ -2818,7 +2847,7 @@ export function App() {
               </option>
             ))}
           </select>
-          <div className="project-access-row">
+          {!IS_SHARE_ENTRY&&<div className="project-access-row">
             <p className="project-name">
               {projectName} · {IS_ADMIN ? "管理員模式" : "一般觀看"}
             </p>
@@ -2845,14 +2874,16 @@ export function App() {
             >
               切換身分
             </button>}
-          </div>
+          </div>}
+          {heightResolution&&<HeightReferenceStatus resolution={heightResolution}/>}
+          {projectId==='taoyuan-building-overlay'&&<ControlPointsLayer viewer={sectionViewer} mode="model" profileId={heightResolution?.profileId??'pending'} resolution={heightResolution} disabled={status.phase!=='ready'}/>}
           </div>
           <div className="setting-group">
           <span className="setting-label">
             <MapIcon size={15} aria-hidden="true" />
-            底圖
+            底圖 <HelpHint label="底圖說明">國土正射＝國土測繪中心正射影像。切換只影響背景，不改變無人機模型貼圖；拍攝日期與色調可能不同。</HelpHint>
           </span>
-          <div className="segmented-control">
+          <div className="segmented-control basemap-control">
             <button
               type="button"
               className={basemap === "aerial" ? "active" : ""}
@@ -2861,6 +2892,7 @@ export function App() {
             >
               衛星航照
             </button>
+            <button type="button" className={basemap==='nlsc'?'active':''} aria-pressed={basemap==='nlsc'} onClick={()=>void changeBasemap('nlsc')}>國土正射</button>
             <button
               type="button"
               className={basemap === "road" ? "active" : ""}
@@ -2970,11 +3002,11 @@ export function App() {
           )}
           {projectHasCadastral && (
             <div className="setting-group cadastral-group">
-              <span className="setting-label">地籍圖層</span>
+              <span className="setting-label">地籍圖層 <HelpHint label="地籍圖層說明">紅色範圍為地籍套繪，點選可查看地籍資料。開啟「座標與量距」後，點選優先用來固定模型表面座標。套繪僅供參考，最終成果以地政單位實地鑑界為準。</HelpHint></span>
               {projectId === "taoyuan-building-overlay" && (
                 <div className="cadastral-parcel-picker">
                   <span>案件區塊</span>
-                  <strong className="current-case-title" title={currentParcel?cadastralGroupLabel(currentParcel):''}>{currentParcel?cadastralGroupLabel(currentParcel):'載入案件中'}</strong>
+                  {nearbyCaseOptions.length<=1&&<strong className="current-case-title" title={currentParcel?cadastralGroupLabel(currentParcel):''}>{currentParcel?cadastralGroupLabel(currentParcel):'載入案件中'}</strong>}
                   <button type="button" className="case-return" onClick={returnToCaseMap}><ArrowLeft size={17}/>返回上一層</button>
                   {nearbyCaseOptions.length>1&&<label className="cadastral-parcel-picker">
                     <span>切換附近案件</span>
@@ -2988,7 +3020,7 @@ export function App() {
                   <span className="overlay-hint">拍攝日期：{caseCaptureDate(currentParcel)}</span>
                 </div>
               )}
-              {CADASTRAL_PROJECTS[projectId]?.parcels.length > 0 && (
+              {visibleCadastralParcels.length>0&&(projectId!=='taoyuan-building-overlay'||visibleCadastralParcels.length>1) && (
                 <label className="cadastral-parcel-picker">
                   <span>地段／地號</span>
                   <select
@@ -2997,7 +3029,7 @@ export function App() {
                     disabled={r2Connecting}
                     onChange={(event) => selectCadastralParcel(event.currentTarget.value)}
                   >
-                    {CADASTRAL_PROJECTS[projectId].parcels.filter(parcel => projectId !== "taoyuan-building-overlay" || cadastralGroup(parcel) === currentGroup).map((parcel) => (
+                    {visibleCadastralParcels.map((parcel) => (
                       <option key={parcel.key} value={parcel.key}>{parcel.label}</option>
                     ))}
                   </select>
@@ -3005,7 +3037,7 @@ export function App() {
               )}
               {currentParcel?.groupKey && (
                 <>
-                  <p className="overlay-hint">{currentParcel.boundaryStatus === "missing" ? "目前顯示地號查詢定位點，並非土地邊界；地籍向量界線待補。" : "同區地籍一起顯示，選取地號以較深色標示；面積與資訊依各筆地號顯示。"}</p>
+                  <div className="sidebar-info-line"><span>{currentParcel.boundaryStatus==='missing'?'定位點非邊界 · 界線待補':'同區地號一起顯示'}</span><HelpHint label="案件區塊說明">{currentParcel.boundaryStatus === "missing" ? "目前顯示地號查詢定位點，並非土地邊界；地籍向量界線待補。" : "同區地籍一起顯示，選取地號以較深色標示；面積與資訊依各筆地號顯示。"}</HelpHint></div>
                   <div className="clip-actions"><button type="button" className="primary" onClick={() => {
                     const viewer = viewerRef.current;
                     const data = cadastralDataSourceRef.current;
@@ -3032,9 +3064,6 @@ export function App() {
                       offset: new HeadingPitchRange(0, CesiumMath.toRadians(-65), Math.max(85, bounds.radius * 3)) });
                   }}>查看區塊全貌</button></div>
                 </>
-              )}
-              {currentParcel?.overlayUrl && (
-                <p className="overlay-hint">私人共用模型・隨網站登入自動載入與更新授權。</p>
               )}
               <label className="overlay-toggle cadastral-toggle">
                 <input
@@ -3075,21 +3104,19 @@ export function App() {
                       onChange={event => changeOccupancyVisibility(event.currentTarget.checked)} />
                     <span>顯示占用範圍</span>
                   </label>
-                  {!hasOccupancyAnalysis && hasOccupancyDisplay && <p className="overlay-hint">本地號待確認；綠色為同區其他地號的參考範圍，可一併開關。</p>}
-                  <p className="cadastral-disclaimer">
-                    地籍線套繪僅供參考，最終成果以地政單位實地鑑界為準。
-                  </p>
+                  {!hasOccupancyAnalysis && hasOccupancyDisplay && <p className="overlay-hint">本地號待確認 · 綠色為同區參考範圍</p>}
+                  <p className="cadastral-disclaimer compact-disclaimer">套繪僅供參考，非正式鑑界。</p>
                   {cadastralDisplayMode === "model-ground" && (
-                    <p className="overlay-hint cadastral-terrain-notice">
+                    <div className="sidebar-info-line"><span>套繪方式</span><HelpHint label="模型地面套繪說明">
+                      <p>
                       {isModelOccupancy ? "綠色為模型判讀的建物／雨遮投影與地籍交集，待複核；非外業實測建物線。" : isSurveyOccupancy ? "綠色為外業房屋參考線與地籍的平面交集，待複核；地籍面為估算地面，1121 隨道路高低起伏。" : isDraftOccupancy ? "綠色為 AI 初步判讀之建物／棚架／雨遮投影，尚待複核；地籍面為模型估算地面。" : hasOccupancyAnalysis ? "地籍面位於估算地面；綠色為建物滴水線投影範圍，模型缺口保留補洞面。" : "地籍面位於模型估算地面；本地號占用範圍尚待圈選確認。"}
-                    </p>
-                  )}
-                  {selectedCadastralParcelKey === "dongliao-1507-1" && cadastralDisplayMode === "model-ground" && (
-                    <p className="overlay-hint">招牌與雨遮完整補色供辨識，不另增計面積；占用仍以地籍內水平投影計算。</p>
+                      </p>
+                      {selectedCadastralParcelKey==='dongliao-1507-1'&&<p>招牌與雨遮完整補色供辨識，不另增計面積；占用仍以地籍內水平投影計算。</p>}
+                    </HelpHint></div>
                   )}
                   {!modelGroundAvailable && (
                     <p className="overlay-hint cadastral-terrain-notice">
-                      正在從目前的三維模型估算地面高度，完成後即可切換套繪。
+                      正在準備模型地面套繪…
                     </p>
                   )}
                 </>
@@ -3099,9 +3126,7 @@ export function App() {
                 className="cadastral-summary"
                 onClick={() => selectCadastralParcel(selectedCadastralParcelKey)}
               >
-                <span>{CADASTRAL_PROJECTS[projectId]?.parcels.find(
-                  (parcel) => parcel.key === selectedCadastralParcelKey
-                )?.info.sectionName}</span>
+                <span>查看地籍資料</span>
                 <strong>地號 {CADASTRAL_PROJECTS[projectId]?.parcels.find(
                   (parcel) => parcel.key === selectedCadastralParcelKey
                 )?.info.parcelNo}</strong>
@@ -3109,13 +3134,13 @@ export function App() {
               {projectId === "taoyuan-building-overlay" && (
                 <div className="occupancy-summary" aria-label="建物占用分析">
                   <div><span>登記面積</span><strong>{currentParcelInfo?.cadastralAreaM2 ?? "—"} m²</strong></div>
-                  <div><span>{isEstimatedOccupancy ? "已判讀投影面積（初估）" : "建物占用投影面積"}</span><strong>{currentParcelInfo?.occupiedAreaM2 === undefined ? "待確認" : `${isEstimatedOccupancy ? "約 " : ""}${currentParcelInfo.occupiedAreaM2.toFixed(isEstimatedOccupancy ? 1 : 2)} m²`}</strong></div>
+                  <div><span className={isEstimatedOccupancy ? "estimated-area-label" : undefined}>{isEstimatedOccupancy ? <>投影面積<br />（初估）</> : "建物占用投影面積"}</span><strong>{currentParcelInfo?.occupiedAreaM2 === undefined ? "待確認" : `${isEstimatedOccupancy ? "約 " : ""}${currentParcelInfo.occupiedAreaM2.toFixed(isEstimatedOccupancy ? 1 : 2)} m²`}</strong></div>
                   <div className="emphasis"><span>{isEstimatedOccupancy ? "占用比例（初估）" : "占用比例"}</span><strong>{currentParcelInfo?.occupancyPercent === undefined ? "待確認" : `${isEstimatedOccupancy ? "約 " : ""}${currentParcelInfo.occupancyPercent.toFixed(isEstimatedOccupancy ? 1 : 2)}%`}</strong></div>
-                  <p>{isModelOccupancy ? "模型判讀／待複核。僅計已判讀建物／棚架／雨遮與 TWD97 地籍的投影交集，CAD 房屋線只作參考；補色立面不另計面積。比例以登記面積為分母，不代表全筆清查或正式占用認定。" : isSurveyOccupancy ? "外業參考／待複核。依 TWD97 平面交集計算，不含牆面表面積；比例以登記面積為分母。" : isDraftOccupancy ? "AI 初步判讀／待複核。僅計入已判讀範圍，未納入不確定區，不代表完整占用或正式鑑界。" : hasOccupancyAnalysis ? "依滴水線垂直投影與地籍範圍交集重算，已修除右端非屋頂尖角。" : "尚未指定本地號要分析的建物；未分析不代表占用為零。"}</p>
+                  <p className="analysis-status"><span>{isModelOccupancy?'模型判讀 · 待複核':isSurveyOccupancy?'外業參考 · 待複核':isDraftOccupancy?'AI 初判 · 待複核':hasOccupancyAnalysis?'投影計算 · 供參考':'尚未分析，不代表零占用'}</span><HelpHint label="占用分析說明">{isModelOccupancy ? "模型判讀／待複核。僅計已判讀建物／棚架／雨遮與 TWD97 地籍的投影交集，CAD 房屋線只作參考；補色立面不另計面積。比例以登記面積為分母，不代表全筆清查或正式占用認定。" : isSurveyOccupancy ? "外業參考／待複核。依 TWD97 平面交集計算，不含牆面表面積；比例以登記面積為分母。" : isDraftOccupancy ? "AI 初步判讀／待複核。僅計入已判讀範圍，未納入不確定區，不代表完整占用或正式鑑界。" : hasOccupancyAnalysis ? "依滴水線垂直投影與地籍範圍交集重算，已修除右端非屋頂尖角。" : "尚未指定本地號要分析的建物；未分析不代表占用為零。"}</HelpHint></p>
                   {currentParcelInfo?.reviewImageUrl && <p><a href={import.meta.env.BASE_URL + currentParcelInfo.reviewImageUrl} target="_blank" rel="noopener noreferrer">查看初判圈選圖（含待釐清區）</a></p>}
                 </div>
               )}
-              <p className="overlay-hint">{currentParcel?.tilesetPath?.startsWith("1010-") ? currentParcelInfo?.analysisNote : "點選紅色範圍可查看土地與地籍資料"}</p>
+              {currentParcel?.tilesetPath?.startsWith('1010-')&&currentParcelInfo?.analysisNote&&<div className="sidebar-info-line">本筆補充 <HelpHint label="本筆地籍補充說明">{currentParcelInfo.analysisNote}</HelpHint></div>}
             </div>
           )}
           {projectHasLandmarks && (
@@ -3496,7 +3521,7 @@ export function App() {
               <div><dt>地籍面積</dt><dd>{Number.isInteger(selectedCadastral.cadastralAreaM2) ? selectedCadastral.cadastralAreaM2.toFixed(0) : selectedCadastral.cadastralAreaM2.toFixed(3)} m²</dd></div>
             )}
             {selectedCadastral.occupiedAreaM2 !== undefined && (
-              <div><dt>{isSelectedEstimatedOccupancy ? "已判讀投影面積（初估）" : "建物占用投影面積"}</dt><dd>{isSelectedEstimatedOccupancy ? "約 " : ""}{selectedCadastral.occupiedAreaM2.toFixed(isSelectedEstimatedOccupancy ? 1 : 2)} m²</dd></div>
+              <div><dt>{isSelectedEstimatedOccupancy ? "投影面積（初估）" : "建物占用投影面積"}</dt><dd>{isSelectedEstimatedOccupancy ? "約 " : ""}{selectedCadastral.occupiedAreaM2.toFixed(isSelectedEstimatedOccupancy ? 1 : 2)} m²</dd></div>
             )}
             {selectedCadastral.occupancyPercent !== undefined && (
               <div className="wide occupancy-card-result"><dt>{isSelectedEstimatedOccupancy ? "占用比例（初估）" : "占用比例"}</dt><dd>{isSelectedEstimatedOccupancy ? "約 " : ""}{selectedCadastral.occupancyPercent.toFixed(isSelectedEstimatedOccupancy ? 1 : 2)}%</dd></div>
@@ -3585,6 +3610,10 @@ export function App() {
           <Share2 size={20} />
           <span>分享連結</span>
         </button>
+        {!showingCaseMap&&!caseEntryPhase&&status.phase==='ready'&&<SurveyToolsPanel viewer={sectionViewer} models={surveyModels} resolution={heightResolution} ready={status.phase==='ready'}
+          blocked={measureMode!=='idle'||clipMode!=='idle'||landmarkEditEnabled||calibrationPickEnabled} onModeChange={onSurveyModeChange}
+          active={measureMode==='distance'} pointCount={measurePointCount} draft={distanceDraft} results={distanceResults} notice={measureNotice}
+          onStart={()=>startMeasurement('distance')} onUndo={undoMeasurementPoint} onFinish={finishMeasurement} onCancel={clearMeasurementDraft} onClear={clearAllMeasurements}/>}
         <button
           type="button"
           onClick={() => void returnToModel()}
@@ -3641,23 +3670,6 @@ export function App() {
     </main>
     </>
   );
-}
-
-async function applyBasemap(
-  viewer: Viewer,
-  basemap: "aerial" | "road"
-): Promise<void> {
-  const provider =
-    basemap === "aerial"
-      ? await createWorldImageryAsync({
-          style: IonWorldImageryStyle.AERIAL
-        })
-      : new OpenStreetMapImageryProvider({
-          url: "https://tile.openstreetmap.org/"
-        });
-
-  viewer.imageryLayers.removeAll();
-  viewer.imageryLayers.addImageryProvider(provider).show=true;
 }
 
 function pickWorldPosition(

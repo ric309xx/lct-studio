@@ -109,6 +109,11 @@ button {
     radial-gradient(circle at 50% 35%, #153342 0%, #071019 62%);
 }
 
+/* Keep scene annotations above WebGL, but below sidebar and dock controls. */
+.cesium-host {
+  isolation: isolate;
+}
+
 .comparison-overlay {
   position: fixed;
   inset: 0;
@@ -619,6 +624,10 @@ button {
   white-space: nowrap;
 }
 
+.occupancy-summary .estimated-area-label {
+  white-space: nowrap;
+}
+
 .occupancy-summary .emphasis {
   border-color: rgba(48, 230, 126, 0.3);
   background: rgba(48, 230, 126, 0.08);
@@ -820,6 +829,8 @@ button {
   font-size: 0.72rem;
   cursor: pointer;
 }
+
+.basemap-control { grid-template-columns: repeat(3,minmax(0,1fr)); }
 
 .segmented-control button.active {
   color: #071019;

@@ -10,6 +10,9 @@ __pycache__/
 **/.wrangler/
 /.pnpm-store/
 /.codex-tmp/
+/.local/private-control-points/
+/analysis/20261027-height-audit/
+/analysis/20261028-height-audit/
 /dist/
 /3d-r2-test/
 .dev.vars

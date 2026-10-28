@@ -1,0 +1,30 @@
+.control-points-group{margin:12px 0;color:#c9dde1;font-size:12px;}
+.control-points-heading,.control-points-heading label{display:flex;align-items:center;gap:7px;}
+.control-points-heading label{cursor:pointer;}
+.control-points-heading input{accent-color:#c3a2ff;}
+.control-points-caption,.control-points-group p{margin:6px 0;font-size:12px;line-height:1.6;}
+.control-points-actions{display:grid;gap:6px;}
+.control-points-actions select{width:100%;min-width:0;padding:8px;border:1px solid #4c6872;border-radius:7px;background:#101e26;color:#e7eff3;font:inherit;}
+.control-points-actions button,.control-point-detail button{border:1px solid #677786;border-radius:6px;background:#152b32;color:#e5f2f6;padding:5px 8px;font:inherit;cursor:pointer;}
+.control-point-detail{margin-top:10px;padding:10px;border:1px solid #8e78b4;border-radius:8px;background:#111d27;}
+.control-point-detail header{display:flex;align-items:center;justify-content:space-between;gap:6px;color:#dac5ff;}
+.control-point-detail dl{margin:8px 0;}
+.control-point-detail dl div{display:flex;justify-content:space-between;gap:6px;margin:5px 0;}
+.control-point-detail dd{margin:0;font-variant-numeric:tabular-nums;}
+.control-point-detail small{display:block;line-height:1.7;overflow-wrap:anywhere;color:#b7cbd4;}
+.control-point-detail details{margin-top:6px;}
+.control-point-photos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:9px;}
+.control-point-photos button{display:grid;width:100%;padding:3px;gap:3px;}
+.control-point-photos img{width:100%;height:90px;object-fit:cover;border-radius:3px;}
+.control-point-markers{position:absolute;inset:0;pointer-events:none;z-index:15;overflow:hidden;}
+.control-point-markers button{position:absolute;display:flex;align-items:center;gap:3px;transform:translate(-9px,-9px);border:0;padding:0;background:transparent;color:#e3d5ff;pointer-events:auto;cursor:pointer;font:600 11px sans-serif;filter:drop-shadow(0 1px 2px #000);}
+.control-point-markers svg{background:#442967;border-radius:50%;color:#eee4ff;flex-shrink:0;}
+.control-point-markers span{text-shadow:1px 1px #09121b,-1px -1px #09121b,1px -1px #09121b,-1px 1px #09121b;}
+.control-point-markers .selected svg,.control-point-markers button:focus-visible svg{background:#8d52c9;outline:2px solid #f4eaff;}
+.case-map-host{isolation:isolate;}
+.control-point-photo-dialog{max-width:92vw;width:900px;max-height:92vh;padding:14px;border:1px solid #8d78a7;border-radius:12px;background:#0e1c24;color:#dbe5ed;}
+.control-point-photo-dialog::backdrop{background:#030a13d9;}
+.control-point-photo-dialog header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.control-point-photo-dialog button{border:1px solid #6c7c8a;background:#1a2d38;color:#e5f1f5;border-radius:6px;padding:5px;cursor:pointer;}
+.control-point-photo-dialog>img{display:block;max-width:100%;max-height:72vh;margin:auto;object-fit:contain;}
+.control-point-photo-dialog small{display:block;margin-top:8px;overflow-wrap:anywhere;}

@@ -123,7 +123,7 @@ export function tuneParcelNavigation(viewer: Viewer, getTarget: () => Cartesian3
     orbiting = true;
   }, ScreenSpaceEventType.MIDDLE_DOWN);
   handler.setInputAction(releaseOrbit, ScreenSpaceEventType.MIDDLE_UP);
-  return () => {
+  const dispose = () => {
     viewer.canvas.removeEventListener('wheel',wheel,true);
     viewer.canvas.removeEventListener('pointerdown',onManualInput);
     removeLevelListener();
@@ -137,4 +137,9 @@ export function tuneParcelNavigation(viewer: Viewer, getTarget: () => Cartesian3
     controller.enableCollisionDetection = collision;
     handler.destroy();
   };
+  return Object.assign(dispose,{resetFocus:()=>{
+    releaseOrbit();
+    selectedTarget=null;selectedParcelTarget=getTarget();
+    viewer.camera.cancelFlight();
+  }});
 }

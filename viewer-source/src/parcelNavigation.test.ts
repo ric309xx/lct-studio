@@ -118,6 +118,26 @@ describe("parcel orbit navigation", () => {
     expect(viewer.scene.postUpdate.numberOfListeners).toBe(0);
     canvas.remove();
   });
+  it('resets the clicked pivot to the case inspection center, including during a middle drag',()=>{
+    const canvas=document.createElement('canvas');document.body.appendChild(canvas);
+    const target=Cartesian3.fromDegrees(121.217,24.962,135),clicked=Cartesian3.fromDegrees(121.218,24.963,145);
+    const transform=vi.fn(),controller={enableInputs:true,rotateEventTypes:CameraEventType.LEFT_DRAG,inertiaSpin:.9};
+    const viewer={canvas,camera:{...basis(),cancelFlight:vi.fn(),lookAtTransform:transform,flyToBoundingSphere:vi.fn(),heading:0,pitch:-1},
+      scene:{postUpdate:new CesiumEvent(),screenSpaceCameraController:controller,pickPositionSupported:true,pickPosition:()=>clicked,requestRender:vi.fn()}} as unknown as Viewer;
+    const navigation=tuneParcelNavigation(viewer,()=>target);
+    canvas.dispatchEvent(new MouseEvent('mousedown',{button:0,bubbles:true}));
+    canvas.dispatchEvent(new MouseEvent('mouseup',{button:0,bubbles:true}));
+    canvas.dispatchEvent(new MouseEvent('mousedown',{button:1,bubbles:true}));
+    expect(transform).toHaveBeenLastCalledWith(Transforms.eastNorthUpToFixedFrame(clicked));
+    navigation.resetFocus();
+    expect(transform).toHaveBeenLastCalledWith(Matrix4.IDENTITY);
+    expect(controller.rotateEventTypes).toBe(CameraEventType.LEFT_DRAG);
+    document.dispatchEvent(new MouseEvent('mouseup',{button:1,bubbles:true}));
+    canvas.dispatchEvent(new MouseEvent('mousedown',{button:1,bubbles:true}));
+    expect(transform).toHaveBeenLastCalledWith(Transforms.eastNorthUpToFixedFrame(target));
+    document.dispatchEvent(new MouseEvent('mouseup',{button:1,bubbles:true}));
+    navigation();canvas.remove();
+  });
   it("levels a tilted camera in world and temporary parcel frames without moving it",()=>{
     const position=Cartesian3.fromDegrees(121.217,24.962,160);
     const normal=Ellipsoid.WGS84.geodeticSurfaceNormal(position,new Cartesian3());

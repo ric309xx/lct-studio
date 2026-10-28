@@ -1,6 +1,6 @@
 import {describe,it,expect,vi} from 'vitest';
 import {Camera,Cartesian3,Cartesian4,Cartographic,GeographicProjection,Math as CesiumMath,Matrix4,OrthographicFrustum,PerspectiveFrustum,SceneMode,Transforms,type Viewer} from 'cesium';
-import {alignCaseEntryToMap,caseEntryMapBounds,caseEntryOrbitTarget,caseEntryViewForParcel,placeCaseEntryCamera,shortestCaseHeadingDelta,tiltCaseEntryCamera,useCaseEntryPerspective} from './caseEntry';
+import {alignCaseEntryToMap,caseEntryMapBounds,caseEntryOrbitTarget,caseEntryViewForParcel,caseEntryInspectionView,restoreCaseInspectionView,placeCaseEntryCamera,shortestCaseHeadingDelta,tiltCaseEntryCamera,useCaseEntryPerspective} from './caseEntry';
 import {caseMapBounds,type CaseOverviewItem} from './caseOverview';
 
 const preset={longitude:121.214,latitude:24.956,height:220,headingDegrees:0,pitchDegrees:-65,rollDegrees:0};
@@ -47,6 +47,63 @@ describe('perspective after map fade',()=>{
   });
 });
 describe('stationary case entry',()=>{
+  it.each(['sanzuwu-sanzuwu-239-1','shuangling-174'])('restores the exact post-turn view, projection and independent pivot for %s',key=>{
+    const frames=new Map<number,FrameRequestCallback>();let id=0;
+    vi.stubGlobal('requestAnimationFrame',(fn:FrameRequestCallback)=>{frames.set(++id,fn);return id;});
+    vi.stubGlobal('cancelAnimationFrame',(key:number)=>frames.delete(key));
+    const tick=(time:number)=>{const callbacks=[...frames.values()];frames.clear();callbacks.forEach(fn=>fn(time));};
+    try{
+      const camera=new Camera({mode:SceneMode.SCENE3D,drawingBufferWidth:1000,drawingBufferHeight:800,mapProjection:new GeographicProjection()} as any);
+      const canvas=document.createElement('canvas');
+      canvas.getBoundingClientRect=()=>({width:1000,height:800}) as DOMRect;
+      const viewer={camera,canvas,isDestroyed:()=>false,scene:{requestRender:vi.fn()}} as unknown as Viewer;
+      const target=Cartesian3.fromDegrees(121.214,24.956,140);
+      camera.setView({destination:Cartesian3.fromDegrees(121.2136,24.9561,440),orientation:{heading:0,pitch:-Math.PI/2,roll:0}});
+      camera.frustum=new OrthographicFrustum({width:300,aspectRatio:1.25});
+      useCaseEntryPerspective(viewer,target);
+      const view=caseEntryInspectionView(viewer,target,key)!;
+      expect(view.target).toEqual(target);expect(view.target).not.toBe(target);
+      const stop=tiltCaseEntryCamera(viewer,target,key);tick(0);tick(1500);
+      const endPosition=Cartesian3.clone(camera.positionWC),endDirection=Cartesian3.clone(camera.directionWC),endUp=Cartesian3.clone(camera.upWC);
+      expect(Cartesian3.distance(endPosition,view.position)).toBeLessThan(1e-7);
+      expect(Cartesian3.distance(endDirection,view.direction)).toBeLessThan(1e-7);
+      stop();
+      camera.lookAt(target,new Cartesian3(30,40,100));
+      camera.frustum=new OrthographicFrustum({width:20,aspectRatio:1.25});
+      const fly=vi.spyOn(camera,'flyTo'),sphere=vi.spyOn(camera,'flyToBoundingSphere');
+      expect(restoreCaseInspectionView(viewer,view)).toBe(true);
+      expect(camera.transform).toEqual(Matrix4.IDENTITY);
+      expect(camera.frustum).toBeInstanceOf(PerspectiveFrustum);
+      expect(camera.frustum).not.toBe(view.frustum);
+      expect((camera.frustum as unknown as PerspectiveFrustum).fov).toBe((view.frustum as PerspectiveFrustum).fov);
+      expect(Cartesian3.distance(camera.positionWC,endPosition)).toBeLessThan(1e-7);
+      expect(Cartesian3.distance(camera.directionWC,endDirection)).toBeLessThan(1e-7);
+      expect(Cartesian3.distance(camera.upWC,endUp)).toBeLessThan(1e-7);
+      expect(fly).not.toHaveBeenCalled();expect(sphere).not.toHaveBeenCalled();
+      (camera.frustum as unknown as PerspectiveFrustum).fov=.5;
+      restoreCaseInspectionView(viewer,view);
+      expect((camera.frustum as unknown as PerspectiveFrustum).fov).toBe((view.frustum as PerspectiveFrustum).fov);
+      expect(restoreCaseInspectionView({...viewer,isDestroyed:()=>true} as Viewer,view)).toBe(false);
+    }finally{vi.unstubAllGlobals();}
+  });
+  it('keeps the intended final view available when entry rotation is interrupted',()=>{
+    const frames=new Map<number,FrameRequestCallback>();let id=0;
+    vi.stubGlobal('requestAnimationFrame',(fn:FrameRequestCallback)=>{frames.set(++id,fn);return id;});
+    vi.stubGlobal('cancelAnimationFrame',(key:number)=>frames.delete(key));
+    try{
+      const camera=new Camera({mode:SceneMode.SCENE3D,drawingBufferWidth:1000,drawingBufferHeight:800,mapProjection:new GeographicProjection()} as any);
+      const target=Cartesian3.fromDegrees(121.214,24.956,140);
+      camera.setView({destination:Cartesian3.fromDegrees(121.214,24.956,440),orientation:{heading:0,pitch:-Math.PI/2,roll:0}});
+      const canvas=document.createElement('canvas'),viewer={camera,canvas,isDestroyed:()=>false,scene:{requestRender:vi.fn()}} as unknown as Viewer;
+      const planned=caseEntryInspectionView(viewer,target,'sanzuwu-sanzuwu-239-1')!;
+      const stop=tiltCaseEntryCamera(viewer,target,'sanzuwu-sanzuwu-239-1');
+      canvas.dispatchEvent(new Event('pointerdown'));expect(frames.size).toBe(0);
+      restoreCaseInspectionView(viewer,planned);
+      expect(CesiumMath.toDegrees(camera.heading)).toBeCloseTo(270,2);
+      expect(CesiumMath.toDegrees(camera.pitch)).toBeCloseTo(-50,2);
+      stop();
+    }finally{vi.unstubAllGlobals();}
+  });
   it('chooses the shorter direction across north and never turns more than half a circle',()=>{
     expect(shortestCaseHeadingDelta(350,10)).toBe(20);
     expect(shortestCaseHeadingDelta(10,350)).toBe(-20);

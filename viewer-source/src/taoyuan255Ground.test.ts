@@ -2,7 +2,20 @@ import {describe,it,expect} from 'vitest';
 import {Cartographic,type Viewer} from 'cesium';
 import {taoyuan255Ground as data,taoyuan255Position,sampleTaoyuan255Offset} from './taoyuan255Ground';
 import {readFileSync} from 'node:fs';
+import {heightProfileForModel} from './heightReference';
+import parcels from './taoyuan1010Parcels.json';
 describe('255 four-parcel road surface',()=>{
+  it('keeps 255-149 road heights in the converted 1010-cl2 model frame without applying N twice',async()=>{
+    const parcel=parcels.find(p=>p.key==='sanzuwu-jiushe-255-149')!;
+    const profile=heightProfileForModel({type:'tileset-url',tilesetUrl:'verified-private-model'},parcel.tilesetPath)!;
+    expect(profile.id).toBe('1010-cl2');expect(profile.offsetM).toBeCloseTo(19.681,6);
+    const before=JSON.stringify(data),n=profile.offsetM!;
+    const viewer={scene:{sampleHeightMostDetailed:async(points:Cartographic[])=>points.map((p,i)=>{p.height=data.probes[i][2]+n;return p;})}} as unknown as Viewer;
+    const offset=await sampleTaoyuan255Offset(viewer),source=data.probes[0];
+    expect(offset).toBeCloseTo(n,6);
+    expect(Cartographic.fromCartesian(taoyuan255Position(source,offset)).height).toBeCloseTo(source[2]+n+data.displayLiftM,5);
+    expect(JSON.stringify(data)).toBe(before);
+  });
   it('preserves each CAD area while replacing one flat height with local road cells',()=>{
     expect(data.components).toHaveLength(6);expect(data.nodes.length).toBeGreaterThan(100);
     expect(Math.max(...data.nodes.map(p=>p[2]))-Math.min(...data.nodes.map(p=>p[2]))).toBeGreaterThan(1);
