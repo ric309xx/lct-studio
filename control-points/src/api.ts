@@ -1,5 +1,5 @@
 import {createLoginProof} from '../shared/loginProof.mjs';
-import {queueDelete,queueList,queuePut} from './storage';
+import {queueDelete,queueList,queuePut,storeValue} from './storage';
 import type {QueueItem} from './types';
 export class ApiError extends Error {constructor(message:string,public status:number){super(message);}}
 export async function api<T=any>(url:string,options:RequestInit={}):Promise<T>{
@@ -17,9 +17,11 @@ export function syncQueue(onChange:()=>void):Promise<void>{
       try{
         if(item.kind==='visit')await api(`/api/points/${item.pointId}/visits`,jsonRequest('POST',item.payload));
         else{
-          const form=new FormData();form.set('file',item.file!,item.filename!);if(item.thumbnail)form.set('thumbnail',item.thumbnail,'thumbnail.jpg');
+          const thumb=item.thumbnail||await makeThumbnail(item.file!);
+          const form=new FormData();form.set('file',item.file!,item.filename!);if(thumb)form.set('thumbnail',thumb,'thumbnail.jpg');
           for(const [key,value] of Object.entries(item.payload))if(value!=null)form.set(key,typeof value==='object'?JSON.stringify(value):String(value));
           await api(`/api/points/${item.pointId}/attachments`,{method:'POST',body:form});
+          if(thumb)await storeValue('photo:'+item.id+':thumb',thumb).catch(()=>{});
         }
         await queueDelete(item.id);onChange();
       }catch(error){await queuePut({...item,error:error instanceof Error?error.message:'上傳失敗'});onChange();if(error instanceof ApiError&&error.status===401)throw error;if(error instanceof TypeError)break;}

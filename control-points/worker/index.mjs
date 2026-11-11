@@ -1,8 +1,9 @@
+import {fieldLayerSettings,editFieldLayer} from '../shared/fieldLayers.mjs';
 import {loginRoute} from './login.mjs';
 import {surveyResultRoute} from './surveyResults.mjs';
 import {readPage} from './pages.mjs';
 import {normalizeRecords} from '../shared/coordinates.mjs';
-import {approximatePoint,measuredPoint} from '../shared/fieldPoints.mjs';
+import {approximatePoint,measuredPoint,manualPoint} from '../shared/fieldPoints.mjs';
 import {PHOTO_CATEGORIES,VISIT_STATUSES} from '../shared/fieldWorkflow.mjs';
 import {referenceRoute,listReferences} from './references.mjs';
 import {createPlaceSearch} from './geocode.mjs';
@@ -66,15 +67,27 @@ async function route(req,env){
     return new Response('{"ok":true}',{headers:{'Content-Type':'application/json','Cache-Control':'no-store','Set-Cookie':`lct_points_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secure}`}});
   }
   if(path==='/api/datasets'&&req.method==='GET')return json((await env.DB.prepare('SELECT d.*, (SELECT COUNT(*) FROM points p WHERE p.dataset_id=d.id AND p.deleted_at IS NULL) point_count FROM datasets d ORDER BY imported_at,id').all()).results);
-  if(path==='/api/field-datasets'&&req.method==='POST'){
-    const data=await readJson(req,2048),id=crypto.randomUUID();
-    if(typeof data.name!=='string'||!data.name.trim()||data.name.length>100)fail('請填寫 100 字以內的圖層名稱');
-    if(!Number.isInteger(data.resultYear)||data.resultYear<1||data.resultYear>300||!/^#[a-f0-9]{6}$/i.test(data.color))fail('年份或顏色不正確');
-    const metadata={fieldLayer:true,resultYear:data.resultYear,color:data.color};
-    await env.DB.batch([env.DB.prepare('INSERT INTO datasets VALUES(?,?,?,?,?,?,?,?,?,?,?)').bind(id,data.name.trim(),'WGS84',4326,'未註明',null,'現場新增',null,null,now(),JSON.stringify(metadata)),audit(env,null,'field-layer',null,{id,name:data.name.trim(),metadata})]);
-    return json({id},201);
+  if (path === "/api/field-datasets" && req.method === "POST") {
+    const data = fieldLayerSettings(await readJson(req, 2048)), id = crypto.randomUUID();
+    const metadata = { fieldLayer: true, resultYear: data.resultYear, color: data.color };
+    await env.DB.batch([env.DB.prepare("INSERT INTO datasets VALUES(?,?,?,?,?,?,?,?,?,?,?)").bind(id, data.name.trim(), "WGS84", 4326, "未註明", null, "現場新增", null, null, now(), JSON.stringify(metadata)), audit(env, null, "field-layer", null, { id, name: data.name.trim(), metadata })]);
+    return json({ id }, 201);
   }
-  if(path==='/api/points'&&req.method==='GET'){
+  const fieldLayerMatch = path.match(/^\/api\/field-datasets\/([^/]+)$/);
+  if (fieldLayerMatch && ["GET", "PATCH"].includes(req.method)) {
+    const id = decodeURIComponent(fieldLayerMatch[1]), before = await env.DB.prepare("SELECT * FROM datasets WHERE id=?").bind(id).first();
+    if (!before) fail("找不到圖層", 404);
+    if (JSON.parse(before.metadata || "{}").fieldLayer !== true) fail("此功能僅供修改手動新增的圖層", 403);
+    if (req.method === "GET") return json(before);
+    const after = editFieldLayer(before, await readJson(req, 16384));
+    const result = await env.DB.batch([
+      env.DB.prepare("INSERT INTO audits SELECT ?,NULL,'field-layer-edit',?,?,? WHERE EXISTS(SELECT 1 FROM datasets WHERE id=? AND name=? AND metadata=?)").bind(crypto.randomUUID(), JSON.stringify(before), JSON.stringify(after), now(), id, before.name, before.metadata),
+      env.DB.prepare("UPDATE datasets SET name=?,metadata=? WHERE id=? AND name=? AND metadata=?").bind(after.name, after.metadata, id, before.name, before.metadata)
+    ]);
+    if (!result[1].meta.changes) fail("圖層已更新，請關閉視窗並重新開啟後再修改", 409);
+    return json(after);
+  }
+    if(path==='/api/points'&&req.method==='GET'){
     const dataset=url.searchParams.get('dataset'),trash=url.searchParams.get('trash')==='1';
     if(url.searchParams.get('paged')==='1')return json(await readPage(env.DB,'points',url.searchParams,'deleted_at IS '+(trash?'NOT NULL':'NULL')+(dataset?' AND dataset_id=?':''),dataset?[dataset]:[]));
     const sql='SELECT * FROM points WHERE deleted_at IS '+(trash?'NOT NULL':'NULL')+(dataset?' AND dataset_id=?':'')+' ORDER BY dataset_id,code';
@@ -90,9 +103,15 @@ async function route(req,env){
     if(JSON.parse(dataset.metadata||'{}').archiveOnly)fail('此資料集保存歷史來源，點位沿用115年成果，請選擇成果資料集');
     let p;
     if(data.coordinateQuality==='approximate')p=approximatePoint(data,dataset);
+    else if(data.coordinateQuality==='manual')p=manualPoint(data,dataset);
     else{const n=normalizeRecords([data],dataset);if(n.errors.length)fail(n.errors[0].message);p=n.points[0];}
-    if(await env.DB.prepare('SELECT id FROM points WHERE dataset_id=? AND code=?').bind(dataset.id,p.code).first())fail('此資料集已有相同點號',409);
-    const fields=Object.keys(p);await env.DB.batch([env.DB.prepare(`INSERT INTO points(${fields.join(',')},updated_at) VALUES(${Array(fields.length+1).fill('?').join(',')})`).bind(...fields.map(k=>p[k]??null),now()),audit(env,p.id,'create',null,p)]);return json(await point(env,p.id),201);
+    const fields=Object.keys(p),at=now();
+    const result=await env.DB.batch([
+      env.DB.prepare('INSERT INTO points('+fields.join(',')+',updated_at) SELECT '+Array(fields.length+1).fill('?').join(',')+' WHERE NOT EXISTS(SELECT 1 FROM points WHERE dataset_id=? AND upper(trim(code))=upper(trim(?)))').bind(...fields.map(k=>p[k]??null),at,dataset.id,p.code),
+      env.DB.prepare("INSERT INTO audits SELECT ?,?,'create',NULL,?,? WHERE EXISTS(SELECT 1 FROM points WHERE id=?)").bind(crypto.randomUUID(),p.id,JSON.stringify(p),at,p.id)
+    ]);
+    if(!result[0].meta.changes)fail('此圖層已有相同點號，請重新取號或輸入其他點號',409);
+    return json(await point(env,p.id),201);
   }
   if(path==='/api/import'&&req.method==='POST'){
     if(Number(req.headers.get('content-length')||0)>20*1024*1024)fail('匯入檔案過大',413);
@@ -169,8 +188,18 @@ async function route(req,env){
       const data=await readJson(req,16384);if(data.version!==p.version)fail('資料已更新，請重新載入後再編輯',409);
       const changed={...p};for(const key of ['name','description','notes'])if(key in data){if(typeof data[key]!=='string'||data[key].length>8000)fail('文字欄位過長');changed[key]=data[key];}
       if('favorite' in data)changed.favorite=data.favorite?1:0;
-      const result=await env.DB.batch([env.DB.prepare('UPDATE points SET name=?,description=?,notes=?,favorite=?,version=version+1,updated_at=? WHERE id=? AND version=?').bind(changed.name,changed.description,changed.notes,changed.favorite,now(),id,p.version),audit(env,id,'edit',p,changed)]);
-      if(!result[0].meta.changes)fail('資料已更新，請重新載入',409);return json(await point(env,id));
+      if('code' in data){
+        if(typeof data.code!=='string'||!data.code.trim()||data.code.trim().length>100||/[\u0000-\u001f\u007f]/.test(data.code))fail('請填寫 1–100 字的點號');
+        changed.code=data.code.trim();
+      }
+      const time=now();changed.updated_at=time;changed.version=p.version+1;
+      const condition='id=? AND version=? AND deleted_at IS NULL AND (code=? OR NOT EXISTS(SELECT 1 FROM points other WHERE other.dataset_id=? AND other.id<>? AND upper(trim(other.code))=upper(trim(?))))';
+      const binds=[id,p.version,changed.code,p.dataset_id,id,changed.code];
+      const result=await env.DB.batch([
+        env.DB.prepare("INSERT INTO audits SELECT ?,?,'edit',?,?,? WHERE EXISTS(SELECT 1 FROM points WHERE "+condition+")").bind(crypto.randomUUID(),id,JSON.stringify(p),JSON.stringify(changed),time,...binds),
+        env.DB.prepare('UPDATE points SET code=?,name=?,description=?,notes=?,favorite=?,version=version+1,updated_at=? WHERE '+condition).bind(changed.code,changed.name,changed.description,changed.notes,changed.favorite,time,...binds)
+      ]);
+      if(!result[1].meta.changes)fail('同圖層已有此點號，或點位已更新；請重新核對後再試。',409);return json(await point(env,id));
     }
     if(req.method==='DELETE'&&!action){await env.DB.batch([env.DB.prepare('UPDATE points SET deleted_at=?,version=version+1 WHERE id=?').bind(now(),id),audit(env,id,'delete',p,null)]);return json({ok:true});}
     if(req.method==='POST'&&action==='restore'){

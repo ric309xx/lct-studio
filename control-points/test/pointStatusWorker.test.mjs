@@ -21,5 +21,20 @@ test('巡查可保存滅失，修改歷史巡查不覆蓋較新點況，修改�
     assert.equal((await edit(visits[0],'滅失','早期補記')).status,200);assert.equal((await(await request('/api/points/'+p.id)).json()).status,'完好');
     assert.equal((await edit(visits[3],'滅失','最新確認滅失')).status,200);assert.equal((await(await request('/api/points/'+p.id)).json()).status,'滅失');
     const history=await(await request(`/api/points/${p.id}/visits`)).json();assert.equal(history.length,4);assert.equal(history.find(v=>v.id===visits[3].id).note,'最新確認滅失');
+    const get=async(path)=>(await request(path)).json(),current=await get('/api/points/'+p.id);
+    const layer=(await (await request('/api/field-datasets',j({name:'測試定位',resultYear:115,color:'#335544'}))).json()).id;
+    let d=await get('/api/field-datasets/'+layer);
+    assert.equal((await request('/api/field-datasets/'+layer,j({name:'現場',color:'#557755',resultYear:115,expectedName:d.name,expectedMetadata:d.metadata},'PATCH'))).status,200);
+    const payload={dataset_id:layer,code:'CL28',coordinateQuality:'manual',coordinateSystem:'WGS84',epsg:4326,coordinates:'24.975, 121.265',height_type:'未註明'};
+    assert.equal((await request('/api/points',j(payload))).status,201);
+    assert.equal((await request('/api/points',j({...payload,code:'cl28'}))).status,409);
+    const put=async(data)=>request('/api/points/'+p.id,j(data,'PATCH'));
+    assert.equal((await put({code:'CL28',version:current.version})).status,200);
+    const renamed=await get('/api/points/'+p.id);assert.equal(renamed.code,'CL28');assert.equal(renamed.original_code,current.original_code);assert.equal(renamed.status,'滅失');assert.equal(renamed.north,p.north);
+    assert.equal((await get('/api/points/'+p.id+'/visits')).length,4);
+    assert.equal((await put({code:'過期版本',version:current.version})).status,409);
+    const second=await (await request('/api/points',j({dataset_id:p.dataset_id,code:'CL29',north:p.north,east:p.east}))).json();assert.ok(second.id);
+    assert.equal((await put({code:'cl29',version:renamed.version})).status,409);assert.equal((await get('/api/points/'+p.id)).code,'CL28');
+    assert.equal((await get('/api/places?q='+encodeURIComponent('24.975, 121.265')))[0].lat,24.975);
   }finally{await mf.dispose();}
 });

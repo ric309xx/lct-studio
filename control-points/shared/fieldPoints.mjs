@@ -1,7 +1,7 @@
 import {normalizeRecords} from './coordinates.mjs';
 export function fieldCapture(point){try{return JSON.parse(point.raw||'{}').fieldCapture||null;}catch{return null;}}
 export const isApproximate=point=>fieldCapture(point)?.quality==='approximate';
-export const coordinateQuality=point=>isApproximate(point)?'概略位置（待測量）':fieldCapture(point)?'已補測量坐標':'來源測量成果';
+export const coordinateQuality=point=>isApproximate(point)?'概略位置（待測量）':fieldCapture(point)?.quality==='manual'?'手動輸入座標':fieldCapture(point)?'已補測量坐標':'來源測量成果';
 const problem=(message,status=400)=>Object.assign(new Error(message),{status});
 export function approximatePoint(data,dataset,time=Date.now()){
   if(!['gps','map'].includes(data.positionMethod))throw problem('請選擇 GPS 或地圖點選位置');
@@ -11,6 +11,17 @@ export function approximatePoint(data,dataset,time=Date.now()){
   if(normalized.errors.length)throw problem(normalized.errors[0].message);
   return normalized.points[0];
 }
+import {manualCoordinates} from './manualCoordinates.mjs';
+export function manualPoint(data, dataset, time = Date.now()) {
+  const coordinates = manualCoordinates(data);
+  const capture = { quality: "manual", method: "manual", createdAt: new Date(time).toISOString(), inputCoordinates: { ...coordinates, originalInput: coordinates.epsg === 4326 ? data.coordinates : null } };
+  const raw = { "輸入方式": "手動輸入座標", "坐標系統": coordinates.coordinateSystem + (coordinates.epsg === 4326 ? " 經緯度" : coordinates.epsg === 3826 ? "／TM2 121 分帶" : "／TM2 119 分帶"), ...coordinates.epsg === 4326 ? { "原始經緯度": data.coordinates } : {}, fieldCapture: capture };
+  const result = normalizeRecords([{ ...data, ...coordinates, raw, source_sheet: "手動輸入座標", source_row: 0 }], { id: dataset.id, ...coordinates, metadata: { coordinateSystem: coordinates.coordinateSystem } });
+  if (result.errors.length) throw problem(result.errors[0].message);
+  return result.points[0];
+}
+
+
 export function measuredPoint(data,point,time=Date.now()){
   const capture=fieldCapture(point);if(!capture)throw problem('僅現場新增點可補測量；來源成果請另行匯入。');
   if(![3826,3825].includes(Number(data.epsg))||!['TWD97','TWD97[2010]'].includes(data.coordinateSystem))throw problem('請明確選擇 TWD97 或 TWD97[2010] 與正確分帶。');

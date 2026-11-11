@@ -21,3 +21,18 @@ test('固定直向僅在原生API成功時成立，不支援不要求全螢幕�
   const supported=createScreenLock({orientation:{lock:async()=>{calls++;if(calls===1)throw new Error();},unlock:()=>unlocks++},document:doc});assert.equal((await supported.lock()).locked,true);assert.equal(fullscreen,1);await supported.unlock();assert.equal(exits,1);assert.equal(unlocks,1);
   const failure=createScreenLock({orientation:{lock:async()=>{throw new Error();}},document:doc});assert.equal((await failure.lock()).locked,false);assert.equal(exits,2);
 });
+
+import {assignPhotoCategories,PHOTO_SET} from '../shared/fieldWorkflow.mjs';
+import {fieldNumbers} from '../shared/fieldNumbering.mjs';
+test('現場取下一號納入臨時點的點名，只計本圖層同字首純數字尾碼並保留補零',()=>{
+ const p=(code,name='',dataset_id='a')=>({code,name,dataset_id});
+ const rows=[p('cl09'),p('F-長編號','CL27'),p('CLY99'),p('CL540','', 'b'),p('HN009'),{...p('CL88'),deleted_at:'昨天'}];
+ assert.equal(fieldNumbers(rows,'a','cl').next,'CL28');assert.ok(fieldNumbers(rows,'a','CL').existing.includes('CL27'));
+ assert.equal(fieldNumbers(rows,'a','HN').next,'HN010');assert.equal(fieldNumbers(rows,'a','新點').next,'新點01');
+});
+test('五張照片可改選第三張為近照，一次建立同巡查的五筆原檔待傳；未滿不允許送出',async()=>{
+ const originals=items(5),mixed=assignPhotoCategories(originals,PHOTO_SET,originals[2].id);
+ const batch=await preparePhotoBatch(mixed,{id:'P',code:'CL27'},{category:PHOTO_SET,visitId:'V'});
+ assert.deepEqual(batch.map(q=>q.payload.category),['遠照','遠照','近照','遠照','遠照']);assert.ok(batch.every((q,i)=>q.payload.visit_id==='V'&&q.file===originals[i].file&&!q.thumbnail));assert.throws(()=>assignPhotoCategories(originals.slice(1),PHOTO_SET,originals[2].id));
+ await assert.rejects(()=>preparePhotoBatch(mixed.map(i=>({...i,category:'近照'})),{id:'P',code:'P'},{category:PHOTO_SET}));
+});

@@ -1,3 +1,4 @@
+import {coordinateSearch} from '../shared/coordinateSearch.mjs';
 const problem=(message,status)=>Object.assign(new Error(message),{status});
 export function placeResults(data) {
   const seen=new Set();
@@ -15,6 +16,7 @@ export function createPlaceSearch({fetcher=fetch,time=Date.now}={}) {
   return async function(query,files,endpoint='https://photon.komoot.io/api/') {
     const q=String(query||'').trim().replace(/\s+/g,' ');
     if(q.length<2||q.length>120) throw problem('請輸入 2–120 字的地標、路名或地址',400);
+    try{const coordinates=coordinateSearch(q);if(coordinates)return [coordinates];}catch(e){throw problem(e.message,400);}
     const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(q)))].map(b=>b.toString(16).padStart(2,'0')).join('');
     const key=`geocoding/v1/${hash}`,cached=await files.get(key);
     if(cached){try{const data=await cached.json();if(data.expires>time()&&Array.isArray(data.results))return data.results;}catch{}}
