@@ -40,6 +40,18 @@ export const PROJECTS = Object.freeze({
     pointCloud: true,
     camera: { heading: 0, pitch: -34.379, rangeFactor: 1.45, minRange: 120 }
   }),
+  'longdong-pix4d-mesh-20260805': Object.freeze({
+    id: 'longdong-pix4d-mesh-20260805', name: '龍洞｜Pix4D 網格（20260805）', date: '2026-08-05',
+    prefix: 'projects/longdong/20260805-pix4d-mesh-20261114-v1/',
+    landmarks: false, measurementOnly: true, siteReadOnly: true,
+    camera: { heading: 0, pitch: -34.379, rangeFactor: 1.45, minRange: 120 }
+  }),
+  'longdong-pix4d-gaussian-20260805': Object.freeze({
+    id: 'longdong-pix4d-gaussian-20260805', name: '龍洞｜Pix4D 高斯潑濺（20260805）', date: '2026-08-05',
+    prefix: 'projects/longdong/20260805-pix4d-gaussian-20261114-v1/',
+    landmarks: false, measurementOnly: true, gaussianViewer: true,
+    camera: { heading: 0, pitch: -34.379, rangeFactor: 1.45, minRange: 120 }
+  }),
   'heping-seawall-20260922': Object.freeze({
     id: 'heping-seawall-20260922', name: '和平海堤模型', date: '2026-09-22',
     prefix: 'projects/heping-seawall/20260922-v1/terra_b3dms/',

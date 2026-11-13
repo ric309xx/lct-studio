@@ -18,6 +18,19 @@ test('unified login requires a trusted origin and supports CORS without cookies'
   assert.equal(r.headers.get('access-control-allow-credentials'),null);
   assert.equal((await call(base+'login',{headers:{origin}})).status,405);assert.equal(reads,0);
 });
+test('Longdong site token is confined to its own mesh and cannot refresh a Taoyuan session',async()=>{
+  const mesh='longdong-pix4d-mesh-20260805';
+  const result=await post('login',{project:mesh,role:'viewer',password:'synthetic-viewer'});
+  assert.equal(result.status,200);
+  const access=await result.json();
+  const payload=await readCadastralToken(new Request('https://worker.test',{headers:{authorization:'Bearer '+access.token}}),env.SESSION_SECRET);
+  assert.equal(payload.projectId,mesh);
+  assert.equal((await post('refresh',{project},access.sessionToken)).status,401);
+  assert.equal((await call(`/projects/${project}/tiles/tileset.json`,{headers:{origin,authorization:'Bearer '+access.token}})).status,403);
+  const preflight=await call(`/projects/${mesh}/tiles/tileset.json`,{method:'OPTIONS',headers:{origin}});
+  assert.equal(preflight.status,204);
+  assert.equal(preflight.headers.get('access-control-allow-origin'),origin);
+});
 test('server passwords only; viewer cannot request an admin website role',async()=>{
   for(const [role,password] of [['admin','synthetic-viewer'],['admin',env.ADMIN_PASSWORD_HASH],['viewer','wrong']]) {
     assert.equal((await post('login',{project,role,password})).status,401);

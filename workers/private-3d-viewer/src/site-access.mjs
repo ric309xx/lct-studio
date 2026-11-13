@@ -2,6 +2,7 @@
 // Never accept a published frontend password hash as a credential.
 import {CADASTRAL_ORIGINS, createCadastralToken} from './cadastral-access.mjs';
 export const SITE_PROJECT = 'taoyuan-20261006';
+const SITE_PROJECTS = new Set([SITE_PROJECT, 'longdong-pix4d-mesh-20260805']);
 const TTL = 12 * 60 * 60;
 const audience = 'lct-site-cadastral-session';
 const encode = value => btoa(JSON.stringify(value)).replaceAll('+','-').replaceAll('/','_').replace(/=+$/,'');
@@ -16,7 +17,7 @@ function equal(a,b) {
   if(typeof a!=='string'||typeof b!=='string'||a.length!==b.length)return false;
   let mismatch=0;for(let i=0;i<a.length;i++)mismatch|=a.charCodeAt(i)^b.charCodeAt(i);return mismatch===0;
 }
-async function readSession(token,secret) {
+async function readSession(token,secret,projectId) {
   if(typeof token!=='string'||token.length>2048)return null;
   const [p,s,extra]=token.split('.');
   if(!p||!s||extra||!equal(s,await sign(p,secret)))return null;
@@ -24,7 +25,7 @@ async function readSession(token,secret) {
     const base=p.replaceAll('-','+').replaceAll('_','/');
     const data=JSON.parse(atob(base.padEnd(Math.ceil(base.length/4)*4,'=')));
     const now=Math.floor(Date.now()/1000);
-    return data.aud===audience&&data.role==='viewer'&&data.projectId===SITE_PROJECT&&
+    return data.aud===audience&&data.role==='viewer'&&data.projectId===projectId&&
       ['admin','viewer'].includes(data.uiRole)&&Number.isFinite(data.exp)&&data.exp>now&&
       data.exp<=now+TTL&&Number.isFinite(data.iat)&&data.exp-data.iat===TTL ? data : null;
   }catch{return null;}
@@ -48,7 +49,8 @@ export async function siteAccess(request,env,path) {
   if(Number(request.headers.get('content-length')||0)>4096)return response(request,{error:'Request too large'},413);
   const raw=await request.text();if(raw.length>4096)return response(request,{error:'Request too large'},413);
   let input;try{input=JSON.parse(raw);}catch{return response(request,{error:'Invalid request'},400);}
-  if(input?.project!==SITE_PROJECT)return response(request,{error:'專案不允許'},403);
+  if(!SITE_PROJECTS.has(input?.project))return response(request,{error:'專案不允許'},403);
+  const projectId=input.project;
   let session,sessionToken;
   if(path==='/api/site-access/login') {
     if(typeof input.password!=='string'||input.password.length<1||input.password.length>64||!['admin','viewer'].includes(input.role))return response(request,{error:'登入資料不正確'},400);
@@ -59,13 +61,13 @@ export async function siteAccess(request,env,path) {
       return response(request,{error:'密碼不正確，請輸入此網站的管理員／觀看密碼。'},401);
     }
     const now=Math.floor(Date.now()/1000);
-    session={role:'viewer',uiRole:input.role,projectId:SITE_PROJECT,aud:audience,iat:now,exp:now+TTL,nonce:crypto.randomUUID()};
+    session={role:'viewer',uiRole:input.role,projectId,aud:audience,iat:now,exp:now+TTL,nonce:crypto.randomUUID()};
     const payload=encode(session);sessionToken=payload+'.'+await sign(payload,env.SESSION_SECRET);
   } else if(path==='/api/site-access/refresh') {
     sessionToken=request.headers.get('authorization')?.match(/^Bearer (\S+)$/)?.[1];
-    session=await readSession(sessionToken,env.SESSION_SECRET);
+    session=await readSession(sessionToken,env.SESSION_SECRET,projectId);
     if(!session)return response(request,{error:'網站登入已過期，請重新登入。'},401);
   } else return response(request,{error:'Not found'},404);
-  const access=await createCadastralToken(SITE_PROJECT,env.SESSION_SECRET,session.exp);
-  return response(request,{project:SITE_PROJECT,role:session.uiRole,sessionToken,sessionExpiresAt:session.exp,...access});
+  const access=await createCadastralToken(projectId,env.SESSION_SECRET,session.exp);
+  return response(request,{project:projectId,role:session.uiRole,sessionToken,sessionExpiresAt:session.exp,...access});
 }

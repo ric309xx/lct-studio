@@ -13,12 +13,33 @@ const env={PROJECT_PASSWORD_HASH:hash('test-viewer'),ADMIN_PASSWORD_HASH:hash('t
   async put(){throw Error('Unexpected storage write');}
 }};
 const call=(url,options={})=>worker.fetch(new Request('https://viewer.test'+url,options),env);
+test('Pix4D Longdong models use distinct private fixed prefixes', async () => {
+  const mesh=PROJECTS['longdong-pix4d-mesh-20260805'];
+  const splat=PROJECTS['longdong-pix4d-gaussian-20260805'];
+  assert.equal(mesh.prefix, 'projects/longdong/20260805-pix4d-mesh-20261114-v1/');
+  assert.equal(splat.prefix, 'projects/longdong/20260805-pix4d-gaussian-20261114-v1/');
+  for (const id of [mesh.id, splat.id]) {
+    assert.equal((await call(`/projects/${id}/tiles/tileset.json`)).status, 401);
+  }
+});
 async function login(password='test-viewer',project='longteng-20260906'){
   const response=await call('/login',{method:'POST',body:new URLSearchParams({password,project})});
   assert.equal(response.status,303);
   assert.equal(response.headers.get('location'),'/viewer?project='+project);
   return response.headers.get('set-cookie').split(';')[0];
 }
+test('Gaussian viewer requires its own project session and serves only its fixed file', async () => {
+  const project='longdong-pix4d-gaussian-20260805';
+  const url=`/viewer?project=${project}`;
+  assert.equal((await call(url)).status, 302);
+  const wrongCookie=await login('test-viewer','longteng-20260906');
+  assert.equal((await call(url,{headers:{cookie:wrongCookie}})).status, 403);
+  const cookie=await login('test-viewer',project);
+  const response=await call(url,{headers:{cookie}});
+  assert.equal(response.status,200);
+  assert.equal(keys.at(-1), 'projects/longdong/20260805-pix4d-gaussian-20261114-v1/viewer.html');
+  keys.length=0;
+});
 test('private routes reject unauthenticated requests before storage access',async()=>{
   for(const url of ['/tiles/tileset.json','/projects/longteng-20260906/tiles/tileset.json','/api/landmarks?project=longteng-20260906'])assert.equal((await call(url)).status,401);
   assert.equal(keys.length,0);
@@ -61,6 +82,7 @@ test('project landmarks are isolated and viewers cannot write',async()=>{
 test('both roles get project selection and generated client JavaScript parses',async()=>{
   for(const password of ['test-viewer','test-admin']){
     for(const p of Object.values(PROJECTS)){
+      if (p.gaussianViewer) continue; // Dedicated HTML is tested separately above.
       const cookie=await login(password,p.id);
       const html=await (await call('/viewer?project='+p.id,{headers:{cookie}})).text();
       assert.ok(html.includes('<h1>'+p.name+'</h1>'));assert.match(html,/releases\/1\.143\//);

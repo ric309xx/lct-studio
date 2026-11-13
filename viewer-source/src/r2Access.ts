@@ -2,10 +2,11 @@ import { Resource } from "cesium";
 
 export const PRIVATE_R2_ORIGIN = "https://lct-private-3d-viewer.private-3d-viewer.workers.dev";
 export const TAOYUAN_R2_PROJECT = "taoyuan-20261006";
+export const LONGDONG_R2_PROJECT = "longdong-pix4d-mesh-20260805";
 type Access = { project: string; token: string; expiresAt: number; role: "admin" | "viewer" };
 export type SiteAuth = {
-  login(password: string, role: "admin" | "viewer"): Promise<Access>;
-  restore(force?: boolean): Promise<Access>;
+  login(password: string, role: "admin" | "viewer", project?: string): Promise<Access>;
+  restore(force?: boolean, project?: string): Promise<Access>;
   getAccess(project: string): Access | null;
   clear(): void;
 };
@@ -18,9 +19,10 @@ export function hasR2Access(project: string): boolean {
   return !!window.LCT_SITE_AUTH?.getAccess(project);
 }
 export async function ensureR2Access(project = TAOYUAN_R2_PROJECT): Promise<void> {
-  if (project !== TAOYUAN_R2_PROJECT) throw new Error("私人模型專案不允許。");
+  if (![TAOYUAN_R2_PROJECT, LONGDONG_R2_PROJECT].includes(project)) throw new Error("私人模型專案不允許。");
   if (!window.LCT_SITE_AUTH) throw new R2AuthorizationRequired();
-  await window.LCT_SITE_AUTH.restore();
+  if (project === TAOYUAN_R2_PROJECT) await window.LCT_SITE_AUTH.restore();
+  else await window.LCT_SITE_AUTH.restore(false, project);
   if (!hasR2Access(project)) throw new R2AuthorizationRequired();
 }
 export function privateR2Resource(url: string, project: string): Resource {
@@ -35,7 +37,10 @@ export function privateR2Resource(url: string, project: string): Resource {
       if (!resource || error?.statusCode !== 401 || !resource.url.startsWith(expected)) return false;
       // Derived tile resources inherit this callback; renewal is shared across tiles.
       const current = auth.getAccess(project);
-      if (!current || resource.headers.Authorization === `Bearer ${current.token}`) await auth.restore(true);
+      if (!current || resource.headers.Authorization === `Bearer ${current.token}`) {
+        if (project === TAOYUAN_R2_PROJECT) await auth.restore(true);
+        else await auth.restore(true, project);
+      }
       const renewed = auth.getAccess(project);
       if (!renewed) return false;
       resource.headers.Authorization = `Bearer ${renewed.token}`;

@@ -1,4 +1,5 @@
 import {readFileSync} from "node:fs";
+import {createHash} from "node:crypto";
 import {beforeEach, afterEach, it, expect, vi} from "vitest";
 const script=readFileSync("../3d-viewer/access-gate.js","utf8");
 const config=(role="admin",projectId="taoyuan-building-overlay")=>({role,projectId,accessId:"test",passwordHash:"not-a-server-credential"});
@@ -8,7 +9,7 @@ beforeEach(()=>{
   document.head.innerHTML="";document.body.innerHTML='<div id="access-gate"><form id="access-form"><input id="access-password"><button type="submit">登入</button></form><p id="access-error"></p><button id="toggle-password"></button></div>';
   (window as any).LCT_VIEWER_ACCESS=config();
 });
-afterEach(()=>{vi.useRealTimers();delete window.LCT_SITE_AUTH;});
+afterEach(()=>{vi.useRealTimers();vi.unstubAllGlobals();delete window.LCT_SITE_AUTH;});
 it("one website form authenticates server-side, clears the password and opens viewer",async()=>{
   const login=vi.fn().mockResolvedValue({role:"admin"});
   (window as any).LCT_SITE_AUTH={login,hasSavedSession:()=>false};window.eval(script);
@@ -36,6 +37,24 @@ it("unrelated project shares retain their existing local gate",async()=>{
   (window as any).LCT_VIEWER_ACCESS=config("viewer","sanxia-solar-2");delete window.LCT_SITE_AUTH;
   window.eval(script);await tick();
   expect(document.querySelector('script[src*="site-auth"]')).toBeNull();
+});
+it("the Longdong comparison requests only its own server-side project session",async()=>{
+  (window as any).LCT_VIEWER_ACCESS={role:"viewer",comparisonId:"longdong-general-close-compare",projectIds:[],accessId:"longdong",passwordHash:createHash("sha256").update("synthetic-viewer").digest("hex")};
+  vi.stubGlobal("crypto",{subtle:{digest:async (_algorithm:string,bytes:Uint8Array)=>createHash("sha256").update(bytes).digest()}});
+  const login=vi.fn().mockResolvedValue({role:"viewer"});
+  (window as any).LCT_SITE_AUTH={login,hasSavedSession:()=>false};window.eval(script);
+  document.querySelector<HTMLInputElement>("input")!.value="synthetic-viewer";
+  document.querySelector("form")!.dispatchEvent(new Event("submit",{cancelable:true}));await tick();
+  expect(login).toHaveBeenCalledWith("synthetic-viewer","viewer","longdong-pix4d-mesh-20260805");
+  expect(document.querySelector("script[data-viewer-app]")).not.toBeNull();
+});
+it("keeps the previous Longdong comparison available when R2 authentication fails",async()=>{
+  (window as any).LCT_VIEWER_ACCESS={role:"viewer",comparisonId:"longdong-general-close-compare",projectIds:[],accessId:"longdong",passwordHash:createHash("sha256").update("synthetic-viewer").digest("hex")};
+  vi.stubGlobal("crypto",{subtle:{digest:async (_algorithm:string,bytes:Uint8Array)=>createHash("sha256").update(bytes).digest()}});
+  (window as any).LCT_SITE_AUTH={login:vi.fn().mockRejectedValue(Error("offline")),hasSavedSession:()=>false};window.eval(script);
+  document.querySelector<HTMLInputElement>("input")!.value="synthetic-viewer";
+  document.querySelector("form")!.dispatchEvent(new Event("submit",{cancelable:true}));await tick();
+  expect(document.querySelector("script[data-viewer-app]")).not.toBeNull();
 });
 it("a shared entry hides homepage navigation and cannot inherit admin UI permissions",async()=>{
   (window as any).LCT_VIEWER_ACCESS=config("viewer");

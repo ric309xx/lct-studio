@@ -42,3 +42,14 @@ it("rejects cross-project and overlong token responses",async()=>{
     expect(sessionStorage.getItem(key)).toBeNull();
   }
 });
+it("keeps Longdong and Taoyuan sessions separate",async()=>{
+  window.eval(script);
+  const longdong="longdong-pix4d-mesh-20260805";
+  const fetch=vi.fn().mockResolvedValue({ok:true,json:async()=>({...data(),project:longdong,role:"viewer"})});
+  vi.stubGlobal("fetch",fetch);
+  await auth().login("synthetic-viewer","viewer",longdong);
+  expect(auth().getAccess(longdong).project).toBe(longdong);
+  expect(auth().getAccess(project)).toBeNull();
+  expect(sessionStorage.getItem(key)).toBeNull();
+  expect(sessionStorage.getItem(key+":"+longdong)).not.toBeNull();
+});

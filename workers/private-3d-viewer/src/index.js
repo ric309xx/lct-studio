@@ -109,13 +109,14 @@ async function routeRequest(request, env) {
   const projectTile = url.pathname.match(/^\/projects\/([^/]+)\/tiles\/(.*)$/);
   if (projectTile) {
     const tileProject = getProject(projectTile[1]);
-    const respond = response => tileProject?.cadastral ? corsResponse(request, response) : response;
-    if (request.method === 'OPTIONS' && tileProject?.cadastral) {
+    const siteAccessAllowed = tileProject?.cadastral || tileProject?.siteReadOnly;
+    const respond = response => siteAccessAllowed ? corsResponse(request, response) : response;
+    if (request.method === 'OPTIONS' && siteAccessAllowed) {
       return CADASTRAL_ORIGINS.has(request.headers.get('origin'))
         ? respond(new Response(null,{status:204,headers:{'Access-Control-Max-Age':'600'}}))
         : textResponse('Origin not allowed',403);
     }
-    const access = session ?? (tileProject?.cadastral ? await readCadastralToken(request, env.SESSION_SECRET) : null);
+    const access = session ?? (siteAccessAllowed ? await readCadastralToken(request, env.SESSION_SECRET) : null);
     if (!access) return respond(textResponse('Unauthorized', 401));
     if (!tileProject) return textResponse('Unknown project', 404);
     if (!canAccessProject(access, tileProject)) return respond(textResponse('Forbidden', 403));
@@ -137,6 +138,9 @@ async function routeRequest(request, env) {
     }
     if (!project) return textResponse('Unknown project', 404);
     if (!canAccessProject(session, project)) return textResponse('Forbidden', 403);
+    if (project.gaussianViewer && request.method === 'GET') {
+      return servePrivateObject(request, env, `${project.prefix}viewer.html`, 'text/html; charset=utf-8');
+    }
     return htmlResponse(viewerHtml(session.role, project));
   }
 

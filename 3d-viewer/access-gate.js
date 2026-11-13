@@ -19,13 +19,17 @@
   // Shared entries always open as viewers, even in a previously admin tab.
   if (config.role === "viewer") document.querySelector(".access-back")?.remove();
   let passwordEntryStarted = false;
+  const longdongProject = 'longdong-pix4d-mesh-20260805';
+  const isLongdongComparison = config.comparisonId === 'longdong-general-close-compare';
+  const authProject = isLongdongComparison ? longdongProject : undefined;
   const unifiedLogin = config.role === "admin" ||
+    isLongdongComparison ||
     config.projectId === "taoyuan-building-overlay" ||
     config.projectIds?.includes("taoyuan-building-overlay");
   const authReady = unifiedLogin ? new Promise((resolve, reject) => {
     if (window.LCT_SITE_AUTH) return resolve(window.LCT_SITE_AUTH);
     const script = document.createElement("script");
-    script.src = "/3d-viewer/site-auth.js?v=20261010c";
+    script.src = "/3d-viewer/site-auth.js?v=20261114-longdong";
     script.onload = () => window.LCT_SITE_AUTH ? resolve(window.LCT_SITE_AUTH) : reject(Error("登入服務無法載入。"));
     script.onerror = () => reject(Error("登入服務無法載入，請重新整理。"));
     document.head.appendChild(script);
@@ -114,12 +118,12 @@
 
     const stylesheet = document.createElement("link");
     stylesheet.rel = "stylesheet";
-    stylesheet.href = "/3d-viewer/assets/viewer.css?v=20261028-camera-v14";
+    stylesheet.href = "/3d-viewer/assets/viewer.css?v=20261114-longdong";
     document.head.appendChild(stylesheet);
 
     const script = document.createElement("script");
     script.type = "module";
-    script.src = "/3d-viewer/assets/viewer.js?v=20261028-camera-v14";
+    script.src = "/3d-viewer/assets/viewer.js?v=20261114-longdong";
     script.dataset.viewerApp = "true";
     document.body.appendChild(script);
   };
@@ -140,9 +144,23 @@
     if (submit) submit.disabled = true;
     try {
       if (unifiedLogin) {
-        const auth = await authReady;
-        const session = await auth.login(input.value, config.role);
+        if (isLongdongComparison && await sha256(input.value) !== config.passwordHash) {
+          throw Error("密碼不正確，請重新輸入。");
+        }
+        let auth;
+        let session;
+        try {
+          auth = await authReady;
+          session = authProject ? await auth.login(input.value, config.role, authProject) : await auth.login(input.value, config.role);
+        } catch (reason) {
+          // Keep legacy ion-only comparison available if the private R2 login is unavailable.
+          if (!isLongdongComparison) throw reason;
+          session = {role: config.role};
+        }
         if (session.role !== config.role) throw Error("登入身分不符，請重新登入。");
+        if (config.role === 'admin' && auth) {
+          try { await auth.login(input.value, 'admin', longdongProject); } catch { /* Other projects remain available. */ }
+        }
       } else if (await sha256(input.value) !== config.passwordHash) {
         throw Error("密碼不正確，請重新輸入。");
       }
@@ -158,8 +176,8 @@
   });
   // Storage is only a hint: the server verifies the saved session before opening.
   if (authReady) void authReady.then(async auth => {
-    if (!auth.hasSavedSession(config.role)) return;
-    const session = await auth.restore();
+    if (!(authProject ? auth.hasSavedSession(config.role, authProject) : auth.hasSavedSession(config.role))) return;
+    const session = authProject ? await auth.restore(false, authProject) : await auth.restore();
     if (session.role === config.role) loadViewer();
   }).catch(reason => { error.textContent = reason.message || "請重新登入網站。"; });
 })();

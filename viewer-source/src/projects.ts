@@ -145,6 +145,18 @@ export function createProjectCatalog(primarySource: ModelSource): ViewerProject[
       }
     },
     {
+      id: "gongliao-longdong-pix4d-mesh-20260805",
+      name: "龍洞｜Pix4D 網格（20260805）",
+      location: "新北市貢寮區龍洞岩場",
+      sharePath: "/3d-viewer/p/V6mQ2rL8dK4x/?project=longdong-general-close-compare",
+      modelSource: {
+        type: "tileset-url",
+        tilesetUrl: "https://lct-private-3d-viewer.private-3d-viewer.workers.dev/projects/longdong-pix4d-mesh-20260805/tiles/tileset.json",
+        privateProjectId: "longdong-pix4d-mesh-20260805"
+      },
+      camera: { longitude: 121.92214411, latitude: 25.10834929, height: 198.45, headingDegrees: 354.942, pitchDegrees: -38.005, rollDegrees: 0 }
+    },
+    {
       id: "gongliao-longdong-manual-20260812",
       name: "龍洞｜手動補拍（20260812）",
       location: "新北市貢寮區龍洞岩場",
@@ -234,6 +246,10 @@ export function createComparisonCatalog(): ViewerComparison[] {
               {
                       projectId: "gongliao-longdong-general-20260805",
                       label: "一般攝影"
+              },
+              {
+                      projectId: "gongliao-longdong-pix4d-mesh-20260805",
+                      label: "08/05 Pix4D 網格"
               },
               {
                       projectId: "gongliao-longdong-manual-20260812",

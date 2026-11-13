@@ -83,6 +83,7 @@ describe("project sharing", () => {
       defaultSplitPosition: 0.5,
       projectOptions: [
         { projectId: "gongliao-longdong-general-20260805", label: "一般攝影" },
+        { projectId: "gongliao-longdong-pix4d-mesh-20260805", label: "08/05 Pix4D 網格" },
         { projectId: "gongliao-longdong-manual-20260812", label: "手動補拍" },
         { projectId: "gongliao-longdong-rock-2", label: "08/05 貼近攝影" },
         { projectId: "gongliao-longdong-twd97-20260926", label: "09/26 TWD97" },
