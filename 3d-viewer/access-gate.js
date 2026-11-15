@@ -118,12 +118,12 @@
 
     const stylesheet = document.createElement("link");
     stylesheet.rel = "stylesheet";
-    stylesheet.href = "/3d-viewer/assets/viewer.css?v=20261114-longdong";
+    stylesheet.href = "/3d-viewer/assets/viewer.css?v=20261115-gaussian";
     document.head.appendChild(stylesheet);
 
     const script = document.createElement("script");
     script.type = "module";
-    script.src = "/3d-viewer/assets/viewer.js?v=20261114-longdong";
+    script.src = "/3d-viewer/assets/viewer.js?v=20261115-gaussian";
     script.dataset.viewerApp = "true";
     document.body.appendChild(script);
   };

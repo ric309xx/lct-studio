@@ -1473,6 +1473,16 @@ button {
   font-size: 14px;
 }
 .occupancy-summary a, .cadastral-details a { color: #86e5d1; text-decoration: underline; text-underline-offset: 3px; }
+.gaussian-open { width: 100%; margin-top: 10px; padding: 10px 12px; color: #9ce9d9; background: #173d3e; border: 1px solid #4e9c95; border-radius: 8px; cursor: pointer; }
+.gaussian-overlay { position: fixed; inset: 0; z-index: 5000; display: flex; flex-direction: column; background: #071019; color: #edf9f8; }
+.gaussian-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px; background: #101f24; }
+.gaussian-header strong, .gaussian-header span { display: block; }
+.gaussian-header span { margin-top: 3px; color: #a9c4c3; font-size: 12px; }
+.gaussian-header button { padding: 9px 12px; color: white; border: 1px solid #6b9291; border-radius: 8px; background: #183439; cursor: pointer; }
+.gaussian-overlay iframe { display: block; flex: 1; width: 100%; min-height: 0; border: 0; background: #000; }
+.gaussian-footer { display: flex; gap: 12px; justify-content: space-between; align-items: center; padding: 9px 16px; font-size: 12px; color: #c2d3d2; }
+.gaussian-footer a { color: #86e5d1; white-space: nowrap; }
+@media (max-width: 600px) { .gaussian-header { padding: 9px 12px; } .gaussian-footer { flex-wrap: wrap; padding: 8px 12px; } }
 .occupancy-summary a:focus-visible, .cadastral-details a:focus-visible { outline: 2px solid #86e5d1; outline-offset: 4px; }
 .cadastral-draft-badge { padding: 8px 10px; border: 1px solid #c89544; border-radius: 7px; color: #ffe0a4; background: #4c381c66; font-size: 14px; line-height: 1.5; }
 @media (max-width: 700px) {

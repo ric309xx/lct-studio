@@ -568,6 +568,8 @@ async function loadModel(
       } : undefined);
 }
 
+import { LongdongGaussian } from './LongdongGaussian';
+
 export function App() {
   const containerRef = useRef<HTMLDivElement>(null);
   const parcelOrbitTargetRef = useRef<Cartesian3 | null>(null);
@@ -618,6 +620,7 @@ export function App() {
   );
   const [status, setStatus] = useState<ViewerStatus>(INITIAL_STATUS);
   const [reloadKey, setReloadKey] = useState(0);
+  const [showLongdongGaussian, setShowLongdongGaussian] = useState(false);
   const [r2Connecting, setR2Connecting] = useState(false);
   const [basemap, setBasemap] = useState<Basemap>(DEFAULT_BASEMAP);
   const basemapChanging=useRef(false);
@@ -2621,6 +2624,7 @@ export function App() {
   const cancelCaseEntry=()=>{caseEntryRef.current=null;setCaseEntryPhase(null);setShowCaseMap(true);const url=new URL(window.location.href);url.searchParams.delete('parcel');url.searchParams.set('view','cases');window.history.replaceState({},'',url);};
   return (
     <>
+    {showLongdongGaussian && <LongdongGaussian onClose={() => setShowLongdongGaussian(false)} />}
     {(showingCaseMap||caseEntryPhase)&&<div className="case-map-layer"><CaseOverviewMap cases={TAOYUAN_CASES} initialKey={currentParcel?cadastralGroup(currentParcel):undefined} savedView={overviewViewRef} savedNavigation={overviewNavigationRef}
       entryPhase={caseEntryPhase} entryError={caseEntryError} onCancelEntry={cancelCaseEntry} onEnter={(key,source)=>{
         saveCaseMapSnapshot(window.sessionStorage,overviewStorageKey,{navigation:overviewNavigationRef.current,view:overviewViewRef.current});
@@ -2847,6 +2851,9 @@ export function App() {
               </option>
             ))}
           </select>
+          {(projectId === 'longdong-general-close-compare' || projectId === 'gongliao-longdong-pix4d-mesh-20260805') && <button
+            type="button" className="gaussian-open" onClick={() => setShowLongdongGaussian(true)}
+          >觀看 08/05 Pix4D 高斯模型 ↗</button>}
           {!IS_SHARE_ENTRY&&<div className="project-access-row">
             <p className="project-name">
               {projectName} · {IS_ADMIN ? "管理員模式" : "一般觀看"}
