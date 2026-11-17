@@ -1,6 +1,7 @@
 import { landmarksApi, landmarkClient } from './landmarks.mjs';
 import { DEFAULT_PROJECT, PROJECTS, getProject } from './projects.mjs';
 import { siteAccess } from './site-access.mjs';
+import { checkLoginLimit, readLimitedText } from './login-security.mjs';
 import { CADASTRAL_ORIGINS, validConnectUrl, corsResponse, createCadastralToken, readCadastralToken, CONNECT_HTML, CONNECT_JS } from './cadastral-access.mjs';
 const COOKIE_NAME = "lct_3d_session";
 const SESSION_TTL_SECONDS = 12 * 60 * 60;
@@ -8,6 +9,8 @@ const COVER_CSS = `.project-cover{width:116px;height:58px;object-fit:cover;borde
 
 
 const SECURITY_HEADERS = {
+  "Strict-Transport-Security": "max-age=31536000",
+  "X-Robots-Tag": "noindex, nofollow, noarchive",
   "Referrer-Policy": "no-referrer",
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
@@ -17,7 +20,9 @@ const SECURITY_HEADERS = {
 export default {
   async fetch(request, env) {
     try {
-      return await routeRequest(request, env);
+      const response = await routeRequest(request, env);
+      const headers = withSecurityHeaders(response.headers);
+      return new Response(response.body, {status: response.status, statusText: response.statusText, headers});
     } catch (error) {
       console.error(JSON.stringify({
         event: "unhandled_error",
@@ -30,6 +35,13 @@ export default {
 
 async function routeRequest(request, env) {
   const url = new URL(request.url);
+  if (request.method === 'POST' && ['/login','/logout'].includes(url.pathname) && request.headers.get('origin') !== url.origin) {
+    return textResponse('Origin not allowed', 403);
+  }
+  if (request.method === 'POST' && url.pathname === '/login') {
+    const limited = await checkLoginLimit(request, env);
+    if (limited) return limited;
+  }
   if (url.pathname === '/api/site-access/login' || url.pathname === '/api/site-access/refresh') {
     return siteAccess(request, env, url.pathname);
   }
@@ -168,7 +180,10 @@ async function handleLogin(request, env) {
     return textResponse("Request too large", 413);
   }
 
-  const form = await request.formData();
+  if (!request.headers.get('content-type')?.startsWith('application/x-www-form-urlencoded')) return textResponse('Unsupported form type',415);
+  let raw;
+  try { raw = await readLimitedText(request); } catch { return textResponse('Request too large',413); }
+  const form = new URLSearchParams(raw);
   const password = String(form.get("password") || "");
   const project = getProject(String(form.get("project") || DEFAULT_PROJECT));
   if (!project) return textResponse("Unknown project", 404);
@@ -417,7 +432,7 @@ function delay(milliseconds) {
 
 function loginHtml(showError, projectId = DEFAULT_PROJECT) {
   const project = getProject(projectId) ?? getProject();
-  return `<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>${project.name}入口｜LCT Studio</title><style>${LOGIN_CSS}</style></head><body><main class="gate"><section class="card" aria-labelledby="gate-title"><p class="eyebrow">PRIVATE 3D ARCHIVE</p><h1 id="gate-title">${project.name}</h1><p class="lead">這是「${project.name}」的專屬觀看入口，請輸入觀看密碼後進入模型。</p><form action="/login" method="post"><input type="hidden" name="project" value="${project.id}"><label for="password">觀看密碼</label><input id="password" name="password" type="password" inputmode="numeric" autocomplete="current-password" maxlength="64" required autofocus>${showError ? '<p class="error" role="alert">密碼不正確，請重新輸入。</p>' : ''}<button type="submit">進入專案</button></form><p class="note">授權工作階段將於 12 小時後自動失效。</p></section></main></body></html>`;
+  return `<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>${project.name}入口｜LCT Studio</title><style>${LOGIN_CSS}</style></head><body><main class="gate"><section class="card" aria-labelledby="gate-title"><p class="eyebrow">PRIVATE 3D ARCHIVE</p><h1 id="gate-title">${project.name}</h1><p class="lead">這是「${project.name}」的專屬觀看入口，請輸入觀看密碼後進入模型。</p><form action="/login" method="post"><input type="hidden" name="project" value="${project.id}"><label for="password">觀看密碼</label><input id="password" name="password" type="password" autocomplete="current-password" maxlength="64" required autofocus>${showError ? '<p class="error" role="alert">密碼不正確，請重新輸入。</p>' : ''}<button type="submit">進入專案</button></form><p class="note">授權工作階段將於 12 小時後自動失效。</p></section></main></body></html>`;
 }
 
 function viewerHtml(role, project) {

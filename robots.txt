@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /3d-viewer/
+Disallow: /control-points/
+
+Sitemap: https://lctstudio.tw/sitemap.xml

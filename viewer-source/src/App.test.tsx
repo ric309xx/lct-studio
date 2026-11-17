@@ -29,13 +29,13 @@ import { App } from "./App";
 
 describe("App controls", () => {
   beforeEach(() => {
-    vi.stubEnv("VITE_CESIUM_ION_ACCESS_TOKEN", "");
+    delete window.LCT_VIEWER_BOOTSTRAP;
   });
 
-  it("renders missing-token guidance and required controls", async () => {
+  it("requires a server session and retains disabled controls when it expires", async () => {
     render(<App />);
     expect(await screen.findByRole("status")).toHaveTextContent(
-      "尚未設定 Cesium ion Access Token"
+      "登入已失效"
     );
     expect(screen.getByRole("button", { name: "回到模型" })).toBeDisabled();
     expect(

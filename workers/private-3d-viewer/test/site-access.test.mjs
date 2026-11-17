@@ -6,7 +6,7 @@ import {readCadastralToken} from '../src/cadastral-access.mjs';
 const project='taoyuan-20261006',origin='http://127.0.0.1:5500',base='/api/site-access/';
 const hash=v=>createHash('sha256').update(v).digest('hex');
 let reads=0;
-const env={ADMIN_PASSWORD_HASH:hash('synthetic-admin'),PROJECT_PASSWORD_HASH:hash('synthetic-viewer'),SESSION_SECRET:randomUUID(),MODELS:{async get(){reads++;throw Error('Unexpected read');},async put(){throw Error('Unexpected write');}}};
+const env={LOGIN_RATE_LIMITER:{async limit(){return {success:true};}},ADMIN_PASSWORD_HASH:hash('synthetic-admin'),PROJECT_PASSWORD_HASH:hash('synthetic-viewer'),SESSION_SECRET:randomUUID(),MODELS:{async get(){reads++;throw Error('Unexpected read');},async put(){throw Error('Unexpected write');}}};
 const call=(path,options={})=>worker.fetch(new Request('https://worker.test'+path,options),env);
 const post=(path,data,token)=>call(base+path,{method:'POST',headers:{origin,'Content-Type':'application/json',...(token?{authorization:'Bearer '+token}:{})},body:JSON.stringify(data)});
 const login=async(role='admin',password='synthetic-admin')=>{const r=await post('login',{project,role,password});assert.equal(r.status,200);return r.json();};
@@ -81,7 +81,7 @@ test('website-specific passwords override legacy credentials without changing Wo
   const viewer=await website('viewer','website-viewer');assert.equal(viewer.status,200);assert.equal((await viewer.json()).role,'viewer');
   const admin=await website('admin','website-admin');assert.equal(admin.status,200);assert.equal((await admin.json()).role,'admin');
   const legacy=await worker.fetch(new Request('https://worker.test/login',{
-    method:'POST',body:new URLSearchParams({project,password:'synthetic-admin'})
+    method:'POST',headers:{origin:'https://worker.test'},body:new URLSearchParams({project,password:'synthetic-admin'})
   }),configured);
   assert.equal(legacy.status,303);assert.ok(legacy.headers.get('set-cookie'));
 });

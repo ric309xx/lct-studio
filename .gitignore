@@ -10,9 +10,14 @@ __pycache__/
 **/.wrangler/
 /.pnpm-store/
 /.codex-tmp/
-/.local/private-control-points/
-/analysis/20261027-height-audit/
-/analysis/20261028-height-audit/
+/.site-dist/
+/.local/
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
 /dist/
 /3d-r2-test/
 .dev.vars
@@ -27,3 +32,7 @@ __pycache__/
 
 # (選擇性) 如果你最後都把東西複製到 publish，其實 public 也可以忽略
 # 但為了保險起見，我們先只忽略大圖就好
+
+/.local/private-control-points/
+/analysis/20261027-height-audit/
+/analysis/20261028-height-audit/

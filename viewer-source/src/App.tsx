@@ -118,18 +118,8 @@ const INITIAL_STATUS: ViewerStatus = {
   message: "正在初始化 3D 檢視器…"
 };
 
-const STORED_ROLE = sessionStorage.getItem("lct-3d-viewer-role");
 const IS_SHARE_ENTRY = isSharedViewerEntry(window.location.pathname, window.LCT_VIEWER_ACCESS?.role);
-const REQUESTED_PROJECT_ID = new URLSearchParams(window.location.search).get(
-  "project"
-);
-const IS_LOCAL_DIRECT_ENTRY =
-  ["127.0.0.1", "localhost"].includes(window.location.hostname) &&
-  REQUESTED_PROJECT_ID === null;
-const IS_ADMIN =
-  !IS_SHARE_ENTRY && (IS_LOCAL_DIRECT_ENTRY ||
-  STORED_ROLE === "admin" ||
-  (import.meta.env.MODE !== "production" && STORED_ROLE !== "viewer"));
+const IS_ADMIN = !IS_SHARE_ENTRY && window.LCT_VIEWER_BOOTSTRAP?.role === "admin";
 const ALLOWED_PROJECT_IDS = (() => {
   try {
     const stored = sessionStorage.getItem("lct-3d-viewer-projects");
@@ -726,7 +716,7 @@ export function App() {
         setDistanceResults([]);setDistanceDraft(null);setDistanceMeasureCount(0);
         setAreaResults([]);setAreaMeasureCount(0);setSelectedAreaIndex(null);
         setMeasureMode('idle');setMeasurePointCount(0);setMeasureNotice('');
-        const config = parseConfig(import.meta.env);
+        const config = parseConfig();
         const allProjects = createProjectCatalog(config.modelSource);
         const allComparisons = createComparisonCatalog();
         const projects = IS_ADMIN
@@ -1880,7 +1870,7 @@ export function App() {
       ) return;
       const viewer = viewerRef.current;
       if (!viewer || viewer.isDestroyed()) return;
-      const config = parseConfig(import.meta.env);
+      const config = parseConfig();
       const nextProject = createProjectCatalog(config.modelSource).find(
         (project) => project.id === nextProjectId
       );
@@ -2578,7 +2568,7 @@ export function App() {
   }, []);
 
   const copyShareLink = useCallback(async () => {
-    const config = parseConfig(import.meta.env);
+    const config = parseConfig();
     const projects = createProjectCatalog(config.modelSource);
     const comparisons = createComparisonCatalog();
     const shareUrl = new URL(
@@ -2861,17 +2851,15 @@ export function App() {
             {!IS_SHARE_ENTRY && <button
               type="button"
               className="switch-role"
-              onClick={() => {
+              onClick={async () => {
                 if (IS_ADMIN) {
-                  sessionStorage.setItem(
-                    "lct-3d-viewer-role",
-                    "viewer"
-                  );
-                  sessionStorage.setItem(
-                    "lct-3d-viewer-projects",
-                    JSON.stringify([projectId])
-                  );
-                  window.location.reload();
+                  const config=parseConfig();
+                  const comparisons=createComparisonCatalog();
+                  const destination=comparisons.some(x=>x.id===projectId)
+                    ? getComparisonSharePath(comparisons,projectId)
+                    : getProjectSharePath(createProjectCatalog(config.modelSource),projectId);
+                  await window.LCT_SITE_AUTH?.clear();
+                  window.location.assign(destination);
                   return;
                 }
                 setAdminPassword("");
@@ -3558,14 +3546,8 @@ export function App() {
                 }
                 return;
               }
-              if (adminPassword !== "1111") {
-                setAdminLoginError("管理員密碼不正確");
-                return;
-              }
-              sessionStorage.setItem("lct-3d-viewer-role", "admin");
-              sessionStorage.removeItem("lct-3d-viewer-projects");
-              sessionStorage.setItem("lct-3d-viewer-active-project", projectId);
-              window.location.reload();
+              setAdminPassword("");
+              setAdminLoginError("登入服務無法使用，請由管理員入口重新登入。");
             }}
           >
             <button

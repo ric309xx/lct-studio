@@ -7,7 +7,7 @@ import {PROJECTS} from '../src/projects.mjs';
 
 const hash=s=>createHash('sha256').update(s).digest('hex');
 const keys=[];
-const env={PROJECT_PASSWORD_HASH:hash('test-viewer'),ADMIN_PASSWORD_HASH:hash('test-admin'),SESSION_SECRET:randomUUID(),MODELS:{
+const env={LOGIN_RATE_LIMITER:{async limit(){return {success:true};}},PROJECT_PASSWORD_HASH:hash('test-viewer'),ADMIN_PASSWORD_HASH:hash('test-admin'),SESSION_SECRET:randomUUID(),MODELS:{
   async get(key){ keys.push(key); if(key.startsWith('settings/'))return null; return {body:new Uint8Array([1,2,3,4]),size:4,httpEtag:'"test"',range:{offset:0,length:4},writeHttpMetadata:h=>h.set('content-type',key.endsWith('.json')?'application/json':'model/vnd.b3dm')}; },
   async head(key){keys.push(key);return {size:4,httpEtag:'"test"',writeHttpMetadata:h=>h.set('content-type','model/vnd.b3dm')};},
   async put(){throw Error('Unexpected storage write');}
@@ -23,7 +23,7 @@ test('Pix4D Longdong models use distinct private fixed prefixes', async () => {
   }
 });
 async function login(password='test-viewer',project='longteng-20260906'){
-  const response=await call('/login',{method:'POST',body:new URLSearchParams({password,project})});
+  const response=await call('/login',{method:'POST',headers:{origin:'https://viewer.test'},body:new URLSearchParams({password,project})});
   assert.equal(response.status,303);
   assert.equal(response.headers.get('location'),'/viewer?project='+project);
   return response.headers.get('set-cookie').split(';')[0];
@@ -50,7 +50,7 @@ test('deep link survives login redirect and form',async()=>{
   const html=await (await call('/?project=longteng-20260906')).text();
   assert.match(html,/name="project" value="longteng-20260906"/);
   assert.match(html,/龍騰斷橋模型/);
-  const failed=await call('/login',{method:'POST',body:new URLSearchParams({password:'wrong',project:'longteng-20260906'})});
+  const failed=await call('/login',{method:'POST',headers:{origin:'https://viewer.test'},body:new URLSearchParams({password:'wrong',project:'longteng-20260906'})});
   assert.equal(failed.headers.get('location'),'/?project=longteng-20260906&error=1');
 });
 test('all projects and legacy Nanya URLs resolve only fixed prefixes',async()=>{

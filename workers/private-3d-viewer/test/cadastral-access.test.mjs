@@ -6,7 +6,7 @@ import {PROJECTS} from '../src/projects.mjs';
 import {createCadastralToken,readCadastralToken} from '../src/cadastral-access.mjs';
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const project='taoyuan-20261006', origin='http://127.0.0.1:5500', keys=[];
-const env={PROJECT_PASSWORD_HASH:hash('test-password'),ADMIN_PASSWORD_HASH:hash('test-admin'),SESSION_SECRET:randomUUID(),MODELS:{
+const env={LOGIN_RATE_LIMITER:{async limit(){return {success:true};}},PROJECT_PASSWORD_HASH:hash('test-password'),ADMIN_PASSWORD_HASH:hash('test-admin'),SESSION_SECRET:randomUUID(),MODELS:{
   async get(key){keys.push(key);return {body:new Uint8Array([1,2,3,4]),size:4,httpEtag:'"test"',range:{offset:0,length:4},writeHttpMetadata:h=>h.set('content-type',key.endsWith('.json')?'application/json':'model/vnd.b3dm')};},
   async head(key){keys.push(key);return {size:4,httpEtag:'"test"',writeHttpMetadata:h=>h.set('content-type','model/vnd.b3dm')};},
   async put(){throw Error('Unexpected write');}
@@ -32,7 +32,7 @@ test('1010 and 1015 models share authorized cadastral access but resolve separat
   }
 });
 async function login(id=project,returnTo=connect){
-  const r=await call('/login',{method:'POST',body:new URLSearchParams({project:id,password:'test-password',returnTo})});
+  const r=await call('/login',{method:'POST',headers:{origin:'https://worker.test'},body:new URLSearchParams({project:id,password:'test-password',returnTo})});
   assert.equal(r.status,303);return {response:r,cookie:r.headers.get('set-cookie').split(';')[0]};
 }
 test('connect accepts only explicit origins, cadastral project and nonce',async()=>{

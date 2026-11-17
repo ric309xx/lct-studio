@@ -1,62 +1,40 @@
-/* Shared by the entry gate and viewer. Passwords are never persisted. */
+// 登入憑證只存在 HttpOnly Cookie；短效模型授權與目錄僅保留在記憶體。
 (() => {
-  const ORIGIN = 'https://lct-private-3d-viewer.private-3d-viewer.workers.dev';
-  const PROJECT = 'taoyuan-20261006';
-  const LONGDONG = 'longdong-pix4d-mesh-20260805';
-  const KEY = 'lct-site-cadastral-session-v1';
-  const allowed = new Set([PROJECT, LONGDONG]);
-  const keyFor = project => project === PROJECT ? KEY : `${KEY}:${project}`;
-  const current = new Map(), inflight = new Map();
-  const now = () => Date.now() / 1000;
-  const clear = (project = PROJECT) => { current.delete(project); sessionStorage.removeItem(keyFor(project)); };
-  const saved = (project = PROJECT) => {
-    try {
-      const data = JSON.parse(sessionStorage.getItem(keyFor(project)) || 'null');
-      return data && allowed.has(project) && data.project === project && ['admin','viewer'].includes(data.role) &&
-        typeof data.sessionToken === 'string' && Number.isFinite(data.sessionExpiresAt) &&
-        data.sessionExpiresAt > now() && data.sessionExpiresAt <= now()+43201 ? data : null;
-    } catch { return null; }
+  const KEY='lct-viewer-ui-v3';
+  for(const old of ['lct-site-cadastral-session-v1','lct-site-cadastral-session-v2'])sessionStorage.removeItem(old);
+  let current=null,inflight=null,generation=0;
+  const now=()=>Date.now()/1000;
+  const forget=()=>{generation++;current=null;delete window.LCT_VIEWER_BOOTSTRAP;sessionStorage.removeItem(KEY);};
+  const access=()=>current?.r2??{project:'',role:current?.role,token:'',expiresAt:current?.sessionExpiresAt??0};
+  const accept=data=>{
+    if(!data||!['admin','viewer'].includes(data.role)||!data.access||data.access.role!==data.role||
+      !Array.isArray(data.projects)||!data.projects.length||!Array.isArray(data.comparisons)||
+      !Number.isFinite(data.sessionExpiresAt)||data.sessionExpiresAt<=now()||data.sessionExpiresAt>now()+43201||
+      'sessionToken' in data)throw Error('登入服務回應不正確。');
+    current=data;window.LCT_VIEWER_BOOTSTRAP=data;
+    Object.assign(window.LCT_VIEWER_ACCESS,data.access);
+    sessionStorage.setItem(KEY,JSON.stringify({role:data.role,accessId:data.access.accessId,expiresAt:data.sessionExpiresAt}));
+    return access();
   };
-  const accept = (data,project) => {
-    if (!data || !allowed.has(project) || data.project !== project || !['admin','viewer'].includes(data.role) ||
-      typeof data.token !== 'string' || typeof data.sessionToken !== 'string' ||
-      !Number.isFinite(data.expiresAt) || !Number.isFinite(data.sessionExpiresAt) ||
-      data.expiresAt <= now() || data.expiresAt > now()+3601 ||
-      data.sessionExpiresAt < data.expiresAt || data.sessionExpiresAt > now()+43201) throw Error('登入服務回應不正確。');
-    current.set(project,data);
-    sessionStorage.setItem(keyFor(project), JSON.stringify({project,role:data.role,sessionToken:data.sessionToken,sessionExpiresAt:data.sessionExpiresAt}));
-    return data;
-  };
-  async function request(path,body,sessionToken) {
-    let response;
-    try {
-      response = await fetch(ORIGIN+path,{method:'POST',credentials:'omit',cache:'no-store',
-        headers:{'Content-Type':'application/json',...(sessionToken?{Authorization:'Bearer '+sessionToken}:{})},body:JSON.stringify(body)});
-    } catch { throw Error('無法連接網站登入服務，請確認網路後再試。'); }
-    const data = await response.json().catch(()=>({}));
-    if (!response.ok) {
-      if ([401,403].includes(response.status)) clear(body.project);
-      throw Error(data.error || '登入服務暫時無法使用。');
-    }
-    return accept(data,body.project);
+  async function request(action,body){
+    const ticket=generation;
+    let response;try{response=await fetch('/api/viewer-session/'+action,{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});}
+    catch{throw Error('無法連接登入服務，請稍後再試。');}
+    const data=await response.json().catch(()=>({}));
+    if(ticket!==generation)throw Error('登入狀態已變更，請重新登入。');
+    if(!response.ok){if([401,403].includes(response.status))forget();throw Error(data.error||'登入服務暫時無法使用。');}
+    return accept(data);
   }
-  async function restore(force = false, project = PROJECT) {
-    if (!allowed.has(project)) throw Error('專案不允許。');
-    if (!force && current.get(project)?.expiresAt > now()+30) return current.get(project);
-    if (inflight.has(project)) return inflight.get(project);
-    const session = saved(project);
-    if (!session) { clear(project); throw Error('網站登入已過期，請重新登入網站。'); }
-    const pending=request('/api/site-access/refresh',{project},session.sessionToken).finally(()=>{inflight.delete(project);});
-    inflight.set(project,pending);
-    return pending;
-  }
-  window.LCT_SITE_AUTH = {
-    login: (password,role,project=PROJECT) => {
-      if (!allowed.has(project)) throw Error('專案不允許。');
-      return request('/api/site-access/login',{project,password,role});
+  window.LCT_SITE_AUTH={
+    login:(password,role)=>request('login',{password,accessId:role==='admin'?'admin':window.LCT_VIEWER_ACCESS.accessId}),
+    restore:(force=false,project)=>{
+      const selected=project?current?.r2Access?.[project]:current?.r2;
+      if(!force&&current?.sessionExpiresAt>now()+30&&(!project||selected)&&(!selected||selected.expiresAt>now()+30))return Promise.resolve(selected??access());
+      if(inflight)return inflight;
+      inflight=request('refresh',{accessId:window.LCT_VIEWER_ACCESS.accessId}).finally(()=>{inflight=null;});return inflight;
     },
-    restore, clear,
-    getAccess: project => current.get(project)?.expiresAt > now()+30 ? current.get(project) : null,
-    hasSavedSession: (role,project=PROJECT) => { const session=saved(project);return !!session && (!role || session.role===role); }
+    getAccess:project=>{const selected=current?.r2Access?.[project]??current?.r2;return selected?.project===project&&selected.expiresAt>now()+30?selected:null;},
+    hasSavedSession:()=>true,
+    clear:async()=>{const accessId=window.LCT_VIEWER_ACCESS.accessId;forget();await fetch('/api/viewer-session/logout',{method:'POST',credentials:'same-origin',cache:'no-store',keepalive:true,headers:{'Content-Type':'application/json'},body:JSON.stringify({accessId})}).catch(()=>{});}
   };
 })();

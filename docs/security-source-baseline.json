@@ -1,0 +1,8 @@
+{
+  "observedAt": "2026-11-18",
+  "repository": "https://github.com/ric309xx/lct-studio",
+  "productionCommit": "d484d25fd09720387228e4ed5783fae02791ce3c",
+  "productionFeature": "Longdong Gaussian viewing",
+  "requiredViewerFiles": ["viewer-source/src/LongdongGaussian.tsx"],
+  "integrationVerified": false
+}

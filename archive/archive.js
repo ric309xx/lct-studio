@@ -18,7 +18,7 @@
       name: "南雅奇岩",
       location: "新北市瑞芳區 · 東北角海岸",
       description: "東北角海岸長期風化、侵蝕所形成的奇特岩層，以三維實景模型保存岩體輪廓與細緻紋理。",
-      interactivePath: "../3d-viewer/?project=ruifang-nanya-rock-20260810",
+      interactivePath: "../3d-viewer/p/Y8nA4rK2mP7x/",
       cesiumJsPath: "https://lct-private-3d-viewer.private-3d-viewer.workers.dev/",
       meta: [
         ["地景類型", "海蝕岩岸"],
@@ -39,7 +39,7 @@
       name: "龍洞岩場",
       location: "新北市貢寮區 · 龍洞灣",
       description: "以設定好的模型飛行路徑導覽岩壁及海岸空間，並以空拍照片保存現場的地貌細節。",
-      interactivePath: "../3d-viewer/?project=gongliao-longdong-general-20260805",
+      interactivePath: "../3d-viewer/p/N5cR8vT2mQ6x/",
       meta: [
         ["地景類型", "岩岸與海蝕崖壁"],
         ["地景特色", "海灣、岩壁與步道空間"],
@@ -59,7 +59,7 @@
       name: "水湳洞選煉廠遺址",
       location: "新北市瑞芳區 · 金瓜石水湳洞",
       description: "以空拍影像記錄山坡上的選礦冶煉設施遺構與聚落地景，保存礦業文化資產及其空間脈絡。",
-      interactivePath: "../3d-viewer/?project=ruifang-shuinandong-smelter-20260811",
+      interactivePath: "../3d-viewer/p/S5nD8gR2mK6x/",
       meta: [
         ["地景類型", "礦業文化資產"],
         ["地景特色", "山坡選礦遺構與聚落紋理"],

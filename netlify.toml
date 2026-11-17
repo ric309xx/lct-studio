@@ -1,0 +1,53 @@
+[build]
+  command = "node scripts/security/cloud_build.mjs"
+  publish = ".site-dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  included_files = ["netlify/private/catalog.json"]
+
+[functions.private-overlay]
+  included_files = ["3d-viewer/overlays/**"]
+
+[functions.viewer-login]
+  included_files = ["viewer-source/src/taoyuan*.json", "viewer-source/src/caseMapGeometry.json", "viewer-source/src/caseCaptureDates.json", "viewer-source/src/shuanglingGround.json"]
+
+[functions.viewer-session]
+  included_files = ["viewer-source/src/taoyuan*.json", "viewer-source/src/caseMapGeometry.json", "viewer-source/src/caseCaptureDates.json", "viewer-source/src/shuanglingGround.json"]
+
+[[redirects]]
+  from = "/control-points"
+  to = "https://lct-control-points.private-3d-viewer.workers.dev/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/control-points/*"
+  to = "https://lct-control-points.private-3d-viewer.workers.dev/:splat"
+  status = 301
+  force = true
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Strict-Transport-Security = "max-age=31536000"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+
+[[headers]]
+  for = "/3d-viewer/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+    Referrer-Policy = "no-referrer"
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/control-points/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"

@@ -1,6 +1,7 @@
 // Website login: existing server passwords, read-only fixed cadastral project.
 // Never accept a published frontend password hash as a credential.
 import {CADASTRAL_ORIGINS, createCadastralToken} from './cadastral-access.mjs';
+import {readLimitedText,checkLoginLimit} from './login-security.mjs';
 export const SITE_PROJECT = 'taoyuan-20261006';
 const SITE_PROJECTS = new Set([SITE_PROJECT, 'longdong-pix4d-mesh-20260805']);
 const TTL = 12 * 60 * 60;
@@ -42,12 +43,20 @@ export async function siteAccess(request,env,path) {
   if(!CADASTRAL_ORIGINS.has(request.headers.get('origin')))return response(request,{error:'來源不允許'},403);
   if(request.method==='OPTIONS')return response(request,null,204);
   if(request.method!=='POST')return response(request,{error:'Method not allowed'},405);
+  if(path==='/api/site-access/login') {
+    const limited=await checkLoginLimit(request,env);
+    if(limited) {
+      const result=response(request,{error:limited.status===429?'嘗試次數過多，請稍後再試':'登入保護暫時無法使用'},limited.status);
+      if(limited.status===429)result.headers.set('Retry-After','60');
+      return result;
+    }
+  }
   // Website credentials are independent of legacy private-Worker passwords.
   const adminHash=env.SITE_ADMIN_PASSWORD_HASH || env.ADMIN_PASSWORD_HASH;
   const viewerHash=env.SITE_VIEWER_PASSWORD_HASH || env.PROJECT_PASSWORD_HASH;
   if(!adminHash||!viewerHash||!env.SESSION_SECRET)return response(request,{error:'登入服務尚未設定'},503);
   if(Number(request.headers.get('content-length')||0)>4096)return response(request,{error:'Request too large'},413);
-  const raw=await request.text();if(raw.length>4096)return response(request,{error:'Request too large'},413);
+  let raw;try{raw=await readLimitedText(request);}catch{return response(request,{error:'Request too large'},413);}
   let input;try{input=JSON.parse(raw);}catch{return response(request,{error:'Invalid request'},400);}
   if(!SITE_PROJECTS.has(input?.project))return response(request,{error:'專案不允許'},403);
   const projectId=input.project;

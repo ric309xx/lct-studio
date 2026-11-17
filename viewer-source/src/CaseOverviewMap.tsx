@@ -85,7 +85,7 @@ export function CaseOverviewMap({cases,initialKey,onEnter,savedView,savedNavigat
   useEffect(()=>{
     let viewer:Viewer|undefined,remove:undefined|(()=>void),removeMove:undefined|(()=>void),frame=0,previous='';
     try{
-      Ion.defaultAccessToken=parseConfig(import.meta.env).accessToken;
+      Ion.defaultAccessToken=parseConfig().accessToken;
       viewer=new Viewer(host.current!,{sceneMode:SceneMode.SCENE2D,animation:false,timeline:false,baseLayerPicker:false,baseLayer:false,geocoder:false,homeButton:false,fullscreenButton:false,infoBox:false,selectionIndicator:false,sceneModePicker:false,navigationHelpButton:false,requestRenderMode:true});
       map.current=viewer;
       setControlViewer(viewer);
