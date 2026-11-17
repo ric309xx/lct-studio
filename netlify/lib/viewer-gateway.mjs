@@ -41,7 +41,11 @@ export function createGateway({env=()=>process.env,fetchUpstream=fetch,loadData=
   return async request=>{
     const url=new URL(request.url),action=url.pathname.split('/').pop(),settings=env();
     if(request.method!=='POST')return json({error:'Method not allowed'},405,{Allow:'POST'});
-    if(!ORIGINS.has(url.origin)||request.headers.get('origin')!==url.origin)return json({error:'來源不允許'},403);
+    const previewOrigin='https://security-preview-20261118--lct-studio.netlify.app';
+    const trusted=ORIGINS.has(url.origin)||(settings.VIEWER_PREVIEW_ORIGIN===previewOrigin&&url.origin===previewOrigin);
+    if(!trusted||request.headers.get('origin')!==url.origin)return json({error:'來源不允許'},403);
+    // 預覽主機必須個別啟用；上游仍只接受既有官網來源。
+    const upstreamOrigin=ORIGINS.has(url.origin)?url.origin:'https://lctstudio.tw';
     if(!['login','refresh','bootstrap','logout'].includes(action))return json({error:'Not found'},404);
     if(typeof settings.VIEWER_SESSION_SECRET!=='string'||settings.VIEWER_SESSION_SECRET.length<32)return json({error:'登入服務尚未設定'},503);
     let input;try{input=await readBody(request);}catch{return json({error:'請求格式不正確或過大'},400);}
@@ -57,7 +61,7 @@ export function createGateway({env=()=>process.env,fetchUpstream=fetch,loadData=
         if(accessId!=='admin'&&!entry)return json({error:'分享入口不存在'},404);
         const usesUpstream=accessId==='admin'||entry.projectId==='taoyuan-building-overlay';
         let initial=null;
-        if(usesUpstream){initial=await upstream('login',{project:PROJECT,role:accessId==='admin'?'admin':'viewer',password},url.origin);
+        if(usesUpstream){initial=await upstream('login',{project:PROJECT,role:accessId==='admin'?'admin':'viewer',password},upstreamOrigin);
           if(initial.role!==(accessId==='admin'?'admin':'viewer'))return json({error:'登入身分不符'},403);
         }else{
           const valid=await verifyPassword(accessId,password,settings);
@@ -65,12 +69,12 @@ export function createGateway({env=()=>process.env,fetchUpstream=fetch,loadData=
           if(!valid)return json({error:'密碼不正確'},401);
         }
         const issued=writeSession({accessId,role:accessId==='admin'?'admin':'viewer',...(initial?{upstreamSessionToken:initial.sessionToken,upstreamExpiresAt:initial.sessionExpiresAt}:{})},settings);
-        return json(await bootstrap(issued.session,url.origin,initial),200,{'Set-Cookie':issued.cookie});
+        return json(await bootstrap(issued.session,upstreamOrigin,initial),200,{'Set-Cookie':issued.cookie});
       }
       const session=readSession(request,settings,undefined,input?.accessId);if(!session)return json({error:'登入已過期，請重新登入'},401);
       // 分享入口還原時不接受其他分頁留下的管理員或不同分享工作階段。
       if(input?.accessId&&input.accessId!==session.accessId)return json({error:'請登入此分享入口'},403);
-      return json(await bootstrap(session,url.origin));
+      return json(await bootstrap(session,upstreamOrigin));
     }catch(error){const status=error.status??502;return json({error:status===429?'嘗試次數過多，請稍後再試':'登入服務暫時無法使用或登入已失效'},status,
       {...(status===429?{'Retry-After':'60'}:{})});}
   };

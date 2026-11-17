@@ -13,6 +13,20 @@ const env={VIEWER_SESSION_SECRET:randomBytes(32).toString('hex'),VIEWER_R2_SERVI
 const request=(action,body={},extra={})=>new Request(origin+'/api/viewer-session/'+action,{method:'POST',headers:{origin,'Content-Type':'application/json',...extra},body:JSON.stringify(body)});
 const upstream=async(_url,options)=>{const body=JSON.parse(options.body);return Response.json({project:body.project,role:body.role??'admin',sessionToken:'synthetic-upstream-session',token:'synthetic-short-read',expiresAt:Math.floor(Date.now()/1000)+600,sessionExpiresAt:Math.floor(Date.now()/1000)+3600});};
 const handler=()=>createGateway({env:()=>env,fetchUpstream:upstream,loadData:async()=>[]});
+
+test('preview requires its exact explicit origin and keeps upstream on the production allowlist',async()=>{
+ const preview='https://security-preview-20261118--lct-studio.netlify.app';
+ const req=(host=preview,source=host)=>new Request(host+'/api/viewer-session/login',{method:'POST',headers:{origin:source,'Content-Type':'application/json'},body:JSON.stringify({accessId:'admin',password})});
+ assert.equal((await handler()(req())).status,403);
+ let seen=[];
+ const gateway=createGateway({env:()=>({...env,VIEWER_PREVIEW_ORIGIN:preview}),fetchUpstream:async(url,options)=>{seen.push(options.headers.Origin);return upstream(url,options);},loadData:async()=>[]});
+ assert.equal((await gateway(req())).status,200);
+ assert.ok(seen.length>0);assert.ok(seen.every(x=>x===origin));
+ assert.equal((await gateway(req(preview,'https://attacker.example'))).status,403);
+ assert.equal((await gateway(req('https://other--lct-studio.netlify.app'))).status,403);
+ const arbitrary=createGateway({env:()=>({...env,VIEWER_PREVIEW_ORIGIN:'https://attacker.example'}),fetchUpstream:upstream});
+ assert.equal((await arbitrary(req('https://attacker.example'))).status,403);
+});
 test('分享登入在後端驗證且目錄僅包含該專案，角色參數不能提權',async()=>{
  const r=await handler()(request('login',{accessId:entry.accessId,password,role:'admin'}));assert.equal(r.status,200);
  const body=await r.json();assert.equal(body.role,'viewer');assert.equal(body.sessionToken,undefined);assert.equal(body.r2,null);assert.deepEqual(body.data,{});
