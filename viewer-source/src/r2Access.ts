@@ -8,7 +8,7 @@ export type SiteAuth = {
   login(password: string, role: "admin" | "viewer", project?: string): Promise<Access>;
   restore(force?: boolean, project?: string): Promise<Access>;
   getAccess(project: string): Access | null;
-  clear(): void;
+  clear(): Promise<void>;
 };
 declare global { interface Window { LCT_SITE_AUTH?: SiteAuth } }
 

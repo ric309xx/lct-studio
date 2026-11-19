@@ -65,7 +65,12 @@ export async function siteAccess(request,env,path) {
     if(typeof input.password!=='string'||input.password.length<1||input.password.length>64||!['admin','viewer'].includes(input.role))return response(request,{error:'登入資料不正確'},400);
     const hash=await digest(input.password);
     const admin=equal(hash,adminHash),viewer=equal(hash,viewerHash);
-    if(!admin&&(input.role==='admin'||!viewer)) {
+    // A separately staged service credential may read only the Longdong mesh.
+    // Keep existing website and legacy passwords unchanged during preview validation.
+    const serviceHash=env.SITE_LONGDONG_SERVICE_PASSWORD_HASH;
+    const meshService=input.project==='longdong-pix4d-mesh-20260805'&&input.role==='viewer'
+      &&typeof serviceHash==='string'&&/^[a-f0-9]{64}$/.test(serviceHash)&&equal(hash,serviceHash);
+    if(!admin&&(input.role==='admin'||(!viewer&&!meshService))) {
       await new Promise(resolve=>setTimeout(resolve,350));
       return response(request,{error:'密碼不正確，請輸入此網站的管理員／觀看密碼。'},401);
     }

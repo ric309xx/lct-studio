@@ -811,6 +811,16 @@ button {
   background: #8ae6d4;
 }
 
+.switch-role:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.cadastral-terrain-notice .switch-role {
+  display: block;
+  margin-top: 6px;
+}
+
 .segmented-control {
   display: grid;
   grid-template-columns: 1fr 1fr;

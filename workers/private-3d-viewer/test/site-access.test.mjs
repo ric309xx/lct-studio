@@ -85,3 +85,42 @@ test('website-specific passwords override legacy credentials without changing Wo
   }),configured);
   assert.equal(legacy.status,303);assert.ok(legacy.headers.get('set-cookie'));
 });
+
+test('Longdong service credential coexists with existing logins and cannot enter Taoyuan or admin',async()=>{
+ const mesh='longdong-pix4d-mesh-20260805';
+ const servicePassword='synthetic-longdong-service-credential';
+ const configured={...env,SITE_LONGDONG_SERVICE_PASSWORD_HASH:hash(servicePassword)};
+ const attempt=(target,role,password)=>worker.fetch(new Request('https://worker.test'+base+'login',{
+   method:'POST',headers:{origin,'Content-Type':'application/json'},body:JSON.stringify({project:target,role,password})
+ }),configured);
+ const response=await attempt(mesh,'viewer',servicePassword);assert.equal(response.status,200);
+ const access=await response.json();assert.equal(access.role,'viewer');assert.equal(access.project,mesh);
+ const claims=await readCadastralToken(new Request('https://worker.test',{headers:{authorization:'Bearer '+access.token}}),env.SESSION_SECRET);
+ assert.equal(claims.projectId,mesh);assert.equal(claims.role,'viewer');
+ for(const [target,role] of [[project,'viewer'],[project,'admin'],[mesh,'admin']]){
+   assert.equal((await attempt(target,role,servicePassword)).status,401);
+ }
+ for(const [target,role,password] of [[project,'viewer','synthetic-viewer'],[project,'admin','synthetic-admin'],[mesh,'viewer','synthetic-viewer']]){
+   assert.equal((await attempt(target,role,password)).status,200);
+ }
+ const legacy=await worker.fetch(new Request('https://worker.test/login',{
+   method:'POST',headers:{origin:'https://worker.test'},body:new URLSearchParams({project,password:'synthetic-admin'})
+ }),configured);
+ assert.equal(legacy.status,303);
+ const wrongContext=await worker.fetch(new Request('https://worker.test/login',{
+   method:'POST',headers:{origin:'https://worker.test'},body:new URLSearchParams({project,password:servicePassword})
+ }),configured);
+ assert.equal(wrongContext.headers.get('set-cookie'),null);
+ assert.notEqual(wrongContext.headers.get('location'),'/viewer?project='+project);
+});
+
+test('missing or malformed Longdong service hash does not weaken existing authentication',async()=>{
+ for(const serviceHash of [undefined,'','not-a-sha256-hash']){
+  const configured={...env,SITE_LONGDONG_SERVICE_PASSWORD_HASH:serviceHash};
+  const request=password=>new Request('https://worker.test'+base+'login',{
+    method:'POST',headers:{origin,'Content-Type':'application/json'},body:JSON.stringify({project:'longdong-pix4d-mesh-20260805',role:'viewer',password})
+  });
+  assert.equal((await worker.fetch(request('synthetic-viewer'),configured)).status,200);
+  assert.equal((await worker.fetch(request('synthetic-longdong-service-credential'),configured)).status,401);
+ }
+});

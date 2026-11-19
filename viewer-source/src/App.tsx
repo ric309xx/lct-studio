@@ -11,6 +11,7 @@ import {auditSurfaceHeights} from './surfaceHeightAudit';
 import {heightProfileForModel,resolveModelHeight,orthometricToRenderHeight,renderToOrthometricHeight,sha256ArrayBuffer,type HeightResolution} from './heightReference';
 import {HeightReferenceStatus} from './HeightReferenceStatus';
 import {HelpHint} from './HelpHint';
+import {sampleModelGround,modelGroundFailure} from './modelGround.mjs';
 import {ControlPointsLayer} from './ControlPointsLayer';
 import {SurveyToolsPanel} from './SurveyToolsPanel';
 import {measureModelPath,type DistanceResult,type DistanceSummary} from './surveyMeasurement';
@@ -625,6 +626,9 @@ export function App() {
     useState<CadastralDisplayMode>("original");
   const [projectHasCadastral, setProjectHasCadastral] = useState(false);
   const [modelGroundAvailable, setModelGroundAvailable] = useState(false);
+  const [modelGroundNotice, setModelGroundNotice] = useState('');
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutNotice, setLogoutNotice] = useState('');
   const [selectedCadastral, setSelectedCadastral] =
     useState<CadastralInfo | null>(null);
   const [selectedCadastralParcelKey, setSelectedCadastralParcelKey] = useState("");
@@ -692,11 +696,27 @@ export function App() {
     Array<{ id: string; name: string }>
   >([]);
 
+  async function logoutViewer(destination?: string) {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    setLogoutNotice('');
+    try {
+      if (!window.LCT_SITE_AUTH) throw Error('Logout service unavailable');
+      await window.LCT_SITE_AUTH.clear();
+      if (destination) window.location.assign(destination);
+      else window.location.reload();
+    } catch {
+      setLogoutNotice('登出未完成，請確認連線後再試。');
+      setLoggingOut(false);
+    }
+  }
+
   useEffect(() => {
     if(showingCaseMap)return;
     if (!containerRef.current) return;
 
     let cancelled = false;
+    const groundSampling = new AbortController();
     let viewer: Viewer | null = null;
     let disposeParcelNavigation: ReturnType<typeof tuneParcelNavigation> | undefined;
     let disposeEntryTilt: (() => void) | undefined;
@@ -811,6 +831,7 @@ export function App() {
         const hasCadastral = Boolean(cadastralConfig);
         setProjectHasCadastral(hasCadastral);
         setModelGroundAvailable(false);
+        setModelGroundNotice('');
         const initialCadastralMode: CadastralDisplayMode =
           project.id === "taoyuan-building-overlay"
             ? "model-ground"
@@ -1081,7 +1102,7 @@ export function App() {
             const members = cadastralConfig!.parcels;
             const samples = members.map(parcel => Cartographic.fromDegrees(parcel.focus!.longitude, parcel.focus!.latitude,
               orthometricToRenderHeight(parcel.focus!.height-100,heightResolutionRef.current)??parcel.focus!.height-100));
-            try { await viewer.scene.sampleHeightMostDetailed(samples); } catch { /* use documented DEM fallback */ }
+            try { await sampleModelGround(() => viewer!.scene.sampleHeightMostDetailed(samples), {signal: groundSampling.signal}); } catch { /* use documented DEM fallback */ }
             if (cancelled || viewer.isDestroyed()) return;
             members.forEach((parcel, index) => {
               const focus = parcel.focus!;
@@ -1143,17 +1164,19 @@ export function App() {
                 Boolean(positions?.length)
             );
           if (fillHierarchies.length && boundaryPositionSets.length) {
+            let groundStage = 'sampling';
             try {
               const samples = boundaryPositionSets.flatMap(
                 (positions) => densifyBoundaryForGroundSampling(positions)
               );
-              const sampled = await viewer.scene.sampleHeightMostDetailed(samples);
+              const sampled = await sampleModelGround(() => viewer!.scene.sampleHeightMostDetailed(samples), {signal: groundSampling.signal});
               const heights = sampled
                 .filter((position): position is Cartographic => Boolean(position))
                 .map((position) => position.height)
                 .filter((height) => Number.isFinite(height))
                 .sort((left, right) => left - right);
               if (heights.length > 0 && !cancelled) {
+                groundStage = 'projection';
                 const groundHeight =
                   heights[Math.floor((heights.length - 1) * 0.25)] + 0.35;
                 const roadOffset = activeParcel?.groupKey === "shuangling-1013-01"
@@ -1390,10 +1413,18 @@ export function App() {
                 applyCadastralDisplayMode(cadastral, initialCadastralMode, occupancyVisibleRef.current);
                 cadastralModelGroundEntitiesRef.current = groundEntities;
                 setModelGroundAvailable(true);
+                setModelGroundNotice('');
               }
-            } catch {
-              setModelGroundAvailable(false);
+            } catch (error) {
+              if (!cancelled) {
+                const failure = modelGroundFailure(error);
+                setModelGroundAvailable(false);
+                setModelGroundNotice(failure.message);
+                console.warn('模型地面套繪無法準備', {stage: groundStage, code: failure.code, statusCode: failure.statusCode});
+              }
             }
+          } else {
+            setModelGroundNotice('此地籍缺少可取樣的界線或範圍，暫時無法建立地面套繪；仍可使用原始顯示。');
           }
 
           // 同區沿用目前 Viewer、模型與地籍；只改選取樣式、資訊與相機。
@@ -1655,6 +1686,7 @@ export function App() {
 
     return () => {
       cancelled = true;
+      groundSampling.abort();
       returnCaseViewRef.current=null;
       disposeEntryTilt?.();
       metalRoofRepairRef.current?.destroy();metalRoofRepairRef.current=null;
@@ -2858,8 +2890,7 @@ export function App() {
                   const destination=comparisons.some(x=>x.id===projectId)
                     ? getComparisonSharePath(comparisons,projectId)
                     : getProjectSharePath(createProjectCatalog(config.modelSource),projectId);
-                  await window.LCT_SITE_AUTH?.clear();
-                  window.location.assign(destination);
+                  await logoutViewer(destination);
                   return;
                 }
                 setAdminPassword("");
@@ -2870,6 +2901,13 @@ export function App() {
               切換身分
             </button>}
           </div>}
+          <div className="project-access-row viewer-session-controls">
+            <button type="button" className="switch-role" disabled={loggingOut}
+              onClick={() => void logoutViewer()}>
+              {loggingOut ? '正在登出…' : IS_SHARE_ENTRY ? '登出此專案' : '登出'}
+            </button>
+          </div>
+          {logoutNotice && <p className="overlay-hint" role="alert">{logoutNotice}</p>}
           {heightResolution&&<HeightReferenceStatus resolution={heightResolution}/>}
           {projectId==='taoyuan-building-overlay'&&<ControlPointsLayer viewer={sectionViewer} mode="model" profileId={heightResolution?.profileId??'pending'} resolution={heightResolution} disabled={status.phase!=='ready'}/>}
           </div>
@@ -3111,7 +3149,8 @@ export function App() {
                   )}
                   {!modelGroundAvailable && (
                     <p className="overlay-hint cadastral-terrain-notice">
-                      正在準備模型地面套繪…
+                      {modelGroundNotice || '正在準備模型地面套繪…'}
+                      {modelGroundNotice && <button type="button" className="switch-role" onClick={() => setReloadKey(key => key + 1)}>重試地面套繪</button>}
                     </p>
                   )}
                 </>
@@ -3413,7 +3452,7 @@ export function App() {
           )}
           </div>
           {mapNotice && <p className="map-notice">{mapNotice}
-            {mapNotice.includes("登入") && <button type="button" onClick={() => { window.LCT_SITE_AUTH?.clear(); window.location.reload(); }}>重新登入網站</button>}
+            {mapNotice.includes("登入") && <button type="button" disabled={loggingOut} onClick={() => void logoutViewer()}>重新登入網站</button>}
           </p>}
         </div>
       </aside>
@@ -3430,7 +3469,7 @@ export function App() {
             重新嘗試
           </button>
           {currentParcel?.overlayUrl && (
-            <button type="button" onClick={() => { window.LCT_SITE_AUTH?.clear(); window.location.reload(); }}>
+            <button type="button" disabled={loggingOut} onClick={() => void logoutViewer()}>
               重新登入網站
             </button>
           )}

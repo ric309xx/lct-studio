@@ -28,6 +28,7 @@ it("shared viewer hides home and management controls despite a stale admin role"
   expect(areaLabel?.querySelectorAll('br')).toHaveLength(1);
   expect(screen.queryByRole("link", { name: "返回 LCT Studio 首頁" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "切換身分" })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', {name: '登出此專案'})).toBeInTheDocument();
   expect(screen.queryByText(/一般觀看/)).not.toBeInTheDocument();
   fireEvent.focus(screen.getByRole('button',{name:'專案瀏覽說明'}));
   expect(screen.getByRole('tooltip')).toHaveTextContent('一般觀看');
@@ -37,4 +38,18 @@ it("shared viewer hides home and management controls despite a stale admin role"
   expect(screen.queryByRole("button", { name: /展開視角工具|收合視角工具/ })).not.toBeInTheDocument();
   const selector = screen.getByRole("combobox", { name: "選擇專案" }) as HTMLSelectElement;
   expect([...selector.options].map(option => option.value)).toEqual(["taoyuan-building-overlay"]);
+});
+
+it('分享登出失敗會顯示重試訊息，不把控制項當成管理入口', async () => {
+  const previous=window.LCT_SITE_AUTH;
+  const clear=vi.fn().mockRejectedValue(Error('Synthetic logout unavailable'));
+  window.LCT_SITE_AUTH={...previous!,clear};
+  try {
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button',{name:'登出此專案'}));
+    expect(await screen.findByText('登出未完成，請確認連線後再試。')).toBeInTheDocument();
+    expect(clear).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button',{name:'登出此專案'})).toBeEnabled();
+    expect(screen.queryByRole('button',{name:'切換身分'})).not.toBeInTheDocument();
+  } finally { window.LCT_SITE_AUTH=previous; }
 });

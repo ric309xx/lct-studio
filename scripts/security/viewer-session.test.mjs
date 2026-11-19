@@ -112,3 +112,19 @@ test('瀏覽器只存無秘密提示，還原必須經後端並清除舊版 bear
  const saved=JSON.parse([...storage.values()][0]);assert.deepEqual(Object.keys(saved).sort(),['accessId','expiresAt','role']);
  await sandbox.window.LCT_SITE_AUTH.restore(true);assert.equal(calls.at(-1).url,'/api/viewer-session/refresh');assert.equal(calls.at(-1).options.credentials,'same-origin');assert.equal(calls.at(-1).options.headers.Authorization,undefined);
 });
+
+test('瀏覽器登出須由伺服器確認，失敗時可重試且不假裝已登出',async()=>{
+ const source=fs.readFileSync(new URL('../../3d-viewer/site-auth.js',import.meta.url),'utf8');
+ for(const outcome of ['network','rejected','unexpected','success']){
+  const storage=new Map();const calls=[];
+  const bootstrap={role:'viewer',sessionExpiresAt:Date.now()/1000+3600,access:{role:'viewer',accessId:entry.accessId},projects:[catalog.projects[0]],comparisons:[],data:{},r2:null};
+  const sandbox={window:{LCT_VIEWER_ACCESS:{accessId:entry.accessId,role:'viewer'},LCT_VIEWER_BOOTSTRAP:bootstrap},sessionStorage:{getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},Date,JSON,Error,Number,Array,Promise,
+   fetch:async(url,options)=>{calls.push({url,options});if(outcome==='network')throw Error('offline');return Response.json(outcome==='success'?{ok:true}:{},{status:outcome==='rejected'?503:200});}};
+  vm.runInNewContext(source,sandbox);
+  if(outcome==='success'){await sandbox.window.LCT_SITE_AUTH.clear();assert.equal(sandbox.window.LCT_VIEWER_BOOTSTRAP,undefined);}
+  else{await assert.rejects(sandbox.window.LCT_SITE_AUTH.clear(),/登出未完成/);assert.equal(sandbox.window.LCT_VIEWER_BOOTSTRAP,bootstrap);}
+  assert.equal(calls[0].url,'/api/viewer-session/logout');
+  assert.deepEqual(JSON.parse(calls[0].options.body),{accessId:entry.accessId});
+  assert.equal(calls[0].options.credentials,'same-origin');
+ }
+});

@@ -35,6 +35,15 @@
     },
     getAccess:project=>{const selected=current?.r2Access?.[project]??current?.r2;return selected?.project===project&&selected.expiresAt>now()+30?selected:null;},
     hasSavedSession:()=>true,
-    clear:async()=>{const accessId=window.LCT_VIEWER_ACCESS.accessId;forget();await fetch('/api/viewer-session/logout',{method:'POST',credentials:'same-origin',cache:'no-store',keepalive:true,headers:{'Content-Type':'application/json'},body:JSON.stringify({accessId})}).catch(()=>{});}
+    clear:async()=>{
+      const accessId=window.LCT_VIEWER_ACCESS.accessId;
+      generation++; // Reject older restore replies while waiting for server-side logout.
+      let response;
+      try{response=await fetch('/api/viewer-session/logout',{method:'POST',credentials:'same-origin',cache:'no-store',keepalive:true,headers:{'Content-Type':'application/json'},body:JSON.stringify({accessId})});}
+      catch{throw Error('登出未完成，請確認網路連線後重試。');}
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok||data.ok!==true)throw Error('登出未完成，請稍後重試。');
+      forget();
+    }
   };
 })();
