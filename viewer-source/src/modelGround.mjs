@@ -1,4 +1,14 @@
 // Never turn missing model heights into an invented ground plane.
+function safeErrorDetails(error) {
+  const errorType = ['Error', 'TypeError', 'RangeError', 'DeveloperError', 'RuntimeError'].includes(error?.name) ? error.name : 'Error';
+  const apis = ['sampleHeightMostDetailed', 'Cartesian3.distance', 'Cartesian3.lerp', 'Cartographic.fromCartesian',
+    'CallbackPositionProperty', 'CallbackProperty', 'PolygonHierarchy', 'PolylineDashMaterialProperty',
+    'getPixelSize', 'getValue', 'withAlpha', 'requestRender'];
+  // Only fixed source-code identifiers may appear in diagnostics, never the message itself.
+  const api = typeof error?.message === 'string' ? apis.find(name => error.message.includes(name)) : undefined;
+  return {errorType, api};
+}
+
 export class ModelGroundError extends Error {
   constructor(code, statusCode) {
     super('Model ground preparation unavailable');
@@ -26,7 +36,7 @@ export async function sampleModelGround(sample, {timeoutMs = 45000, signal} = {}
     const statusCode = Number.isInteger(error?.statusCode) && error.statusCode >= 400 && error.statusCode <= 599
       ? error.statusCode : undefined;
     // Do not retain upstream URLs, request headers, or credential-bearing errors.
-    throw new ModelGroundError('request', statusCode);
+    throw Object.assign(new ModelGroundError('request', statusCode), safeErrorDetails(error));
   } finally {
     clearTimeout(timer);
     if (abort) signal?.removeEventListener('abort', abort);
@@ -45,5 +55,6 @@ export function modelGroundFailure(error) {
         : statusCode === 413
           ? '模型高度取樣資源超過目前平台限制；請先使用原始顯示。'
           : '模型地面套繪無法完成；仍可使用原始顯示，或稍後重試。';
-  return {code, statusCode, message};
+  const details = error instanceof ModelGroundError ? {errorType: error.errorType, api: error.api} : safeErrorDetails(error);
+  return {code, statusCode, message, ...details};
 }

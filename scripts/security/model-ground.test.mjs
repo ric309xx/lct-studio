@@ -31,4 +31,8 @@ test('失敗診斷僅保留狀態碼，不能洩露上游秘密', async () => {
   assert.equal(failure.statusCode, 413);
   assert.doesNotMatch(JSON.stringify(failure), /example|synthetic|access_token/);
   assert.match(modelGroundFailure(failure).message, /平台限制/);
+  assert.doesNotMatch(JSON.stringify(modelGroundFailure(privateError)), /example|synthetic|access_token/);
+  const missingApi=modelGroundFailure(new TypeError('CallbackPositionProperty is not a constructor'));
+  assert.equal(missingApi.errorType,'TypeError');
+  assert.equal(missingApi.api,'CallbackPositionProperty');
 });

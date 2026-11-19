@@ -1420,7 +1420,7 @@ export function App() {
                 const failure = modelGroundFailure(error);
                 setModelGroundAvailable(false);
                 setModelGroundNotice(failure.message);
-                console.warn('模型地面套繪無法準備', {stage: groundStage, code: failure.code, statusCode: failure.statusCode});
+                console.warn('模型地面套繪無法準備 '+JSON.stringify({stage: groundStage, code: failure.code, statusCode: failure.statusCode, errorType: failure.errorType, api: failure.api}));
               }
             }
           } else {
