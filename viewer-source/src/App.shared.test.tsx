@@ -1,5 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, expect, it, vi } from "vitest";
+
+afterEach(cleanup);
 
 vi.hoisted(() => {
   window.history.replaceState({}, "", "/3d-viewer/p/H4mT8qP2vK6x/?project=taoyuan-building-overlay&parcel=dongliao-1507-1");
