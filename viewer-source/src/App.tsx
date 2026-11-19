@@ -11,7 +11,7 @@ import {auditSurfaceHeights} from './surfaceHeightAudit';
 import {heightProfileForModel,resolveModelHeight,orthometricToRenderHeight,renderToOrthometricHeight,sha256ArrayBuffer,type HeightResolution} from './heightReference';
 import {HeightReferenceStatus} from './HeightReferenceStatus';
 import {HelpHint} from './HelpHint';
-import {sampleModelGround,modelGroundFailure} from './modelGround.mjs';
+import {sampleModelGround,modelGroundFailure,selectModelGroundProfiles} from './modelGround.mjs';
 import {ControlPointsLayer} from './ControlPointsLayer';
 import {SurveyToolsPanel} from './SurveyToolsPanel';
 import {measureModelPath,type DistanceResult,type DistanceSummary} from './surveyMeasurement';
@@ -1179,13 +1179,14 @@ export function App() {
                 groundStage = 'projection';
                 const groundHeight =
                   heights[Math.floor((heights.length - 1) * 0.25)] + 0.35;
-                const roadOffset = activeParcel?.groupKey === "shuangling-1013-01"
+                const groundProfiles = selectModelGroundProfiles(project.id, activeParcel, taoyuan17Ground, taoyuan255Ground);
+                const roadOffset = groundProfiles.road
                   ? await sampleRoadOffset(viewer) : null;
-                const road17Offset = activeParcel?.key === taoyuan17Ground.parcelKey
+                const road17Offset = groundProfiles.road17
                   ? await sampleTaoyuan17Offset(viewer) : null;
-                const road255Offset = activeParcel?.groupKey === taoyuan255Ground.groupKey
+                const road255Offset = groundProfiles.road255
                   ? await sampleTaoyuan255Offset(viewer) : null;
-                const road174HeightAt=activeParcel?.key==='shuangling-174'?fitParcel174Ground(sampled):null;
+                const road174HeightAt=groundProfiles.road174?fitParcel174Ground(sampled):null;
                 if (cancelled || viewer.isDestroyed()) return;
                 const heightAt = (latitude: number,longitude:number) => road174HeightAt ? road174HeightAt(latitude,longitude)
                   : road255Offset!==null ? taoyuan255HeightAt(longitude,latitude,road255Offset)

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {sampleModelGround, modelGroundFailure, ModelGroundError} from '../../viewer-source/src/modelGround.mjs';
+import {sampleModelGround, modelGroundFailure, ModelGroundError, selectModelGroundProfiles} from '../../viewer-source/src/modelGround.mjs';
 
 test('模型取樣保留有效資料，不以零高度取代缺值', async () => {
   const points = [{height: undefined}, {height: 23.4}, {height: NaN}];
@@ -35,4 +35,20 @@ test('失敗診斷僅保留狀態碼，不能洩露上游秘密', async () => {
   const missingApi=modelGroundFailure(new TypeError('CallbackPositionProperty is not a constructor'));
   assert.equal(missingApi.errorType,'TypeError');
   assert.equal(missingApi.api,'CallbackPositionProperty');
+});
+
+test('三峽不能因缺少桃園資料而誤觸私有校正流程', () => {
+  const privateProfile = new Proxy({}, {get() {throw Error('Unexpected private data access');}});
+  const disabled = {road:false,road17:false,road255:false,road174:false};
+  assert.deepEqual(selectModelGroundProfiles('sanxia-solar-2',{key:'shisantianyi-388'},privateProfile,privateProfile),disabled);
+  assert.deepEqual(selectModelGroundProfiles('sanxia-solar-2',undefined,{},{}),disabled);
+  assert.deepEqual(selectModelGroundProfiles('taoyuan-building-overlay',{}, {},{}),disabled);
+});
+
+test('只有桃園有效識別碼可選用對應道路校正', () => {
+  const project='taoyuan-building-overlay';
+  assert.deepEqual(selectModelGroundProfiles(project,{key:'parcel-17'},{parcelKey:'parcel-17'},{}),{road:false,road17:true,road255:false,road174:false});
+  assert.deepEqual(selectModelGroundProfiles(project,{key:'other',groupKey:'group-255'},{parcelKey:'parcel-17'},{groupKey:'group-255'}),{road:false,road17:false,road255:true,road174:false});
+  assert.deepEqual(selectModelGroundProfiles(project,{key:'shuangling-174'}),{road:false,road17:false,road255:false,road174:true});
+  assert.deepEqual(selectModelGroundProfiles(project,{groupKey:'shuangling-1013-01'}),{road:true,road17:false,road255:false,road174:false});
 });

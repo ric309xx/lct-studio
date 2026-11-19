@@ -17,6 +17,20 @@ export class ModelGroundError extends Error {
   }
 }
 
+export function selectModelGroundProfiles(projectId, parcel, road17, road255) {
+  if (projectId !== 'taoyuan-building-overlay') {
+    return {road: false, road17: false, road255: false, road174: false};
+  }
+  const key = typeof parcel?.key === 'string' && parcel.key.length > 0 ? parcel.key : null;
+  const group = typeof parcel?.groupKey === 'string' && parcel.groupKey.length > 0 ? parcel.groupKey : null;
+  return {
+    road: group === 'shuangling-1013-01',
+    road17: key !== null && key === road17?.parcelKey,
+    road255: group !== null && group === road255?.groupKey,
+    road174: key === 'shuangling-174'
+  };
+}
+
 export async function sampleModelGround(sample, {timeoutMs = 45000, signal} = {}) {
   if (signal?.aborted) throw new ModelGroundError('cancelled');
   let timer, abort;
