@@ -44,7 +44,8 @@
   for = "/3d-viewer/*"
   [headers.values]
     X-Robots-Tag = "noindex, nofollow, noarchive"
-    Referrer-Policy = "no-referrer"
+    # OSM requires a valid Referer; send only the origin, never private paths/query.
+    Referrer-Policy = "strict-origin"
     Cache-Control = "no-store"
 
 [[headers]]
