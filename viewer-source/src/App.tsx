@@ -2645,10 +2645,14 @@ export function App() {
     const url=new URL(window.location.href);url.searchParams.delete('parcel');url.searchParams.set('view','cases');window.history.replaceState({},'',url);setShowCaseMap(true);
   };
   const cancelCaseEntry=()=>{caseEntryRef.current=null;setCaseEntryPhase(null);setShowCaseMap(true);const url=new URL(window.location.href);url.searchParams.delete('parcel');url.searchParams.set('view','cases');window.history.replaceState({},'',url);};
+  const gukengShortcut=IS_ADMIN?<a className="external-project-link" href="https://gukeng-3d-survey.private-3d-viewer.workers.dev/" target="_blank" rel="noopener noreferrer">
+    <span>古坑噴凝土邊坡成果</span><span aria-hidden="true">↗</span>
+  </a>:null;
   return (
     <>
     {showLongdongGaussian && <LongdongGaussian onClose={() => setShowLongdongGaussian(false)} />}
     {(showingCaseMap||caseEntryPhase)&&<div className="case-map-layer"><CaseOverviewMap cases={TAOYUAN_CASES} initialKey={currentParcel?cadastralGroup(currentParcel):undefined} savedView={overviewViewRef} savedNavigation={overviewNavigationRef}
+      projectShortcut={gukengShortcut}
       entryPhase={caseEntryPhase} entryError={caseEntryError} onCancelEntry={cancelCaseEntry} onEnter={(key,source)=>{
         saveCaseMapSnapshot(window.sessionStorage,overviewStorageKey,{navigation:overviewNavigationRef.current,view:overviewViewRef.current});
         caseEntryRef.current=source?{key,source}:null;setCaseEntryPhase(source?'loading':null);setCaseEntryError('');
@@ -2874,6 +2878,7 @@ export function App() {
               </option>
             ))}
           </select>
+          {gukengShortcut}
           {(projectId === 'longdong-general-close-compare' || projectId === 'gongliao-longdong-pix4d-mesh-20260805') && <button
             type="button" className="gaussian-open" onClick={() => setShowLongdongGaussian(true)}
           >觀看 08/05 Pix4D 高斯模型 ↗</button>}

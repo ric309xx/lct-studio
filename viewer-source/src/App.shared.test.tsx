@@ -30,6 +30,7 @@ it("shared viewer hides home and management controls despite a stale admin role"
   expect(areaLabel?.querySelectorAll('br')).toHaveLength(1);
   expect(screen.queryByRole("link", { name: "返回 LCT Studio 首頁" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "切換身分" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "古坑噴凝土邊坡成果" })).not.toBeInTheDocument();
   expect(screen.getByRole('button', {name: '登出此專案'})).toBeInTheDocument();
   expect(screen.queryByText(/一般觀看/)).not.toBeInTheDocument();
   fireEvent.focus(screen.getByRole('button',{name:'專案瀏覽說明'}));

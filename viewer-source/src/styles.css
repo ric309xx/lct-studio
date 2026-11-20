@@ -795,6 +795,31 @@ button {
   margin-top: 7px;
 }
 
+.external-project-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(138, 230, 212, 0.32);
+  border-radius: 8px;
+  color: #a6eee0;
+  background: rgba(138, 230, 212, 0.08);
+  font-size: 14px;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.external-project-link:hover {
+  background: rgba(138, 230, 212, 0.16);
+}
+
+.external-project-link:focus-visible {
+  outline: 2px solid #8ae6d4;
+  outline-offset: 3px;
+}
+
 .switch-role {
   flex: 0 0 auto;
   padding: 3px 6px;

@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {Cartesian3,Color,Ion,Rectangle,SceneMode,Viewer} from 'cesium';
 import {createRoadBasemapProvider} from './basemaps';
 import {MapPin,LocateFixed,ArrowRight,Search,LoaderCircle} from 'lucide-react';
@@ -9,8 +9,8 @@ import {caseEntryMapBounds,type CaseEntryPhase,type CaseEntrySource} from './cas
 import {ControlPointsLayer} from './ControlPointsLayer';
 import {heightProfileForPath} from './heightReference';
 
-type Props={cases:CaseOverviewItem[];initialKey?:string;onEnter:(parcelKey:string,source?:CaseEntrySource)=>void;savedView:{current:CaseMapView|null};savedNavigation:{current:CaseMapNavigation|null};entryPhase?:CaseEntryPhase|null;entryError?:string;onCancelEntry?:()=>void};
-export function CaseOverviewMap({cases,initialKey,onEnter,savedView,savedNavigation,entryPhase,entryError,onCancelEntry}:Props){
+type Props={cases:CaseOverviewItem[];initialKey?:string;onEnter:(parcelKey:string,source?:CaseEntrySource)=>void;savedView:{current:CaseMapView|null};savedNavigation:{current:CaseMapNavigation|null};entryPhase?:CaseEntryPhase|null;entryError?:string;onCancelEntry?:()=>void;projectShortcut?:ReactNode};
+export function CaseOverviewMap({cases,initialKey,onEnter,savedView,savedNavigation,entryPhase,entryError,onCancelEntry,projectShortcut}:Props){
   const [controlViewer,setControlViewer]=useState<Viewer|null>(null);
   const host=useRef<HTMLDivElement>(null),map=useRef<Viewer|null>(null);
   const [selected,setSelected]=useState(savedNavigation.current?.selected??initialKey??'');
@@ -160,6 +160,7 @@ export function CaseOverviewMap({cases,initialKey,onEnter,savedView,savedNavigat
     </div>
     <aside className="case-overview-panel" inert={busy}>
       <header><p className="case-eyebrow">LCT · DRONE SURVEY</p><h1>案件總覽</h1><p className="case-intro">先看位置，再進入現地模型。</p><span className="case-count">{cases.length} 個案件 · {cases.reduce((n,c)=>n+c.parcels.length,0)} 筆地號</span></header>
+      {projectShortcut}
       <ControlPointsLayer viewer={controlViewer} mode="map" disabled={busy} profileId={active?(active.parcels[0].key==='sanzuwu-jiushe-102-45'?'1007-ion-6000372':heightProfileForPath(active.parcels[0].tilesetPath)?.id):null}/>
       <label className="case-map-search"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="搜尋地段或地號" aria-label="搜尋案件地段或地號"/></label>
       {query&&<div className="case-map-results">{matches.length?matches.map(item=><button key={item.key} onClick={()=>choose(item)}>{item.title}</button>):<p>沒有符合的案件</p>}</div>}
