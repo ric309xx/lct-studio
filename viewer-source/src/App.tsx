@@ -2881,7 +2881,7 @@ export function App() {
           {gukengShortcut}
           {(projectId === 'longdong-general-close-compare' || projectId === 'gongliao-longdong-pix4d-mesh-20260805') && <button
             type="button" className="gaussian-open" onClick={() => setShowLongdongGaussian(true)}
-          >觀看 08/05 Pix4D 高斯模型 ↗</button>}
+          ><span>Pix4Dmatic高斯模型(2026/08/05)</span><span aria-hidden="true">↗</span></button>}
           {!IS_SHARE_ENTRY&&<div className="project-access-row">
             <p className="project-name">
               {projectName} · {IS_ADMIN ? "管理員模式" : "一般觀看"}
