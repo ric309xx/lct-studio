@@ -50,7 +50,7 @@ export function createGateway({env=()=>process.env,fetchUpstream=fetch,loadData=
     if(typeof settings.VIEWER_SESSION_SECRET!=='string'||settings.VIEWER_SESSION_SECRET.length<32)return json({error:'登入服務尚未設定'},503);
     let input;try{input=await readBody(request);}catch{return json({error:'請求格式不正確或過大'},400);}
     if(action==='logout'){
-      if(input?.accessId!=='admin'&&!Object.hasOwn(catalog.entries,input?.accessId??''))return json({error:'分享入口不存在'},400);
+      if(input?.accessId!=='admin'&&!Object.hasOwn(catalog.entries,input?.accessId??'')&&!Object.hasOwn(catalog.retiredEntries??{},input?.accessId??''))return json({error:'分享入口不存在'},400);
       return json({ok:true},200,{'Set-Cookie':clearCookie(input.accessId)});
     }
     try{

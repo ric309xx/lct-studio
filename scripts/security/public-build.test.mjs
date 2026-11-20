@@ -4,6 +4,8 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
 const root=path.resolve(import.meta.dirname,'../..');
+const catalog=JSON.parse(fs.readFileSync(path.join(root,'netlify/private/catalog.json'),'utf8'));
+const retiredPaths=new Set(Object.values(catalog.retiredEntries??{}).map(entry=>entry.path.replace(/^\//,'')+'index.html'));
 test('公開產物不包含伺服器、專案原始碼或工作文件',()=>{
   const out=path.join(root,'.site-dist');assert.ok(fs.existsSync(out));
   for(const file of ['workers','netlify','viewer-source','control-points','scripts','PROJECT_LOG.md','.local','.env','index-LAPTOP-LCT-F16.html'])assert.equal(fs.existsSync(path.join(out,file)),false,file);
@@ -15,7 +17,13 @@ test('公開產物不包含伺服器、專案原始碼或工作文件',()=>{
 test('管理員與既有後端登入分享頁不再公開密碼雜湊；分享頁設定仍可解析',()=>{
   const pages=['3d-viewer/index.html',...fs.readdirSync(path.join(root,'3d-viewer/p')).map(x=>'3d-viewer/p/'+x+'/index.html').filter(x=>fs.existsSync(path.join(root,x)))];
   for(const file of pages){
-    const html=fs.readFileSync(path.join(root,file),'utf8');const config=html.match(/window\.LCT_VIEWER_ACCESS\s*=\s*({[\s\S]*?});/);
+    const html=fs.readFileSync(path.join(root,file),'utf8');
+    if(retiredPaths.has(file)){
+      assert.match(html,/此分享連結已停用/);assert.match(html,/noindex/);
+      assert.doesNotMatch(html,/<form|<script|LCT_VIEWER_ACCESS|access-password/);
+      continue;
+    }
+    const config=html.match(/window\.LCT_VIEWER_ACCESS\s*=\s*({[\s\S]*?});/);
     assert.ok(config,file);const parsed=vm.runInNewContext('('+config[1]+')');
     assert.equal(parsed.passwordHash,undefined,file);
     assert.deepEqual(Object.keys(parsed).sort(),['accessId','role']);

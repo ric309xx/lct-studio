@@ -216,26 +216,6 @@
         "pitchDegrees": -90,
         "rollDegrees": 0
       }
-    },
-    {
-      "id": "linkou-factory",
-      "name": "新北市林口區工廠廠房",
-      "location": "新北市林口區",
-      "sharePath": "/3d-viewer/p/K8mQ4xT7cN2v/",
-      "modelSource": {
-        "type": "cesium-ion",
-        "assetId": 5094702
-      }
-    },
-    {
-      "id": "sanxia-solar",
-      "name": "新北市三峽區太陽能板",
-      "location": "新北市三峽區",
-      "sharePath": "/3d-viewer/p/R9wP3sL6dA5z/",
-      "modelSource": {
-        "type": "cesium-ion",
-        "assetId": 5100866
-      }
     }
   ],
   "comparisons": [
@@ -335,12 +315,6 @@
       "projectId": "taoyuan-building-overlay",
       "path": "/3d-viewer/p/H4mT8qP2vK6x/"
     },
-    "K8mQ4xT7cN2v": {
-      "accessId": "K8mQ4xT7cN2v",
-      "role": "viewer",
-      "projectId": "linkou-factory",
-      "path": "/3d-viewer/p/K8mQ4xT7cN2v/"
-    },
     "L5cT7iQ1nA9x": {
       "accessId": "L5cT7iQ1nA9x",
       "role": "viewer",
@@ -375,12 +349,6 @@
       "projectId": "gongliao-longdong-twd97-20260926",
       "path": "/3d-viewer/p/R7nD3vQ9mK5x/"
     },
-    "R9wP3sL6dA5z": {
-      "accessId": "R9wP3sL6dA5z",
-      "role": "viewer",
-      "projectId": "sanxia-solar",
-      "path": "/3d-viewer/p/R9wP3sL6dA5z/"
-    },
     "S5nD8gR2mK6x": {
       "accessId": "S5nD8gR2mK6x",
       "role": "viewer",
@@ -412,6 +380,22 @@
       "role": "viewer",
       "projectId": "ruifang-nanya-rock-20260810",
       "path": "/3d-viewer/p/Y8nA4rK2mP7x/"
+    }
+  },
+  "retiredEntries": {
+    "K8mQ4xT7cN2v": {
+      "accessId": "K8mQ4xT7cN2v",
+      "projectId": "linkou-factory",
+      "assetId": 5094702,
+      "path": "/3d-viewer/p/K8mQ4xT7cN2v/",
+      "retiredOn": "2026-11-20"
+    },
+    "R9wP3sL6dA5z": {
+      "accessId": "R9wP3sL6dA5z",
+      "projectId": "sanxia-solar",
+      "assetId": 5100866,
+      "path": "/3d-viewer/p/R9wP3sL6dA5z/",
+      "retiredOn": "2026-11-20"
     }
   }
 }
