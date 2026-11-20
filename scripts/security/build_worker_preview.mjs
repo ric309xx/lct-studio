@@ -13,8 +13,10 @@ const root=path.resolve(import.meta.dirname,'../..');
 const output=path.join(root,'.local/cloud-worker-preview');
 await fs.mkdir(output,{recursive:true});
 // Reuse Vite's locked esbuild dependency, without installing another version.
-const require=createRequire(path.join(root,'viewer-source/node_modules/vite/package.json'));
-const {build}=require('esbuild');
+const projectRequire=createRequire(path.join(root,'viewer-source/package.json'));
+// Resolve Vite's physical pnpm package path before looking up its dependencies.
+const viteRequire=createRequire(projectRequire.resolve('vite'));
+const {build}=viteRequire('esbuild');
 const result=await build({entryPoints:[path.join(root,'workers/private-3d-viewer/src/index.js')],bundle:true,write:false,format:'esm',platform:'browser',target:'es2022',keepNames:false,charset:'utf8',logLevel:'warning'});
 assert.equal(result.outputFiles.length,1);
 const bytes=result.outputFiles[0].contents;
