@@ -16,6 +16,7 @@ run('corepack',['pnpm','install','--frozen-lockfile'],path.join(root,'viewer-sou
 const tests=['scripts/security','workers/private-3d-viewer/test'].flatMap(dir=>fs.readdirSync(path.join(root,dir)).filter(x=>x.endsWith('.test.mjs')).map(x=>path.join(dir,x)));
 run(process.execPath,[path.join(root,'scripts/build_public_site.mjs')]);
 run(process.execPath,['--test',...tests]);
+run(process.execPath,[path.join(root,'scripts/security/build_worker_preview.mjs')]);
 run(process.execPath,['node_modules/vitest/vitest.mjs','run','--maxWorkers=2'],path.join(root,'viewer-source'));
 run(process.execPath,[path.join(root,'scripts/build_viewer.mjs')]);
 await import('./build_and_audit.mjs');
