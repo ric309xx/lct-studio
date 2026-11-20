@@ -6,7 +6,7 @@ import {readCadastralToken} from '../src/cadastral-access.mjs';
 const project='taoyuan-20261006',origin='http://127.0.0.1:5500',base='/api/site-access/';
 const hash=v=>createHash('sha256').update(v).digest('hex');
 let reads=0;
-const env={LOGIN_RATE_LIMITER:{async limit(){return {success:true};}},ADMIN_PASSWORD_HASH:hash('synthetic-admin'),PROJECT_PASSWORD_HASH:hash('synthetic-viewer'),SESSION_SECRET:randomUUID(),MODELS:{async get(){reads++;throw Error('Unexpected read');},async put(){throw Error('Unexpected write');}}};
+const env={LOGIN_RATE_LIMITER:{async limit(){return {success:true};}},ADMIN_PASSWORD_HASH:hash('synthetic-admin'),PROJECT_PASSWORD_HASH:hash('synthetic-viewer'),SITE_LONGDONG_SERVICE_PASSWORD_HASH:hash('synthetic-longdong-service-credential'),SESSION_SECRET:randomUUID(),MODELS:{async get(){reads++;throw Error('Unexpected read');},async put(){throw Error('Unexpected write');}}};
 const call=(path,options={})=>worker.fetch(new Request('https://worker.test'+path,options),env);
 const post=(path,data,token)=>call(base+path,{method:'POST',headers:{origin,'Content-Type':'application/json',...(token?{authorization:'Bearer '+token}:{})},body:JSON.stringify(data)});
 const login=async(role='admin',password='synthetic-admin')=>{const r=await post('login',{project,role,password});assert.equal(r.status,200);return r.json();};
@@ -20,7 +20,7 @@ test('unified login requires a trusted origin and supports CORS without cookies'
 });
 test('Longdong site token is confined to its own mesh and cannot refresh a Taoyuan session',async()=>{
   const mesh='longdong-pix4d-mesh-20260805';
-  const result=await post('login',{project:mesh,role:'viewer',password:'synthetic-viewer'});
+  const result=await post('login',{project:mesh,role:'viewer',password:'synthetic-longdong-service-credential'});
   assert.equal(result.status,200);
   const access=await result.json();
   const payload=await readCadastralToken(new Request('https://worker.test',{headers:{authorization:'Bearer '+access.token}}),env.SESSION_SECRET);
@@ -86,7 +86,7 @@ test('website-specific passwords override legacy credentials without changing Wo
   assert.equal(legacy.status,303);assert.ok(legacy.headers.get('set-cookie'));
 });
 
-test('Longdong service credential coexists with existing logins and cannot enter Taoyuan or admin',async()=>{
+test('Taoyuan customer and Longdong service credentials cannot enter each other or admin',async()=>{
  const mesh='longdong-pix4d-mesh-20260805';
  const servicePassword='synthetic-longdong-service-credential';
  const configured={...env,SITE_LONGDONG_SERVICE_PASSWORD_HASH:hash(servicePassword)};
@@ -100,7 +100,10 @@ test('Longdong service credential coexists with existing logins and cannot enter
  for(const [target,role] of [[project,'viewer'],[project,'admin'],[mesh,'admin']]){
    assert.equal((await attempt(target,role,servicePassword)).status,401);
  }
- for(const [target,role,password] of [[project,'viewer','synthetic-viewer'],[project,'admin','synthetic-admin'],[mesh,'viewer','synthetic-viewer']]){
+ for(const role of ['viewer','admin']){
+   assert.equal((await attempt(mesh,role,'synthetic-viewer')).status,401);
+ }
+ for(const [target,role,password] of [[project,'viewer','synthetic-viewer'],[project,'admin','synthetic-admin'],[mesh,'admin','synthetic-admin'],[mesh,'viewer','synthetic-admin']]){
    assert.equal((await attempt(target,role,password)).status,200);
  }
  const legacy=await worker.fetch(new Request('https://worker.test/login',{
@@ -120,7 +123,7 @@ test('missing or malformed Longdong service hash does not weaken existing authen
   const request=password=>new Request('https://worker.test'+base+'login',{
     method:'POST',headers:{origin,'Content-Type':'application/json'},body:JSON.stringify({project:'longdong-pix4d-mesh-20260805',role:'viewer',password})
   });
-  assert.equal((await worker.fetch(request('synthetic-viewer'),configured)).status,200);
+  assert.equal((await worker.fetch(request('synthetic-viewer'),configured)).status,401);
   assert.equal((await worker.fetch(request('synthetic-longdong-service-credential'),configured)).status,401);
  }
 });

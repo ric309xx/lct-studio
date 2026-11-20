@@ -64,9 +64,9 @@ export async function siteAccess(request,env,path) {
   if(path==='/api/site-access/login') {
     if(typeof input.password!=='string'||input.password.length<1||input.password.length>64||!['admin','viewer'].includes(input.role))return response(request,{error:'登入資料不正確'},400);
     const hash=await digest(input.password);
-    const admin=equal(hash,adminHash),viewer=equal(hash,viewerHash);
-    // A separately staged service credential may read only the Longdong mesh.
-    // Keep existing website and legacy passwords unchanged during preview validation.
+    const admin=equal(hash,adminHash),viewer=projectId===SITE_PROJECT&&equal(hash,viewerHash);
+    // The customer viewer password belongs to Taoyuan; the separate service
+    // credential belongs only to the Longdong mesh. Configure distinct values.
     const serviceHash=env.SITE_LONGDONG_SERVICE_PASSWORD_HASH;
     const meshService=input.project==='longdong-pix4d-mesh-20260805'&&input.role==='viewer'
       &&typeof serviceHash==='string'&&/^[a-f0-9]{64}$/.test(serviceHash)&&equal(hash,serviceHash);
