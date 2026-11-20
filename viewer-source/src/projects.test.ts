@@ -53,7 +53,7 @@ describe("project sharing", () => {
     ).toBe("/3d-viewer/p/C8vN4pR2xK7m/");
   });
 
-  it("defines the Longdong historical comparison and 20260926 combined view", () => {
+  it("defines Longdong comparisons with a draggable split for the 20260926 dual-area entry", () => {
     const projects = createProjectCatalog({
       type: "cesium-ion",
       assetId: 5094702
@@ -95,7 +95,8 @@ describe("project sharing", () => {
     ).toMatchObject({
       leftProjectId: "gongliao-longdong-extension-20260926",
       rightProjectId: "gongliao-longdong-twd97-20260926",
-      displayMode: "combined"
+      displayMode: "split",
+      defaultSplitPosition: 0.5
     });
     expect(
       getComparisonSharePath(comparisons, "longdong-general-close-compare")

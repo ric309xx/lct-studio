@@ -277,7 +277,7 @@
       "leftLabel": "09/26 延伸區",
       "rightLabel": "09/26 TWD97主區",
       "defaultSplitPosition": 0.5,
-      "displayMode": "combined"
+      "displayMode": "split"
     }
   ],
   "entries": {
