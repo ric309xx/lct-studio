@@ -37,7 +37,7 @@ for(const role of ['viewer','admin']){
  const nodes=new Map();
  const element=()=>({style:{},append(){},replaceChildren(){},querySelector(selector){if(!nodes.has(selector))nodes.set(selector,element());return nodes.get(selector);}});
  const client=vm.runInNewContext('('+embedded+')',{document:{createElement:element,body:{append(){}}},window:{addEventListener(){}},fetch:async()=>{requests++;return {ok:true,json:async()=>({version:'synthetic',landmarks:[]})};},prompt:()=>null,confirm:()=>false,crypto});
- client({entities:{remove(){},add(){}}},{ScreenSpaceEventHandler:class{setInputAction(){}},ScreenSpaceEventType:{LEFT_CLICK:1}},role,()=>{},{id:'synthetic-project',name:'Synthetic project'});
+ client({entities:{remove(){},add(){}},scene:{canvas:{},requestRender(){}}},{ScreenSpaceEventHandler:class{setInputAction(){}},ScreenSpaceEventType:{LEFT_CLICK:1}},role,()=>{},{id:'synthetic-project',name:'Synthetic project'});
  await new Promise(resolve=>setImmediate(resolve));
  assert.equal(requests,1);
  assert.equal(nodes.get('.message').textContent,'已讀取共 0 個標的');
