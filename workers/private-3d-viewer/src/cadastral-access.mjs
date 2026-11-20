@@ -1,6 +1,7 @@
 // Explicit origins, read-only project-scoped bearer access. No R2 keys in client input.
 export const CADASTRAL_ORIGINS = new Set([
   'https://lctstudio.tw', 'https://www.lctstudio.tw',
+  'https://security-preview-20261118--lct-studio.netlify.app',
   'http://localhost:5500', 'http://127.0.0.1:5500',
   'http://localhost:5173', 'http://127.0.0.1:5173'
 ]);
