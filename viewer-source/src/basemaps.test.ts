@@ -33,5 +33,9 @@ it('retains the current layer if provider construction fails and discards outdat
 });
 it('never accumulates more than the selected layer and its fallback',async()=>{
   const {values,viewer}=fixture();await applyBasemap(viewer,'nlsc');await applyBasemap(viewer,'road');await applyBasemap(viewer,'nlsc');
-  expect(values).toHaveLength(2);expect(mock.road).toHaveBeenCalledWith({url:'https://tile.openstreetmap.org/'});
+  expect(values).toHaveLength(2);
+  const roadOptions=mock.road.mock.calls[0][0];
+  expect(roadOptions.url).toBe('https://tile.openstreetmap.org/');
+  expect(roadOptions.credit.html).toContain('https://www.openstreetmap.org/copyright');
+  expect(roadOptions.credit.showOnScreen).toBe(true);
 });

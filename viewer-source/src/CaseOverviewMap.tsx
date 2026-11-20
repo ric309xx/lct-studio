@@ -1,5 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
-import {Cartesian3,Color,Ion,OpenStreetMapImageryProvider,Rectangle,SceneMode,Viewer} from 'cesium';
+import {Cartesian3,Color,Ion,Rectangle,SceneMode,Viewer} from 'cesium';
+import {createRoadBasemapProvider} from './basemaps';
 import {MapPin,LocateFixed,ArrowRight,Search,LoaderCircle} from 'lucide-react';
 import {parseConfig} from './config';
 import {caseMapBounds,clusterMapMarkers,type CaseOverviewItem,type MapMarker} from './caseOverview';
@@ -89,7 +90,7 @@ export function CaseOverviewMap({cases,initialKey,onEnter,savedView,savedNavigat
       viewer=new Viewer(host.current!,{sceneMode:SceneMode.SCENE2D,animation:false,timeline:false,baseLayerPicker:false,baseLayer:false,geocoder:false,homeButton:false,fullscreenButton:false,infoBox:false,selectionIndicator:false,sceneModePicker:false,navigationHelpButton:false,requestRenderMode:true});
       map.current=viewer;
       setControlViewer(viewer);
-      viewer.imageryLayers.addImageryProvider(new OpenStreetMapImageryProvider({url:'https://tile.openstreetmap.org/'}));
+      viewer.imageryLayers.addImageryProvider(createRoadBasemapProvider());
       viewer.scene.backgroundColor=Color.fromCssColorString('#e0e6e1');
       for(const item of cases)for(const ring of item.rings){
         viewer.entities.add({polyline:{positions:Cartesian3.fromDegreesArray(ring.flat()),width:2,material:Color.fromCssColorString('#087e80')}});

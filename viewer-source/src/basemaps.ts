@@ -8,9 +8,13 @@ export const NLSC_PHOTO_OPTIONS={
   url:'https://wmts.nlsc.gov.tw/wmts/PHOTO2/{Style}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}',
   layer:'PHOTO2',style:'default',format:'image/jpeg',tileMatrixSetID:'GoogleMapsCompatible',maximumLevel:19
 } as const;
+export function createRoadBasemapProvider():OpenStreetMapImageryProvider{
+  return new OpenStreetMapImageryProvider({url:'https://tile.openstreetmap.org/',
+    credit:new Credit('<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors</a>',true)});
+}
 export async function createBasemapProvider(choice:Basemap):Promise<ImageryProvider>{
   if(choice==='aerial')return createWorldImageryAsync({style:IonWorldImageryStyle.AERIAL});
-  if(choice==='road')return new OpenStreetMapImageryProvider({url:'https://tile.openstreetmap.org/'});
+  if(choice==='road')return createRoadBasemapProvider();
   return new WebMapTileServiceImageryProvider({...NLSC_PHOTO_OPTIONS,
     tilingScheme:new WebMercatorTilingScheme(),rectangle:Rectangle.fromDegrees(117.89,21.41,122.38,26.46),
     credit:new Credit('<a href="https://maps.nlsc.gov.tw/" target="_blank" rel="noopener noreferrer">內政部國土測繪中心・正射影像</a>',true)});
