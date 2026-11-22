@@ -67,7 +67,7 @@ export function installGukengNavigation(viewer:Viewer,canInteract:()=>boolean=()
   function panBy(dx:number,dy:number){
     if(!dx&&!dy)return;cancelMotion();
     const pivot=Matrix4.getTranslation(camera.transform,new Cartesian3()),range=Cartesian3.distance(camera.positionWC,pivot),frustum=camera.frustum;
-    const height=frustum instanceof OrthographicFrustum?(frustum.width??120)/(frustum.aspectRatio??1):2*range*Math.tan((frustum as PerspectiveFrustum).fovy/2);
+    const height=frustum instanceof OrthographicFrustum?(frustum.width??120)/(frustum.aspectRatio??1):2*range*Math.tan(((frustum as PerspectiveFrustum).fovy??Math.PI/3)/2);
     const scale=height/Math.max(canvas.clientHeight,1),right=-dx*scale,up=dy*scale;
     const delta=Cartesian3.add(Cartesian3.multiplyByScalar(camera.rightWC,right,new Cartesian3()),Cartesian3.multiplyByScalar(camera.upWC,up,new Cartesian3()),new Cartesian3());
     const next=Matrix4.setTranslation(camera.transform,Cartesian3.add(pivot,delta,new Cartesian3()),new Matrix4());

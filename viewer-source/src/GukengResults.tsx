@@ -1,4 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
+import {createPortal} from 'react-dom';
 import {Axis,BoundingSphere,Cartesian3,ClippingPlane,ClippingPlaneCollection,Color,CustomDataSource,HeadingPitchRange,
   Math as CesiumMath,Matrix4,Model,Transforms,type Viewer,type Cesium3DTileset} from 'cesium';
 import {ensureR2Access,GUKENG_R2_PROJECT,PRIVATE_R2_ORIGIN,privateR2Resource} from './r2Access';
@@ -8,7 +9,7 @@ export const GUKENG_VIEWER_PROJECT='gukeng-slope-20261019';
 const root=`${PRIVATE_R2_ORIGIN}/projects/${GUKENG_R2_PROJECT}/tiles/`;
 type Point=[number,number,number];
 type Part='completed'|'unperformed';
-type DocumentInfo={title:string;url:string;note?:string};
+type DocumentInfo={title:string;url:string;note?:string;preview_pages?:string[]};
 type Manifest={transform:number[];metadata_url:string;partition_url:string;results_date:string;documents:Record<string,DocumentInfo>};
 type Partition={completed:{title:string;area_m2:number;model_url:string};unperformed:{title:string;area_m2:number;model_url:string};
   boundaries:{completed_local_rings:Point[][];unperformed_local_rings:Point[][]};view_center_local:Point;note:string};
@@ -47,10 +48,11 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
   onBeforeFocus?:()=>void;registerReset?:(reset:(()=>boolean)|null)=>void}){
   const [data,setData]=useState<Data|null>(null),[error,setError]=useState(''),[mode,setMode]=useState<'original'|'underlying'>('original');
   const [selected,setSelected]=useState<Record<Part,boolean>>({completed:true,unperformed:true}),[busy,setBusy]=useState(false);
-  const [pdf,setPdf]=useState<{url:string;title:string;note?:string}|null>(null),[reportBusy,setReportBusy]=useState(false);
+  const [pdf,setPdf]=useState<{url:string;title:string;filename:string;note?:string;pages:string[]}|null>(null),[reportBusy,setReportBusy]=useState(false);
   const sceneRef=useRef<{models:Map<Part,Model>;borders:CustomDataSource;transform:Matrix4;disposed:boolean}|null>(null);
-  const alive=useRef(true),pdfUrl=useRef<string|null>(null);
-  useEffect(()=>{alive.current=true;return()=>{alive.current=false;if(pdfUrl.current)URL.revokeObjectURL(pdfUrl.current);};},[]);
+  const alive=useRef(true),reportUrls=useRef<string[]>([]);
+  const releaseReport=()=>{reportUrls.current.forEach(url=>URL.revokeObjectURL(url));reportUrls.current=[];};
+  useEffect(()=>{alive.current=true;return()=>{alive.current=false;releaseReport();};},[]);
 
   const focus=(value:Data,part?:Part)=>{
     if(!viewer||viewer.isDestroyed())return;
@@ -133,13 +135,22 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
     if(reportBusy)return;setReportBusy(true);setError('');
     try{
       if(!/^\/output\/pdf\/[A-Za-z0-9_-]+\.pdf$/.test(doc.url))throw Error('報告路徑不正確');
-      await ensureR2Access(GUKENG_R2_PROJECT);const bytes=await resource(doc.url).fetchArrayBuffer();if(!bytes)throw Error('報告尚未載入');
-      if(!alive.current)return;if(pdfUrl.current)URL.revokeObjectURL(pdfUrl.current);
-      const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));pdfUrl.current=url;setPdf({url,title:doc.title,note:doc.note});
-    }catch{if(alive.current)setError('成果報告載入失敗，請重試。');}
+      const pagePaths=doc.preview_pages??[];
+      if(pagePaths.length>40||pagePaths.some(path=>!/^\/output\/pdf\/preview\/[A-Za-z0-9_-]+\.(?:jpg|png|webp)$/.test(path)))throw Error('報告頁面路徑不正確');
+      await ensureR2Access(GUKENG_R2_PROJECT);
+      const paths=[doc.url,...pagePaths],buffers:ArrayBuffer[]=[];
+      // Fetch small groups instead of starting every report page at once.
+      for(let i=0;i<paths.length;i+=3){
+        const chunk=await Promise.all(paths.slice(i,i+3).map(path=>resource(path).fetchArrayBuffer()));
+        if(chunk.some(bytes=>!bytes))throw Error('報告尚未載入');buffers.push(...chunk as ArrayBuffer[]);
+      }
+      if(!alive.current)return;releaseReport();
+      const urls=buffers.map((bytes,index)=>URL.createObjectURL(new Blob([bytes],{type:index===0?'application/pdf':paths[index].endsWith('.png')?'image/png':paths[index].endsWith('.webp')?'image/webp':'image/jpeg'})));
+      reportUrls.current=urls;setPdf({url:urls[0],pages:urls.slice(1),filename:doc.url.split('/').pop()!,title:doc.title,note:doc.note});
+    }catch(reason){if(alive.current){const status=(reason as {statusCode?:number})?.statusCode;setError(`成果報告載入失敗${Number.isInteger(status)?'（HTTP '+status+'）':''}，請重試。`);}}
     finally{if(alive.current)setReportBusy(false);}
   }
-  function closePdf(){if(pdfUrl.current){URL.revokeObjectURL(pdfUrl.current);pdfUrl.current=null;}setPdf(null);}
+  function closePdf(){releaseReport();setPdf(null);}
   return <section className="setting-group gukeng-results" aria-label="古坑成果">
     <span className="setting-label">古坑噴凝土邊坡 · 2026/10/19</span>
     {!data&&!error&&<p role="status">{ready?'正在讀取坡面成果…':'模型載入後顯示坡面成果。'}</p>}
@@ -153,6 +164,6 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
       <p className="overlay-hint">{data.partition.note} 成果日期：{data.manifest.results_date.replaceAll('-','/')}。</p>
       <div className="gukeng-reports">{Object.entries(data.manifest.documents).map(([key,doc])=><button type="button" key={key} disabled={reportBusy} onClick={()=>void openReport(doc)}>{reportBusy?'讀取報告中…':doc.title}</button>)}</div>
     </>}
-    {pdf&&<div className="gukeng-pdf-backdrop"><div className="gukeng-pdf" role="dialog" aria-modal="true" aria-label={pdf.title} onKeyDown={e=>{if(e.key==='Escape')closePdf();}}><header><strong>{pdf.title}</strong><button type="button" autoFocus onClick={closePdf}>關閉報告</button></header>{pdf.note&&<p>{pdf.note}</p>}<iframe title={pdf.title} src={pdf.url}/></div></div>}
+    {pdf&&createPortal(<div className="gukeng-pdf-backdrop"><div className="gukeng-pdf" role="dialog" aria-modal="true" aria-label={pdf.title} onKeyDown={e=>{if(e.key==='Escape')closePdf();}}><header><strong>{pdf.title}</strong><a href={pdf.url} download={pdf.filename}>下載 PDF</a><button type="button" autoFocus onClick={closePdf}>關閉報告</button></header>{pdf.note&&<p>{pdf.note}</p>}{pdf.pages.length?<div className="gukeng-report-pages">{pdf.pages.map((url,index)=><figure key={url}><figcaption>第 {index+1} 頁／共 {pdf.pages.length} 頁</figcaption><img src={url} alt={`${pdf.title} 第 ${index+1} 頁`} loading="lazy"/></figure>)}</div>:<iframe title={pdf.title} src={pdf.url}/>}</div></div>,document.body)}
   </section>;
 }
