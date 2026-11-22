@@ -93,7 +93,7 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
   useEffect(()=>{
     if(!ready||!viewer||!tileset||viewer.isDestroyed())return;
     setData(null);setMode('original');setError('');
-    let disposed=false;let borders:CustomDataSource|null=null;
+    let disposed=false,blendTimedOut=false,blendTimer=0;let borders:CustomDataSource|null=null;
     void (async()=>{
       try{
         const manifest=await getJSON<Manifest>('/output/results-manifest.json');
@@ -118,11 +118,12 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
         setBackdropReady(Boolean(backdropRef.current));
         sceneRef.current={models:new Map(),borders,transform,disposed:false};setData(result);focus(result);
         setBlendBusy(true);setBlendStatus('正在準備周邊背景接邊…');
-        void prepareGukengTerrainBlend(viewer,tileset,()=>disposed).then(control=>{
-          if(disposed){control?.dispose();return;}
+        blendTimer=window.setTimeout(()=>{blendTimedOut=true;if(!disposed){setBlendBusy(false);setBlendStatus('背景接邊準備逾時，可重新載入再試；模型仍可操作。');}},45000);
+        void prepareGukengTerrainBlend(viewer,tileset,()=>disposed||blendTimedOut).then(control=>{
+          if(disposed||blendTimedOut){control?.dispose();return;}
           blendRef.current=control;setBlendReady(Boolean(control));control?.setEnabled(true);
           setBlendStatus(control?'周邊背景接邊已套用；僅供定位，量測仍取航測模型。':'');
-        }).catch(()=>{if(!disposed)setBlendStatus('周邊背景接邊暫時無法完成，維持原背景。');}).finally(()=>{if(!disposed)setBlendBusy(false);});
+        }).catch(()=>{if(!disposed&&!blendTimedOut)setBlendStatus('周邊背景接邊暫時無法完成，維持原背景。');}).finally(()=>{window.clearTimeout(blendTimer);if(!disposed)setBlendBusy(false);});
         if(window.location.hostname==='security-preview-20261118--lct-studio.netlify.app'&&new URLSearchParams(window.location.search).get('heightAudit')==='1'){
           const point=Cartographic.fromCartesian(Matrix4.multiplyByPoint(transform,Cartesian3.fromArray(partition.view_center_local),new Cartesian3()));
           setTerrainAudit('正在比較坡面附近9點的模型與背景地形高度…');
@@ -132,7 +133,7 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
         }
       }catch{if(!disposed)setError('古坑成果載入失敗，請重新載入或稍後重試。');}
     })();
-    return()=>{disposed=true;blendRef.current?.dispose();blendRef.current=null;backdropRef.current?.dispose();backdropRef.current=null;const scene=sceneRef.current;if(scene){scene.disposed=true;sceneRef.current=null;}
+    return()=>{disposed=true;window.clearTimeout(blendTimer);blendRef.current?.dispose();blendRef.current=null;backdropRef.current?.dispose();backdropRef.current=null;const scene=sceneRef.current;if(scene){scene.disposed=true;sceneRef.current=null;}
       if(!viewer.isDestroyed()){for(const model of scene?.models.values()??[])viewer.scene.primitives.remove(model);if(borders)viewer.dataSources.remove(borders,true);}};
   },[viewer,tileset,ready]);
 
