@@ -49,7 +49,9 @@ export async function prepareGukengTerrainBlend(viewer:Viewer,tileset:Cesium3DTi
       const childTileMask=[[0,1,1],[1,1,2],[0,0,4],[1,0,8]].reduce((mask,[dx,dy,bit])=>mask|(data.isChildAvailable(x,y,x*2+dx,y*2+dy)?bit:0),0);
       const result=new HeightmapTerrainData({buffer,width:size,height:size,childTileMask,
         waterMask:data.waterMask instanceof Uint8Array?data.waterMask:undefined});
-      result.credits=data.credits;return result;
+      // HeightmapTerrainData exposes a getter-only credits property. Preserve
+      // the source attribution through an instance getter, never assignment.
+      Object.defineProperty(result,'credits',{get:()=>data.credits});return result;
     });
   };
   // Delegate the base provider's availability, credentials, events and credits.
