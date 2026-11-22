@@ -4,6 +4,7 @@ import {Cartesian3,ClippingPolygonCollection,Matrix4,Model,Transforms,type Viewe
 import {GukengResults} from './GukengResults';
 
 const mock=vi.hoisted(()=>({json:new Map<string,unknown>(),ensure:vi.fn()}));
+vi.mock('./gukengTerrainBlend',()=>({prepareGukengTerrainBlend:async()=>null}));
 vi.mock('./r2Access',()=>({GUKENG_R2_PROJECT:'gukeng-20261019',PRIVATE_R2_ORIGIN:'https://worker.test',ensureR2Access:mock.ensure,
   privateR2Resource:(url:string)=>({url,fetchJson:async()=>mock.json.get(new URL(url).pathname.split('/tiles')[1]),fetchArrayBuffer:async()=>new Uint8Array([37,80,68,70]).buffer})}));
 afterEach(()=>{cleanup();vi.restoreAllMocks();mock.json.clear();mock.ensure.mockClear();});

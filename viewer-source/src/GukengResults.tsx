@@ -6,6 +6,7 @@ import {ensureR2Access,GUKENG_R2_PROJECT,PRIVATE_R2_ORIGIN,privateR2Resource} fr
 import {parseGukengAssetPath} from './gukengResourcePath.mjs';
 import {auditSurfaceHeights} from './surfaceHeightAudit';
 import {installGukengBackdrop} from './gukengBackdrop';
+import {prepareGukengTerrainBlend} from './gukengTerrainBlend';
 import './gukeng.css';
 
 export const GUKENG_VIEWER_PROJECT='gukeng-slope-20261019';
@@ -52,6 +53,8 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
   const [showContext,setShowContext]=useState(true);
   const [modelFirst,setModelFirst]=useState(true),[backdropReady,setBackdropReady]=useState(false);
   const backdropRef=useRef<ReturnType<typeof installGukengBackdrop>>(null);
+  const blendRef=useRef<Awaited<ReturnType<typeof prepareGukengTerrainBlend>>>(null);
+  const [blendEnabled,setBlendEnabled]=useState(true),[blendStatus,setBlendStatus]=useState(''),[blendBusy,setBlendBusy]=useState(false),[blendReady,setBlendReady]=useState(false);
   const [selected,setSelected]=useState<Record<Part,boolean>>({completed:true,unperformed:true}),[busy,setBusy]=useState(false);
   const [pdf,setPdf]=useState<{url:string;title:string;filename:string;note?:string;pages:string[]}|null>(null),[reportBusy,setReportBusy]=useState(false);
   const [terrainAudit,setTerrainAudit]=useState('');
@@ -114,6 +117,12 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
         catch{backdropRef.current=null;}
         setBackdropReady(Boolean(backdropRef.current));
         sceneRef.current={models:new Map(),borders,transform,disposed:false};setData(result);focus(result);
+        setBlendBusy(true);setBlendStatus('正在準備周邊背景接邊…');
+        void prepareGukengTerrainBlend(viewer,tileset,()=>disposed).then(control=>{
+          if(disposed){control?.dispose();return;}
+          blendRef.current=control;setBlendReady(Boolean(control));control?.setEnabled(true);
+          setBlendStatus(control?'周邊背景接邊已套用；僅供定位，量測仍取航測模型。':'');
+        }).catch(()=>{if(!disposed)setBlendStatus('周邊背景接邊暫時無法完成，維持原背景。');}).finally(()=>{if(!disposed)setBlendBusy(false);});
         if(window.location.hostname==='security-preview-20261118--lct-studio.netlify.app'&&new URLSearchParams(window.location.search).get('heightAudit')==='1'){
           const point=Cartographic.fromCartesian(Matrix4.multiplyByPoint(transform,Cartesian3.fromArray(partition.view_center_local),new Cartesian3()));
           setTerrainAudit('正在比較坡面附近9點的模型與背景地形高度…');
@@ -123,7 +132,7 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
         }
       }catch{if(!disposed)setError('古坑成果載入失敗，請重新載入或稍後重試。');}
     })();
-    return()=>{disposed=true;backdropRef.current?.dispose();backdropRef.current=null;const scene=sceneRef.current;if(scene){scene.disposed=true;sceneRef.current=null;}
+    return()=>{disposed=true;blendRef.current?.dispose();blendRef.current=null;backdropRef.current?.dispose();backdropRef.current=null;const scene=sceneRef.current;if(scene){scene.disposed=true;sceneRef.current=null;}
       if(!viewer.isDestroyed()){for(const model of scene?.models.values()??[])viewer.scene.primitives.remove(model);if(borders)viewer.dataSources.remove(borders,true);}};
   },[viewer,tileset,ready]);
 
@@ -138,6 +147,7 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
     if(!data)return;
     backdropRef.current?.update(modelFirst,mode==='original'?parts:parts.filter(part=>selected[part]));
   },[modelFirst,mode,selected,data]);
+  useEffect(()=>{blendRef.current?.setEnabled(blendEnabled);},[blendEnabled]);
 
   useEffect(()=>{
     if(!data||!tileset||tileset.isDestroyed()||!viewer||viewer.isDestroyed())return;
@@ -194,10 +204,12 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
     {terrainAudit&&<p role="status" aria-label="背景地形檢查">{terrainAudit}</p>}
     {data&&<>
       <p className="overlay-hint">左鍵點選對焦 · 拖曳繞焦點旋轉 · 右鍵平移 · 滾輪縮放</p>
-      <div className="segmented-control"><button type="button" aria-pressed={mode==='original'} className={mode==='original'?'active':''} disabled={busy} onClick={()=>void showMode('original')}>原始實景</button><button type="button" aria-pressed={mode==='underlying'} className={mode==='underlying'?'active':''} disabled={busy} onClick={()=>void showMode('underlying')}>{busy?'載入中…':'計算坡面'}</button></div>
+      <div className="segmented-control"><button type="button" aria-pressed={mode==='original'} className={mode==='original'?'active':''} disabled={busy||blendBusy} onClick={()=>void showMode('original')}>原始實景</button><button type="button" aria-pressed={mode==='underlying'} className={mode==='underlying'?'active':''} disabled={busy||blendBusy} onClick={()=>void showMode('underlying')}>{busy?'載入中…':'計算坡面'}</button></div>
       {mode==='original'&&<label className="gukeng-context"><input type="checkbox" checked={showContext} onChange={e=>setShowContext(e.target.checked)}/>顯示周邊航測實景</label>}
       {backdropReady?<label className="gukeng-context"><input type="checkbox" checked={modelFirst} onChange={e=>setModelFirst(e.target.checked)}/>坡面範圍背景避讓</label>:<p className="overlay-hint">此裝置無法啟用局部背景避讓，維持原顯示。</p>}
       {backdropReady&&<p className="overlay-hint">背景在坡面覆蓋範圍內避讓；模型與量測高程不變。</p>}
+      {blendReady&&<label className="gukeng-context"><input type="checkbox" checked={blendEnabled} onChange={e=>setBlendEnabled(e.target.checked)}/>周邊背景平順接邊</label>}
+      {blendStatus&&<p className="overlay-hint" role="status">{blendStatus}</p>}
       <p className="overlay-hint">{mode==='original'?'周邊航測實景保留同次拍攝的道路與地貌；':'計算坡面為獨立分析面；'}背景地圖與地形僅供定位，接邊不代表量測誤差。</p>
       <button type="button" className="gukeng-focus" onClick={()=>home(data)}>回到坡面全景</button>
       <button type="button" className="gukeng-focus" onClick={front}>正視坡面</button>
