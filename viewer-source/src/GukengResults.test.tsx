@@ -65,7 +65,7 @@ it('keeps the surrounding surveyed model by default without moving geometry or c
   fireEvent.click(control);await waitFor(()=>expect(tileset.clippingPlanes.enabled).toBe(false));
   expect(tileset.modelMatrix).toEqual(matrix);expect(screen.getByText(/123.0/)).toBeInTheDocument();
 });
-it('restores background under hidden calculated regions and releases it on leaving the project',async()=>{
+it('does not punch globe holes behind independent calculated faces and releases clipping on leaving',async()=>{
   vi.spyOn(ClippingPolygonCollection,'isSupported').mockReturnValue(true);
   vi.spyOn(Model,'fromGltfAsync').mockImplementation(async()=>({show:false,destroy:vi.fn()}) as unknown as Model);
   const {viewer,tileset}=setup();Object.assign(viewer.canvas,{dataset:{}});Object.assign(viewer.scene,{globe:{show:true}});
@@ -74,7 +74,10 @@ it('restores background under hidden calculated regions and releases it on leavi
   expect(await screen.findByRole('checkbox',{name:'坡面範圍背景避讓'})).toBeChecked();
   await waitFor(()=>expect(viewer.scene.globe.clippingPolygons?.length).toBe(2));
   fireEvent.click(screen.getByRole('button',{name:'計算坡面'}));await waitFor(()=>expect(tileset.show).toBe(false));
-  fireEvent.click(screen.getByRole('checkbox',{name:'應施作未施作'}));await waitFor(()=>expect(viewer.scene.globe.clippingPolygons?.length).toBe(1));
+  await waitFor(()=>expect(viewer.scene.globe.clippingPolygons?.length).toBe(0));
+  expect(viewer.scene.globe.clippingPolygons?.enabled).toBe(false);
+  fireEvent.click(screen.getByRole('checkbox',{name:'應施作未施作'}));expect(viewer.scene.globe.clippingPolygons?.length).toBe(0);
+  fireEvent.click(screen.getByRole('button',{name:'原始實景'}));await waitFor(()=>expect(viewer.scene.globe.clippingPolygons?.length).toBe(2));
   fireEvent.click(screen.getByRole('checkbox',{name:'坡面範圍背景避讓'}));expect(viewer.scene.globe.clippingPolygons?.enabled).toBe(false);
   unmount();expect(viewer.scene.globe.clippingPolygons).toBeUndefined();expect(viewer.scene.globe.show).toBe(true);
 });

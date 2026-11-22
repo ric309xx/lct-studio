@@ -146,9 +146,11 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
 
   useEffect(()=>{
     if(!data)return;
-    backdropRef.current?.update(modelFirst,mode==='original'?parts:parts.filter(part=>selected[part]));
+    // A vertical globe cut can expose a void behind an isolated fitted face
+    // from oblique views. Restrict replacement to the original survey scene.
+    backdropRef.current?.update(modelFirst,mode==='original'?parts:[]);
   },[modelFirst,mode,selected,data]);
-  useEffect(()=>{blendRef.current?.setEnabled(blendEnabled);},[blendEnabled]);
+  useEffect(()=>{blendRef.current?.setEnabled(blendEnabled&&mode==='original');},[blendEnabled,mode]);
 
   useEffect(()=>{
     if(!data||!tileset||tileset.isDestroyed()||!viewer||viewer.isDestroyed())return;
@@ -207,10 +209,10 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
       <p className="overlay-hint">左鍵點選對焦 · 拖曳繞焦點旋轉 · 右鍵平移 · 滾輪縮放</p>
       <div className="segmented-control"><button type="button" aria-pressed={mode==='original'} className={mode==='original'?'active':''} disabled={busy||blendBusy} onClick={()=>void showMode('original')}>原始實景</button><button type="button" aria-pressed={mode==='underlying'} className={mode==='underlying'?'active':''} disabled={busy||blendBusy} onClick={()=>void showMode('underlying')}>{busy?'載入中…':'計算坡面'}</button></div>
       {mode==='original'&&<label className="gukeng-context"><input type="checkbox" checked={showContext} onChange={e=>setShowContext(e.target.checked)}/>顯示周邊航測實景</label>}
-      {backdropReady?<label className="gukeng-context"><input type="checkbox" checked={modelFirst} onChange={e=>setModelFirst(e.target.checked)}/>坡面範圍背景避讓</label>:<p className="overlay-hint">此裝置無法啟用局部背景避讓，維持原顯示。</p>}
-      {backdropReady&&<p className="overlay-hint">背景在坡面覆蓋範圍內避讓；模型與量測高程不變。</p>}
-      {blendReady&&<label className="gukeng-context"><input type="checkbox" checked={blendEnabled} onChange={e=>setBlendEnabled(e.target.checked)}/>周邊背景平順接邊</label>}
-      {blendStatus&&<p className="overlay-hint" role="status">{blendReady&&!blendEnabled?'周邊背景接邊已關閉，顯示原背景。':blendStatus}</p>}
+      {mode==='original'&&(backdropReady?<label className="gukeng-context"><input type="checkbox" checked={modelFirst} onChange={e=>setModelFirst(e.target.checked)}/>坡面範圍背景避讓</label>:<p className="overlay-hint">此裝置無法啟用局部背景避讓，維持原顯示。</p>)}
+      {backdropReady&&mode==='original'&&<p className="overlay-hint">背景在坡面覆蓋範圍內避讓；模型與量測高程不變。</p>}
+      {blendReady&&mode==='original'&&<label className="gukeng-context"><input type="checkbox" checked={blendEnabled} onChange={e=>setBlendEnabled(e.target.checked)}/>周邊背景平順接邊</label>}
+      {blendStatus&&<p className="overlay-hint" role="status">{mode!=='original'?'計算坡面保留原背景，供獨立檢視。':blendReady&&!blendEnabled?'周邊背景接邊已關閉，顯示原背景。':blendStatus}</p>}
       <p className="overlay-hint">{mode==='original'?'周邊航測實景保留同次拍攝的道路與地貌；':'計算坡面為獨立分析面；'}背景地圖與地形僅供定位，接邊不代表量測誤差。</p>
       <button type="button" className="gukeng-focus" onClick={()=>home(data)}>回到坡面全景</button>
       <button type="button" className="gukeng-focus" onClick={front}>正視坡面</button>
