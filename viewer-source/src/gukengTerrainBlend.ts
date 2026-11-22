@@ -23,7 +23,7 @@ export async function prepareGukengTerrainBlend(viewer:Viewer,tileset:Cesium3DTi
       sampleTerrainMostDetailed(base,chunk.map(p=>Cartographic.clone(p)))]);
     for(let i=0;i<chunk.length;i++){
       const a=mesh[i]?.height,b=terrain[i]?.height;
-      if(Number.isFinite(a)&&Number.isFinite(b)&&Math.abs(a-b)<=100)samples.push({...offsets[start+i],delta:a-b-.5});
+      if(typeof a==='number'&&typeof b==='number'&&Number.isFinite(a)&&Number.isFinite(b)&&Math.abs(a-b)<=100)samples.push({...offsets[start+i],delta:a-b-.5});
     }
   }
   if(cancelled()||viewer.isDestroyed())return null;
