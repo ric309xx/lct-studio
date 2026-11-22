@@ -210,7 +210,7 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
       {backdropReady?<label className="gukeng-context"><input type="checkbox" checked={modelFirst} onChange={e=>setModelFirst(e.target.checked)}/>坡面範圍背景避讓</label>:<p className="overlay-hint">此裝置無法啟用局部背景避讓，維持原顯示。</p>}
       {backdropReady&&<p className="overlay-hint">背景在坡面覆蓋範圍內避讓；模型與量測高程不變。</p>}
       {blendReady&&<label className="gukeng-context"><input type="checkbox" checked={blendEnabled} onChange={e=>setBlendEnabled(e.target.checked)}/>周邊背景平順接邊</label>}
-      {blendStatus&&<p className="overlay-hint" role="status">{blendStatus}</p>}
+      {blendStatus&&<p className="overlay-hint" role="status">{blendReady&&!blendEnabled?'周邊背景接邊已關閉，顯示原背景。':blendStatus}</p>}
       <p className="overlay-hint">{mode==='original'?'周邊航測實景保留同次拍攝的道路與地貌；':'計算坡面為獨立分析面；'}背景地圖與地形僅供定位，接邊不代表量測誤差。</p>
       <button type="button" className="gukeng-focus" onClick={()=>home(data)}>回到坡面全景</button>
       <button type="button" className="gukeng-focus" onClick={front}>正視坡面</button>
