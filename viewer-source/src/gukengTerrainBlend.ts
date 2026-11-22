@@ -4,8 +4,16 @@ import {terrainDisplayDelta,type DisplayHeightSample} from './gukengTerrainField
 /** Build a temporary display backdrop from the existing protected mesh. This
  * is not a bare-earth DEM, datum correction or a source for survey exports. */
 export async function prepareGukengTerrainBlend(viewer:Viewer,tileset:Cesium3DTileset,cancelled:()=>boolean){
-  const base=viewer.terrainProvider,center=Cartographic.fromCartesian(tileset.boundingSphere.center),R=6378137,cos=Math.cos(center.latitude);
-  if(!base.availability||Math.abs(cos)<.1)throw Error('背景地形尚未就緒');
+  let base=viewer.terrainProvider;
+  // Cached models can become ready before createWorldTerrainAsync finishes.
+  // Wait within the caller's bounded preparation window, including re-entry.
+  while(!base.availability){
+    if(cancelled()||viewer.isDestroyed())return null;
+    await new Promise(resolve=>setTimeout(resolve,100));base=viewer.terrainProvider;
+  }
+  if(cancelled()||viewer.isDestroyed())return null;
+  const center=Cartographic.fromCartesian(tileset.boundingSphere.center),R=6378137,cos=Math.cos(center.latitude);
+  if(Math.abs(cos)<.1)throw Error('背景範圍無法換算');
   const radius=Math.min(500,Math.max(80,tileset.boundingSphere.radius)),steps=Math.min(32,Math.max(12,Math.ceil(radius/12)));
   const positions:Cartographic[]=[],offsets:Array<{east:number;north:number}>=[];
   for(let row=0;row<=steps;row++)for(let col=0;col<=steps;col++){

@@ -32,3 +32,10 @@ it('does not install a provider after cancellation or replace another feature du
   const controller=(await prepareGukengTerrainBlend(v,model,()=>false))!;controller.setEnabled(true);
   const other={} as TerrainProvider;v.terrainProvider=other;controller.dispose();expect(v.terrainProvider).toBe(other);
 });
+it('waits for real terrain when a cached model loads before the terrain provider',async()=>{
+  const {v,model,base}=setup();v.terrainProvider={} as TerrainProvider;
+  queueMicrotask(()=>{v.terrainProvider=base;});
+  const controller=(await prepareGukengTerrainBlend(v,model,()=>false))!;
+  controller.setEnabled(true);expect(v.terrainProvider).not.toBe(base);
+  controller.dispose();expect(v.terrainProvider).toBe(base);
+});
