@@ -1,9 +1,10 @@
 import {useEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
-import {Axis,BoundingSphere,Cartesian3,ClippingPlane,ClippingPlaneCollection,Color,CustomDataSource,HeadingPitchRange,
+import {Axis,BoundingSphere,Cartesian3,Cartographic,ClippingPlane,ClippingPlaneCollection,Color,CustomDataSource,HeadingPitchRange,
   Math as CesiumMath,Matrix4,Model,Transforms,type Viewer,type Cesium3DTileset} from 'cesium';
 import {ensureR2Access,GUKENG_R2_PROJECT,PRIVATE_R2_ORIGIN,privateR2Resource} from './r2Access';
 import {parseGukengAssetPath} from './gukengResourcePath.mjs';
+import {auditSurfaceHeights} from './surfaceHeightAudit';
 import './gukeng.css';
 
 export const GUKENG_VIEWER_PROJECT='gukeng-slope-20261019';
@@ -49,6 +50,7 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
   const [data,setData]=useState<Data|null>(null),[error,setError]=useState(''),[mode,setMode]=useState<'original'|'underlying'>('original');
   const [selected,setSelected]=useState<Record<Part,boolean>>({completed:true,unperformed:true}),[busy,setBusy]=useState(false);
   const [pdf,setPdf]=useState<{url:string;title:string;filename:string;note?:string;pages:string[]}|null>(null),[reportBusy,setReportBusy]=useState(false);
+  const [terrainAudit,setTerrainAudit]=useState('');
   const sceneRef=useRef<{models:Map<Part,Model>;borders:CustomDataSource;transform:Matrix4;disposed:boolean}|null>(null);
   const alive=useRef(true),reportUrls=useRef<string[]>([]);
   const releaseReport=()=>{reportUrls.current.forEach(url=>URL.revokeObjectURL(url));reportUrls.current=[];};
@@ -103,6 +105,13 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
         }
         const result={manifest,partition,meta,display};
         sceneRef.current={models:new Map(),borders,transform,disposed:false};setData(result);focus(result);
+        if(window.location.hostname==='security-preview-20261118--lct-studio.netlify.app'&&new URLSearchParams(window.location.search).get('heightAudit')==='1'){
+          const point=Cartographic.fromCartesian(Matrix4.multiplyByPoint(transform,Cartesian3.fromArray(partition.view_center_local),new Cartesian3()));
+          setTerrainAudit('正在比較坡面附近9點的模型與背景地形高度…');
+          void auditSurfaceHeights(viewer,viewer.terrainProvider,CesiumMath.toDegrees(point.longitude),CesiumMath.toDegrees(point.latitude),()=>disposed).then(report=>{
+            if(!disposed)setTerrainAudit(report?`模型－背景地形高差：${report.minimumDifferenceM?.toFixed(2)??'無'}～${report.maximumDifferenceM?.toFixed(2)??'無'} m（${report.validPairs}/9點；可能含植被，非校正依據）`:'背景地形比較暫時無法完成');
+          });
+        }
       }catch{if(!disposed)setError('古坑成果載入失敗，請重新載入或稍後重試。');}
     })();
     return()=>{disposed=true;const scene=sceneRef.current;if(scene){scene.disposed=true;sceneRef.current=null;}
@@ -159,6 +168,7 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
     <span className="setting-label">古坑噴凝土邊坡 · 2026/10/19</span>
     {!data&&!error&&<p role="status">{ready?'正在讀取坡面成果…':'模型載入後顯示坡面成果。'}</p>}
     {error&&<p role="alert">{error}</p>}
+    {terrainAudit&&<p role="status" aria-label="背景地形檢查">{terrainAudit}</p>}
     {data&&<>
       <p className="overlay-hint">左鍵點選對焦 · 拖曳繞焦點旋轉 · 右鍵平移 · 滾輪縮放</p>
       <div className="segmented-control"><button type="button" aria-pressed={mode==='original'} className={mode==='original'?'active':''} disabled={busy} onClick={()=>void showMode('original')}>原始實景</button><button type="button" aria-pressed={mode==='underlying'} className={mode==='underlying'?'active':''} disabled={busy} onClick={()=>void showMode('underlying')}>{busy?'載入中…':'計算坡面'}</button></div>

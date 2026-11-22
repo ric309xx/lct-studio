@@ -31,8 +31,9 @@ export async function auditSurfaceHeights(viewer:Viewer,provider:TerrainProvider
       return {longitude:CesiumMath.toDegrees(p.longitude),latitude:CesiumMath.toDegrees(p.latitude),
         sceneHeight:a,terrainHeight:b,differenceM:a!==null&&b!==null?a-b:null};
     });
-    viewer.canvas.dataset.surfaceHeightAudit=JSON.stringify({status:'ready',frame:'Cesium displayed heights; not orthometric/geoid validation',
-      ...summarizeSurfaceHeightPairs(samples),samples});
+    const report={status:'ready',frame:'Cesium displayed heights; not orthometric/geoid validation',
+      ...summarizeSurfaceHeightPairs(samples),samples};
+    viewer.canvas.dataset.surfaceHeightAudit=JSON.stringify(report);return report;
   }catch{
     if(!viewer.isDestroyed()&&!cancelled())viewer.canvas.dataset.surfaceHeightAudit=JSON.stringify({status:'unavailable'});
   }
