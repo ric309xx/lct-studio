@@ -8,7 +8,7 @@ export type HeightProfile={id:string;tilesetPath:string;sourceVerticalDatum:stri
   offsetM:number|null;pairedControls:number;rangeM:number|null;renderFrame:HeightFrame;
   conversionMethod:string;conversionRevision:string;frameEvidence:string};
 export type HeightResolution={profileId:string;revision:string;sourceDatum:'TWVD2001'|'unknown';
-  status:'converted-local-controls'|'already-ellipsoidal'|'pending';undulationM:number|null;appliedOffsetM:number;reason:string};
+  status:'converted-local-controls'|'converted-geoid-grid'|'already-ellipsoidal'|'pending';undulationM:number|null;appliedOffsetM:number;reason:string};
 
 // Runtime receives only the per-model conversion manifest, not raw survey rows
 // or control-point coordinates. Diagnostics are a separate local-only build;
@@ -37,6 +37,25 @@ const applied=new WeakMap<Cesium3DTileset,{revision:string;resolution:HeightReso
 /** A coordinate pick must use its actual tileset's verified frame, never the
  * active project's frame for an unverified comparison model. */
 export function resolvedTilesetHeight(tileset:Cesium3DTileset):HeightResolution|null{return applied.get(tileset)?.resolution??null;}
+// Gukeng's source transform encodes TWVD2001 H as ellipsoidal h. The
+// independently archived TWGEOID2018h grid gives h-H at the source origin.
+// This is a rigid display correction, shared by all derived geometry; it does
+// not change source XYZ, published areas or the original report/exports.
+export const GUKENG_HEIGHT={rootSha256:'813c4e36d9c9d508c57cc90993788c3e9a4b5980fb8d86b067df4402f8a37b10',
+  undulationM:23.787085804753787,revision:'gukeng-TWGEOID2018h-v1'} as const;
+export function resolveGukengHeight(tileset:Cesium3DTileset,rootSha256:string|null):HeightResolution{
+  const previous=applied.get(tileset);
+  if(previous){if(previous.revision!==GUKENG_HEIGHT.revision||rootSha256!==GUKENG_HEIGHT.rootSha256)throw Error('模型已套用不同高程版本，請重新載入');return previous.resolution;}
+  if(rootSha256!==GUKENG_HEIGHT.rootSha256)return {profileId:'gukeng-20261019',revision:GUKENG_HEIGHT.revision,
+    sourceDatum:'TWVD2001',status:'pending',undulationM:null,appliedOffsetM:0,reason:'古坑模型版本未確認，未套用高程轉換'};
+  const up=Ellipsoid.WGS84.geodeticSurfaceNormal(tileset.boundingSphere.center,new Cartesian3());
+  const translation=Matrix4.fromTranslation(Cartesian3.multiplyByScalar(up,GUKENG_HEIGHT.undulationM,new Cartesian3()));
+  tileset.modelMatrix=Matrix4.multiply(translation,tileset.modelMatrix,new Matrix4());
+  const resolution:HeightResolution={profileId:'gukeng-20261019',revision:GUKENG_HEIGHT.revision,sourceDatum:'TWVD2001',
+    status:'converted-geoid-grid',undulationM:GUKENG_HEIGHT.undulationM,appliedOffsetM:GUKENG_HEIGHT.undulationM,
+    reason:'TWGEOID2018h 網格於原點雙線性內插，局部固定換算；背景地形僅供定位'};
+  applied.set(tileset,{revision:GUKENG_HEIGHT.revision,resolution});return resolution;
+}
 export function resolveModelHeight(tileset:Cesium3DTileset,profile:HeightProfile|undefined,rootSha256:string|null):HeightResolution{
   const revision=profile?`height-v1:${profile.id}:${profile.rootTilesetSha256}:${profile.gcpSha256}:${profile.offsetM}:${profile.renderFrame}:${profile.conversionMethod}:${profile.conversionRevision}`:'height-v1:unknown';
   const previous=applied.get(tileset);

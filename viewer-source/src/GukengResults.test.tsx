@@ -1,6 +1,6 @@
 import {act,cleanup,fireEvent,render,screen,waitFor} from '@testing-library/react';
 import {afterEach,expect,it,vi} from 'vitest';
-import {Cartesian3,Matrix4,Model,type Viewer,type Cesium3DTileset} from 'cesium';
+import {Cartesian3,Matrix4,Model,type Viewer,type Cesium3DTileset,type CustomDataSource} from 'cesium';
 import {GukengResults} from './GukengResults';
 
 const mock=vi.hoisted(()=>({json:new Map<string,unknown>(),ensure:vi.fn()}));
@@ -15,7 +15,7 @@ function setup(){
   mock.json.set('/output/partition.json',{completed:{title:'已施作',area_m2:123,model_url:'/output/partition-20261024-v2/completed.glb'},unperformed:{title:'應施作未施作',area_m2:45,model_url:'/output/partition-20261024-v2/unperformed.glb'},boundaries:{completed_local_rings:[ring],unperformed_local_rings:[ring]},view_center_local:[5,5,5],note:'遮蔽區坡面推估，非直接量得。'});
   const viewer={isDestroyed:()=>false,canvas:{clientWidth:1000,clientHeight:800},dataSources:{add:vi.fn(async (x:unknown)=>x),remove:vi.fn()},
     camera:{cancelFlight:vi.fn(),lookAt:vi.fn(),lookAtTransform:vi.fn()},scene:{requestRender:vi.fn(),primitives:{add:vi.fn(),remove:vi.fn()}}} as unknown as Viewer;
-  const tileset={show:true,isDestroyed:()=>false,boundingSphere:{center:Cartesian3.fromDegrees(120,23)}} as unknown as Cesium3DTileset;
+  const tileset={show:true,modelMatrix:Matrix4.fromTranslation(new Cartesian3(10,20,30)),isDestroyed:()=>false,boundingSphere:{center:Cartesian3.fromDegrees(120,23)}} as unknown as Cesium3DTileset;
   return {viewer,tileset};
 }
 it('waits for the original model before requesting protected report data',()=>{
@@ -24,13 +24,17 @@ it('waits for the original model before requesting protected report data',()=>{
 });
 it('displays the existing classified quantities and switches layers without moving the camera',async()=>{
   const {viewer,tileset}=setup(),models:Model[]=[];
-  vi.spyOn(Model,'fromGltfAsync').mockImplementation(async()=>{const model={show:false,destroy:vi.fn()} as unknown as Model;models.push(model);return model;});
+  const loader=vi.spyOn(Model,'fromGltfAsync').mockImplementation(async()=>{const model={show:false,destroy:vi.fn()} as unknown as Model;models.push(model);return model;});
   render(<GukengResults viewer={viewer} tileset={tileset} ready/>);
   expect(await screen.findByRole('button',{name:'分區面積報告'})).toBeInTheDocument();
   expect(screen.getByText(/123.0/)).toBeInTheDocument();expect(screen.getByText(/非直接量得/)).toBeInTheDocument();
   expect(viewer.camera.lookAt).toHaveBeenCalledTimes(1);
+  expect(vi.mocked(viewer.camera.lookAt).mock.calls[0][0]).toEqual(new Cartesian3(15,25,35));
+  const borders=vi.mocked(viewer.dataSources.add).mock.calls[0][0];
+  expect((borders as CustomDataSource).entities.values[0].polyline?.positions?.getValue()[0]).toEqual(new Cartesian3(10,20,30));
   fireEvent.click(screen.getByRole('button',{name:'計算坡面'}));
   await waitFor(()=>expect(tileset.show).toBe(false));expect(models).toHaveLength(2);expect(models.every(x=>x.show)).toBe(true);
+  for(const call of loader.mock.calls)expect(call[0].modelMatrix).toEqual(tileset.modelMatrix);
   expect(viewer.camera.lookAt).toHaveBeenCalledTimes(1);
   fireEvent.click(screen.getByRole('checkbox',{name:'應施作未施作'}));await act(async()=>{});
   expect(models[1].show).toBe(false);expect(models[0].show).toBe(true);

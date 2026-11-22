@@ -8,7 +8,7 @@ import taoyuan1015Parcels from "./taoyuan1015Parcels.json";
 import { roadGround, roadPosition, roadHeightAt, sampleRoadOffset } from "./shuanglingGround";
 import {fitParcel174Ground} from './parcel174Ground';
 import {auditSurfaceHeights} from './surfaceHeightAudit';
-import {heightProfileForModel,resolveModelHeight,orthometricToRenderHeight,renderToOrthometricHeight,sha256ArrayBuffer,type HeightResolution} from './heightReference';
+import {heightProfileForModel,resolveModelHeight,resolveGukengHeight,orthometricToRenderHeight,renderToOrthometricHeight,sha256ArrayBuffer,type HeightResolution} from './heightReference';
 import {HeightReferenceStatus} from './HeightReferenceStatus';
 import {HelpHint} from './HelpHint';
 import {GukengResults,GUKENG_VIEWER_PROJECT} from './GukengResults';
@@ -948,6 +948,15 @@ export function App() {
             : new Error("兩側模型皆無法載入。");
         }
         if (leftTileset) {
+          if(project.id===GUKENG_VIEWER_PROJECT){
+            let sourceHash:string|null=null;
+            try{const bytes=await leftTileset.resource.fetchArrayBuffer();if(bytes)sourceHash=await sha256ArrayBuffer(bytes);}catch{/* Keep unverified heights explicitly pending. */}
+            if(cancelled||viewer.isDestroyed()){if(!leftTileset.isDestroyed())leftTileset.destroy();return;}
+            const resolution=resolveGukengHeight(leftTileset,sourceHash);
+            heightResolutionRef.current=resolution;setHeightResolution(resolution);
+            viewer.canvas.dataset.heightReference=JSON.stringify(resolution);
+            viewer.canvas.dataset.heightModelRootSha256=sourceHash??'';
+          }
           if(project.id==='taoyuan-building-overlay'){
             const profile=heightProfileForModel(project.modelSource,activeParcel?.tilesetPath);
             let sourceHash:string|null=null;

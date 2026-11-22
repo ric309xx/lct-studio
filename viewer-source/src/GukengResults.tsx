@@ -56,7 +56,7 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
 
   const focus=(value:Data,part?:Part)=>{
     if(!viewer||viewer.isDestroyed())return;
-    onBeforeFocus?.();const transform=Matrix4.fromArray(value.manifest.transform);
+    onBeforeFocus?.();const transform=sceneRef.current?.transform;if(!transform)return;
     const sphere=part?BoundingSphere.fromPoints(value.partition.boundaries[`${part}_local_rings`].flat().map(p=>Matrix4.multiplyByPoint(transform,Cartesian3.fromArray(p),new Cartesian3()))):null;
     const target=sphere?.center??Matrix4.multiplyByPoint(transform,Cartesian3.fromArray(value.partition.view_center_local),new Cartesian3());
     const display=value.display;
@@ -68,7 +68,8 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
   };
   const front=()=>{
     if(!data||!viewer||viewer.isDestroyed())return;onBeforeFocus?.();viewer.camera.cancelFlight();
-    const transform=Matrix4.fromArray(data.manifest.transform),center=Matrix4.multiplyByPoint(transform,Cartesian3.fromArray(data.partition.view_center_local),new Cartesian3());
+    const transform=sceneRef.current?.transform;if(!transform)return;
+    const center=Matrix4.multiplyByPoint(transform,Cartesian3.fromArray(data.partition.view_center_local),new Cartesian3());
     const normal=Cartesian3.normalize(Matrix4.multiplyByPointAsVector(transform,Cartesian3.fromArray(data.meta.basis_columns.map(r=>r[2])),new Cartesian3()),new Cartesian3());
     const up=Cartesian3.normalize(Matrix4.multiplyByPointAsVector(transform,Cartesian3.fromArray(data.meta.basis_columns.map(r=>r[1])),new Cartesian3()),new Cartesian3());
     const range=65*Math.max(1,1.2/viewer.canvas.clientWidth*viewer.canvas.clientHeight);
@@ -89,7 +90,9 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
         const manifest=await getJSON<Manifest>('/output/results-manifest.json');
         const [partition,meta,display]=await Promise.all([getJSON<Partition>(manifest.partition_url),getJSON<Meta>(manifest.metadata_url),getJSON<Display>('/output/display-settings.json')]);
         if(disposed||viewer.isDestroyed())return;
-        const transform=Matrix4.fromArray(manifest.transform),clipOrigin=Transforms.eastNorthUpToFixedFrame(tileset.boundingSphere.center);
+        // Apply exactly the same verified rigid correction as the original
+        // tileset to GLBs, borders, clipping and camera targets.
+        const transform=Matrix4.multiply(tileset.modelMatrix,Matrix4.fromArray(manifest.transform),new Matrix4()),clipOrigin=Transforms.eastNorthUpToFixedFrame(tileset.boundingSphere.center);
         tileset.clippingPlanes=new ClippingPlaneCollection({planes:clippingPlanes(meta,display),
           modelMatrix:Matrix4.multiply(Matrix4.inverse(clipOrigin,new Matrix4()),transform,new Matrix4()),unionClippingRegions:true,edgeWidth:0});
         borders=new CustomDataSource('gukeng-scope');await viewer.dataSources.add(borders);
