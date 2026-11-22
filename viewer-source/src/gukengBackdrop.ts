@@ -27,7 +27,9 @@ export function installGukengBackdrop(viewer:Viewer,transform:Matrix4,rings:Foot
     dispose(){
       if(disposed)return;disposed=true;
       if(!viewer.isDestroyed()){
-        if(globe.clippingPolygons===collection)globe.clippingPolygons=undefined;
+        // Cesium's owner setter accepts undefined to detach/destroy, although
+        // its generated declaration does not mark this property optional.
+        if(globe.clippingPolygons===collection)Reflect.set(globe,'clippingPolygons',undefined);
         delete viewer.canvas.dataset.gukengBackdrop;viewer.scene.requestRender();
       }
       if(!collection.isDestroyed())collection.destroy();
