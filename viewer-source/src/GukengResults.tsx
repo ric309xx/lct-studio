@@ -3,6 +3,7 @@ import {createPortal} from 'react-dom';
 import {Axis,BoundingSphere,Cartesian3,ClippingPlane,ClippingPlaneCollection,Color,CustomDataSource,HeadingPitchRange,
   Math as CesiumMath,Matrix4,Model,Transforms,type Viewer,type Cesium3DTileset} from 'cesium';
 import {ensureR2Access,GUKENG_R2_PROJECT,PRIVATE_R2_ORIGIN,privateR2Resource} from './r2Access';
+import {parseGukengAssetPath} from './gukengResourcePath.mjs';
 import './gukeng.css';
 
 export const GUKENG_VIEWER_PROJECT='gukeng-slope-20261019';
@@ -23,8 +24,7 @@ const format=(n:number)=>n.toLocaleString('zh-TW',{minimumFractionDigits:1,maxim
 
 // Only server-owned release paths are accepted. Credentials stay in request headers.
 function resource(path:string){
-  if(!/^\/(?:model|output)\/[A-Za-z0-9_./-]+$/.test(path)||path.split('/').some(x=>x==='.'||x==='..'))throw Error('成果檔案路徑不正確');
-  return privateR2Resource(root+path.slice(1),GUKENG_R2_PROJECT);
+  return privateR2Resource(root+parseGukengAssetPath(path).path.slice(1),GUKENG_R2_PROJECT);
 }
 async function getJSON<T>(path:string):Promise<T>{
   await ensureR2Access(GUKENG_R2_PROJECT);
@@ -134,9 +134,10 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
   async function openReport(doc:DocumentInfo){
     if(reportBusy)return;setReportBusy(true);setError('');
     try{
-      if(!/^\/output\/pdf\/[A-Za-z0-9_-]+\.pdf$/.test(doc.url))throw Error('報告路徑不正確');
+      const reportPath=parseGukengAssetPath(doc.url);
+      if(!/^\/output\/pdf\/[A-Za-z0-9_-]+\.pdf$/.test(reportPath.pathname))throw Error('報告路徑不正確');
       const pagePaths=doc.preview_pages??[];
-      if(pagePaths.length>40||pagePaths.some(path=>!/^\/output\/pdf\/preview\/[A-Za-z0-9_-]+\.(?:jpg|png|webp)$/.test(path)))throw Error('報告頁面路徑不正確');
+      if(pagePaths.length>40||pagePaths.some(path=>!/^\/output\/pdf\/preview\/[A-Za-z0-9_-]+\.(?:jpg|png|webp)$/.test(parseGukengAssetPath(path).pathname)))throw Error('報告頁面路徑不正確');
       await ensureR2Access(GUKENG_R2_PROJECT);
       const paths=[doc.url,...pagePaths],buffers:ArrayBuffer[]=[];
       // Fetch small groups instead of starting every report page at once.
@@ -145,8 +146,8 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
         if(chunk.some(bytes=>!bytes))throw Error('報告尚未載入');buffers.push(...chunk as ArrayBuffer[]);
       }
       if(!alive.current)return;releaseReport();
-      const urls=buffers.map((bytes,index)=>URL.createObjectURL(new Blob([bytes],{type:index===0?'application/pdf':paths[index].endsWith('.png')?'image/png':paths[index].endsWith('.webp')?'image/webp':'image/jpeg'})));
-      reportUrls.current=urls;setPdf({url:urls[0],pages:urls.slice(1),filename:doc.url.split('/').pop()!,title:doc.title,note:doc.note});
+      const urls=buffers.map((bytes,index)=>{const path=parseGukengAssetPath(paths[index]).pathname;return URL.createObjectURL(new Blob([bytes],{type:index===0?'application/pdf':path.endsWith('.png')?'image/png':path.endsWith('.webp')?'image/webp':'image/jpeg'}));});
+      reportUrls.current=urls;setPdf({url:urls[0],pages:urls.slice(1),filename:reportPath.filename,title:doc.title,note:doc.note});
     }catch(reason){if(alive.current){const status=(reason as {statusCode?:number})?.statusCode;setError(`成果報告載入失敗${Number.isInteger(status)?'（HTTP '+status+'）':''}，請重試。`);}}
     finally{if(alive.current)setReportBusy(false);}
   }
