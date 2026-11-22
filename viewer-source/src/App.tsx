@@ -12,6 +12,7 @@ import {heightProfileForModel,resolveModelHeight,orthometricToRenderHeight,rende
 import {HeightReferenceStatus} from './HeightReferenceStatus';
 import {HelpHint} from './HelpHint';
 import {GukengResults,GUKENG_VIEWER_PROJECT} from './GukengResults';
+import {installGukengNavigation} from './gukengNavigation';
 import {sampleModelGround,modelGroundFailure,selectModelGroundProfiles} from './modelGround.mjs';
 import {ControlPointsLayer} from './ControlPointsLayer';
 import {SurveyToolsPanel} from './SurveyToolsPanel';
@@ -601,6 +602,8 @@ export function App() {
   const measurementKindRef = useRef<MeasureKind>("distance");
   const cameraPresetRef = useRef<CameraPreset | null>(null);
   const returnCaseViewRef = useRef<(() => boolean) | null>(null);
+  const gukengNavigationRef=useRef<ReturnType<typeof installGukengNavigation>|null>(null);
+  const registerGukengReset=useCallback((reset:(()=>boolean)|null)=>{returnCaseViewRef.current=reset;},[]);
   const overlayVisibleRef = useRef(true);
   const overlayXrayRef = useRef(false);
   const landmarksVisibleRef = useRef(true);
@@ -890,6 +893,9 @@ export function App() {
           viewer.camera.setView({destination:Cartesian3.fromDegrees(pose.longitude,pose.latitude,pose.height),orientation:{heading:CesiumMath.toRadians(pose.headingDegrees),pitch:CesiumMath.toRadians(pose.pitchDegrees),roll:CesiumMath.toRadians(pose.rollDegrees)}});
         }
         if (project.id === "taoyuan-building-overlay") disposeParcelNavigation = tuneParcelNavigation(viewer, () => parcelOrbitTargetRef.current, () => !measurementHandlerRef.current && !measurementEditorRef.current?.isDragging() && !clippingHandlerRef.current && !calibrationPickEnabledRef.current && !landmarkEditEnabledRef.current,()=>{entryManualInput=true;disposeEntryTilt?.();});
+        if(project.id===GUKENG_VIEWER_PROJECT)gukengNavigationRef.current=installGukengNavigation(viewer,
+          ()=>!!tilesetRef.current&&!surveySelectionActiveRef.current&&!measurementHandlerRef.current&&!measurementEditorRef.current?.isDragging()&&!clippingHandlerRef.current,
+          setMapNotice);
         setSectionViewer(viewer);
         viewer.scene.splitPosition = initialSplit;
 
@@ -1688,6 +1694,7 @@ export function App() {
 
     return () => {
       cancelled = true;
+      gukengNavigationRef.current?.dispose();gukengNavigationRef.current=null;
       groundSampling.abort();
       returnCaseViewRef.current=null;
       disposeEntryTilt?.();
@@ -2918,7 +2925,8 @@ export function App() {
           {heightResolution&&<HeightReferenceStatus resolution={heightResolution}/>}
           {projectId==='taoyuan-building-overlay'&&<ControlPointsLayer viewer={sectionViewer} mode="model" profileId={heightResolution?.profileId??'pending'} resolution={heightResolution} disabled={status.phase!=='ready'}/>}
           </div>
-          {projectId===GUKENG_VIEWER_PROJECT&&<GukengResults viewer={sectionViewer} tileset={sectionTileset} ready={status.phase==='ready'}/>}
+          {projectId===GUKENG_VIEWER_PROJECT&&<GukengResults viewer={sectionViewer} tileset={sectionTileset} ready={status.phase==='ready'}
+            onBeforeFocus={()=>gukengNavigationRef.current?.reset()} registerReset={registerGukengReset}/>}
           <div className="setting-group">
           <span className="setting-label">
             <MapIcon size={15} aria-hidden="true" />

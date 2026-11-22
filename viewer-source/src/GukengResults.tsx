@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
-import {Axis,Cartesian3,ClippingPlane,ClippingPlaneCollection,Color,CustomDataSource,HeadingPitchRange,
+import {Axis,BoundingSphere,Cartesian3,ClippingPlane,ClippingPlaneCollection,Color,CustomDataSource,HeadingPitchRange,
   Math as CesiumMath,Matrix4,Model,Transforms,type Viewer,type Cesium3DTileset} from 'cesium';
 import {ensureR2Access,GUKENG_R2_PROJECT,PRIVATE_R2_ORIGIN,privateR2Resource} from './r2Access';
 import './gukeng.css';
@@ -43,7 +43,8 @@ function clippingPlanes(meta:Meta,display:Display){
   return specs.map(p=>new ClippingPlane(Cartesian3.fromArray(p.normal),p.distance));
 }
 
-export function GukengResults({viewer,tileset,ready}:{viewer:Viewer|null;tileset:Cesium3DTileset|null;ready:boolean}){
+export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}:{viewer:Viewer|null;tileset:Cesium3DTileset|null;ready:boolean;
+  onBeforeFocus?:()=>void;registerReset?:(reset:(()=>boolean)|null)=>void}){
   const [data,setData]=useState<Data|null>(null),[error,setError]=useState(''),[mode,setMode]=useState<'original'|'underlying'>('original');
   const [selected,setSelected]=useState<Record<Part,boolean>>({completed:true,unperformed:true}),[busy,setBusy]=useState(false);
   const [pdf,setPdf]=useState<{url:string;title:string;note?:string}|null>(null),[reportBusy,setReportBusy]=useState(false);
@@ -51,15 +52,32 @@ export function GukengResults({viewer,tileset,ready}:{viewer:Viewer|null;tileset
   const alive=useRef(true),pdfUrl=useRef<string|null>(null);
   useEffect(()=>{alive.current=true;return()=>{alive.current=false;if(pdfUrl.current)URL.revokeObjectURL(pdfUrl.current);};},[]);
 
-  const focus=(value:Data)=>{
+  const focus=(value:Data,part?:Part)=>{
     if(!viewer||viewer.isDestroyed())return;
-    const target=Matrix4.multiplyByPoint(Matrix4.fromArray(value.manifest.transform),Cartesian3.fromArray(value.partition.view_center_local),new Cartesian3());
+    onBeforeFocus?.();const transform=Matrix4.fromArray(value.manifest.transform);
+    const sphere=part?BoundingSphere.fromPoints(value.partition.boundaries[`${part}_local_rings`].flat().map(p=>Matrix4.multiplyByPoint(transform,Cartesian3.fromArray(p),new Cartesian3()))):null;
+    const target=sphere?.center??Matrix4.multiplyByPoint(transform,Cartesian3.fromArray(value.partition.view_center_local),new Cartesian3());
     const display=value.display;
     viewer.camera.cancelFlight();
     viewer.camera.lookAt(target,new HeadingPitchRange(CesiumMath.toRadians(display.original_home_heading_degrees),
-      CesiumMath.toRadians(display.original_home_pitch_degrees),Math.max(90,display.original_home_range_m)*Math.max(1,1.2/viewer.canvas.clientWidth*viewer.canvas.clientHeight)));
-    viewer.camera.lookAtTransform(Matrix4.IDENTITY);viewer.scene.requestRender();
+      CesiumMath.toRadians(display.original_home_pitch_degrees),Math.max(part?30:90,sphere?sphere.radius*3:display.original_home_range_m)*Math.max(1,1.2/viewer.canvas.clientWidth*viewer.canvas.clientHeight)));
+    // Keep this local frame: left drag must orbit the slope, not Earth centre.
+    viewer.scene.requestRender();
   };
+  const front=()=>{
+    if(!data||!viewer||viewer.isDestroyed())return;onBeforeFocus?.();viewer.camera.cancelFlight();
+    const transform=Matrix4.fromArray(data.manifest.transform),center=Matrix4.multiplyByPoint(transform,Cartesian3.fromArray(data.partition.view_center_local),new Cartesian3());
+    const normal=Cartesian3.normalize(Matrix4.multiplyByPointAsVector(transform,Cartesian3.fromArray(data.meta.basis_columns.map(r=>r[2])),new Cartesian3()),new Cartesian3());
+    const up=Cartesian3.normalize(Matrix4.multiplyByPointAsVector(transform,Cartesian3.fromArray(data.meta.basis_columns.map(r=>r[1])),new Cartesian3()),new Cartesian3());
+    const range=65*Math.max(1,1.2/viewer.canvas.clientWidth*viewer.canvas.clientHeight);
+    viewer.camera.lookAtTransform(Matrix4.IDENTITY);viewer.camera.setView({destination:Cartesian3.add(center,Cartesian3.multiplyByScalar(normal,range,new Cartesian3()),new Cartesian3()),orientation:{direction:Cartesian3.negate(normal,new Cartesian3()),up}});
+    viewer.camera.lookAtTransform(Transforms.eastNorthUpToFixedFrame(center));viewer.scene.requestRender();
+  };
+  const home=(value:Data)=>{setSelected({completed:true,unperformed:true});focus(value);};
+  useEffect(()=>{
+    if(!data||!viewer)return;registerReset?.(()=>{if(viewer.isDestroyed())return false;home(data);return true;});
+    return()=>registerReset?.(null);
+  },[data,viewer,registerReset]);
   useEffect(()=>{
     if(!ready||!viewer||!tileset||viewer.isDestroyed())return;
     setData(null);setMode('original');setError('');
@@ -127,9 +145,11 @@ export function GukengResults({viewer,tileset,ready}:{viewer:Viewer|null;tileset
     {!data&&!error&&<p role="status">{ready?'正在讀取坡面成果…':'模型載入後顯示坡面成果。'}</p>}
     {error&&<p role="alert">{error}</p>}
     {data&&<>
+      <p className="overlay-hint">左鍵點選對焦 · 拖曳繞焦點旋轉 · 右鍵平移 · 滾輪縮放</p>
       <div className="segmented-control"><button type="button" aria-pressed={mode==='original'} className={mode==='original'?'active':''} disabled={busy} onClick={()=>void showMode('original')}>原始實景</button><button type="button" aria-pressed={mode==='underlying'} className={mode==='underlying'?'active':''} disabled={busy} onClick={()=>void showMode('underlying')}>{busy?'載入中…':'計算坡面'}</button></div>
-      <button type="button" className="gukeng-focus" onClick={()=>focus(data)}>回到坡面全景</button>
-      {parts.map(key=><div className={`gukeng-quantity ${key}`} key={key}><label><input type="checkbox" checked={selected[key]} onChange={e=>setSelected(old=>({...old,[key]:e.target.checked}))}/>{label[key]}</label><strong>{format(data.partition[key].area_m2)} <small>m²</small></strong></div>)}
+      <button type="button" className="gukeng-focus" onClick={()=>home(data)}>回到坡面全景</button>
+      <button type="button" className="gukeng-focus" onClick={front}>正視坡面</button>
+      {parts.map(key=><div className={`gukeng-quantity ${key}`} key={key}><label><input type="checkbox" checked={selected[key]} onChange={e=>setSelected(old=>({...old,[key]:e.target.checked}))}/>{label[key]}</label><strong>{format(data.partition[key].area_m2)} <small>m²</small></strong><button type="button" className="gukeng-region-focus" onClick={()=>{setSelected({completed:key==='completed',unperformed:key==='unperformed'});focus(data,key);}}>查看{label[key]}範圍</button></div>)}
       <p className="overlay-hint">{data.partition.note} 成果日期：{data.manifest.results_date.replaceAll('-','/')}。</p>
       <div className="gukeng-reports">{Object.entries(data.manifest.documents).map(([key,doc])=><button type="button" key={key} disabled={reportBusy} onClick={()=>void openReport(doc)}>{reportBusy?'讀取報告中…':doc.title}</button>)}</div>
     </>}
