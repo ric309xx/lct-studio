@@ -11,6 +11,7 @@ import {auditSurfaceHeights} from './surfaceHeightAudit';
 import {heightProfileForModel,resolveModelHeight,orthometricToRenderHeight,renderToOrthometricHeight,sha256ArrayBuffer,type HeightResolution} from './heightReference';
 import {HeightReferenceStatus} from './HeightReferenceStatus';
 import {HelpHint} from './HelpHint';
+import {GukengResults,GUKENG_VIEWER_PROJECT} from './GukengResults';
 import {sampleModelGround,modelGroundFailure,selectModelGroundProfiles} from './modelGround.mjs';
 import {ControlPointsLayer} from './ControlPointsLayer';
 import {SurveyToolsPanel} from './SurveyToolsPanel';
@@ -552,7 +553,7 @@ async function loadModel(
     : source.privateProjectId === TAOYUAN_R2_PROJECT
       ? taoyuanModelQuality(window.matchMedia("(pointer: coarse)").matches)
     : source.privateProjectId ? {
-        maximumScreenSpaceError: 4,
+        maximumScreenSpaceError: source.privateProjectId==='gukeng-20261019'?1:4,
         dynamicScreenSpaceError: false,
         cacheBytes: 512 * 1024 * 1024,
         maximumCacheOverflowBytes: 256 * 1024 * 1024
@@ -2645,14 +2646,15 @@ export function App() {
     const url=new URL(window.location.href);url.searchParams.delete('parcel');url.searchParams.set('view','cases');window.history.replaceState({},'',url);setShowCaseMap(true);
   };
   const cancelCaseEntry=()=>{caseEntryRef.current=null;setCaseEntryPhase(null);setShowCaseMap(true);const url=new URL(window.location.href);url.searchParams.delete('parcel');url.searchParams.set('view','cases');window.history.replaceState({},'',url);};
-  const gukengShortcut=IS_ADMIN?<a className="external-project-link" href="https://gukeng-3d-survey.private-3d-viewer.workers.dev/" target="_blank" rel="noopener noreferrer">
-    <span>古坑噴凝土邊坡成果</span><span aria-hidden="true">↗</span>
-  </a>:null;
+  const caseProjectPicker=IS_ADMIN?<label className="case-project-picker">專案<select aria-label="選擇管理專案" value={projectId} onChange={event=>{
+    const id=event.target.value;setProjectId(id);sessionStorage.setItem('lct-3d-viewer-active-project',id);
+    const url=new URL(window.location.href);url.searchParams.set('project',id);window.history.replaceState({},'',url);
+  }}>{projectOptions.map(project=><option key={project.id} value={project.id}>{project.name}</option>)}</select></label>:null;
   return (
     <>
     {showLongdongGaussian && <LongdongGaussian onClose={() => setShowLongdongGaussian(false)} />}
     {(showingCaseMap||caseEntryPhase)&&<div className="case-map-layer"><CaseOverviewMap cases={TAOYUAN_CASES} initialKey={currentParcel?cadastralGroup(currentParcel):undefined} savedView={overviewViewRef} savedNavigation={overviewNavigationRef}
-      projectShortcut={gukengShortcut}
+      projectShortcut={caseProjectPicker}
       entryPhase={caseEntryPhase} entryError={caseEntryError} onCancelEntry={cancelCaseEntry} onEnter={(key,source)=>{
         saveCaseMapSnapshot(window.sessionStorage,overviewStorageKey,{navigation:overviewNavigationRef.current,view:overviewViewRef.current});
         caseEntryRef.current=source?{key,source}:null;setCaseEntryPhase(source?'loading':null);setCaseEntryError('');
@@ -2878,7 +2880,6 @@ export function App() {
               </option>
             ))}
           </select>
-          {gukengShortcut}
           {(projectId === 'longdong-general-close-compare' || projectId === 'gongliao-longdong-pix4d-mesh-20260805') && <button
             type="button" className="gaussian-open" onClick={() => setShowLongdongGaussian(true)}
           ><span>Pix4Dmatic高斯模型(2026/08/05)</span><span aria-hidden="true">↗</span></button>}
@@ -2917,6 +2918,7 @@ export function App() {
           {heightResolution&&<HeightReferenceStatus resolution={heightResolution}/>}
           {projectId==='taoyuan-building-overlay'&&<ControlPointsLayer viewer={sectionViewer} mode="model" profileId={heightResolution?.profileId??'pending'} resolution={heightResolution} disabled={status.phase!=='ready'}/>}
           </div>
+          {projectId===GUKENG_VIEWER_PROJECT&&<GukengResults viewer={sectionViewer} tileset={sectionTileset} ready={status.phase==='ready'}/>}
           <div className="setting-group">
           <span className="setting-label">
             <MapIcon size={15} aria-hidden="true" />

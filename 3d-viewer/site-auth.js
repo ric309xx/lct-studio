@@ -2,15 +2,19 @@
 (() => {
   const KEY='lct-viewer-ui-v3';
   for(const old of ['lct-site-cadastral-session-v1','lct-site-cadastral-session-v2'])sessionStorage.removeItem(old);
-  let current=null,inflight=null,generation=0;
+  let current=null,generation=0;const inflight=new Map();
   const now=()=>Date.now()/1000;
-  const forget=()=>{generation++;current=null;delete window.LCT_VIEWER_BOOTSTRAP;sessionStorage.removeItem(KEY);};
+  const forget=()=>{generation++;current=null;inflight.clear();delete window.LCT_VIEWER_BOOTSTRAP;sessionStorage.removeItem(KEY);};
   const access=()=>current?.r2??{project:'',role:current?.role,token:'',expiresAt:current?.sessionExpiresAt??0};
   const accept=data=>{
     if(!data||!['admin','viewer'].includes(data.role)||!data.access||data.access.role!==data.role||
       !Array.isArray(data.projects)||!data.projects.length||!Array.isArray(data.comparisons)||
       !Number.isFinite(data.sessionExpiresAt)||data.sessionExpiresAt<=now()||data.sessionExpiresAt>now()+43201||
       'sessionToken' in data)throw Error('登入服務回應不正確。');
+    if(current?.access.accessId===data.access.accessId&&current.role===data.role){
+      const previous=Object.fromEntries(Object.entries(current.r2Access??{}).filter(([,v])=>v.expiresAt>now()+30));
+      data.r2Access={...previous,...data.r2Access};
+    }
     current=data;window.LCT_VIEWER_BOOTSTRAP=data;
     Object.assign(window.LCT_VIEWER_ACCESS,data.access);
     sessionStorage.setItem(KEY,JSON.stringify({role:data.role,accessId:data.access.accessId,expiresAt:data.sessionExpiresAt}));
@@ -30,8 +34,9 @@
     restore:(force=false,project)=>{
       const selected=project?current?.r2Access?.[project]:current?.r2;
       if(!force&&current?.sessionExpiresAt>now()+30&&(!project||selected)&&(!selected||selected.expiresAt>now()+30))return Promise.resolve(selected??access());
-      if(inflight)return inflight;
-      inflight=request('refresh',{accessId:window.LCT_VIEWER_ACCESS.accessId}).finally(()=>{inflight=null;});return inflight;
+      const key=project??'';if(inflight.has(key))return inflight.get(key);
+      const task=request('refresh',{accessId:window.LCT_VIEWER_ACCESS.accessId,...(project?{project}:{})}).then(()=>project?current?.r2Access?.[project]??access():access()).finally(()=>{if(inflight.get(key)===task)inflight.delete(key);});
+      inflight.set(key,task);return task;
     },
     getAccess:project=>{const selected=current?.r2Access?.[project]??current?.r2;return selected?.project===project&&selected.expiresAt>now()+30?selected:null;},
     hasSavedSession:()=>true,

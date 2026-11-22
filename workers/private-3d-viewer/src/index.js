@@ -1,6 +1,7 @@
 import { landmarksApi, landmarkClient } from './landmarks.mjs';
 import { DEFAULT_PROJECT, PROJECTS, getProject } from './projects.mjs';
 import { siteAccess } from './site-access.mjs';
+import {GUKENG_PROJECT, gukengAsset} from './gukeng-access.mjs';
 import { checkLoginLimit, readLimitedText } from './login-security.mjs';
 import { CADASTRAL_ORIGINS, validConnectUrl, corsResponse, createCadastralToken, readCadastralToken, CONNECT_HTML, CONNECT_JS } from './cadastral-access.mjs';
 const COOKIE_NAME = "lct_3d_session";
@@ -42,7 +43,7 @@ async function routeRequest(request, env) {
     const limited = await checkLoginLimit(request, env);
     if (limited) return limited;
   }
-  if (url.pathname === '/api/site-access/login' || url.pathname === '/api/site-access/refresh') {
+  if (['/api/site-access/login','/api/site-access/refresh','/api/site-access/exchange'].includes(url.pathname)) {
     return siteAccess(request, env, url.pathname);
   }
   const session = await readSession(request, env);
@@ -120,6 +121,7 @@ async function routeRequest(request, env) {
 
   const projectTile = url.pathname.match(/^\/projects\/([^/]+)\/tiles\/(.*)$/);
   if (projectTile) {
+    if (projectTile[1] === GUKENG_PROJECT) return gukengAsset(request, env, projectTile[2]);
     const tileProject = getProject(projectTile[1]);
     const siteAccessAllowed = tileProject?.cadastral || tileProject?.siteReadOnly;
     const respond = response => siteAccessAllowed ? corsResponse(request, response) : response;

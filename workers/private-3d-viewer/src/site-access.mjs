@@ -3,7 +3,8 @@
 import {CADASTRAL_ORIGINS, createCadastralToken} from './cadastral-access.mjs';
 import {readLimitedText,checkLoginLimit} from './login-security.mjs';
 export const SITE_PROJECT = 'taoyuan-20261006';
-const SITE_PROJECTS = new Set([SITE_PROJECT, 'longdong-pix4d-mesh-20260805']);
+const GUKENG_PROJECT = 'gukeng-20261019';
+const SITE_PROJECTS = new Set([SITE_PROJECT, 'longdong-pix4d-mesh-20260805', GUKENG_PROJECT]);
 const TTL = 12 * 60 * 60;
 const audience = 'lct-site-cadastral-session';
 const encode = value => btoa(JSON.stringify(value)).replaceAll('+','-').replaceAll('/','_').replace(/=+$/,'');
@@ -62,6 +63,8 @@ export async function siteAccess(request,env,path) {
   const projectId=input.project;
   let session,sessionToken;
   if(path==='/api/site-access/login') {
+    // Gukeng has no new password path: its read scope is issued only by exchange.
+    if(projectId===GUKENG_PROJECT)return response(request,{error:'請由官網管理員切換專案'},403);
     if(typeof input.password!=='string'||input.password.length<1||input.password.length>64||!['admin','viewer'].includes(input.role))return response(request,{error:'登入資料不正確'},400);
     const hash=await digest(input.password);
     const admin=equal(hash,adminHash),viewer=projectId===SITE_PROJECT&&equal(hash,viewerHash);
@@ -76,6 +79,13 @@ export async function siteAccess(request,env,path) {
     }
     const now=Math.floor(Date.now()/1000);
     session={role:'viewer',uiRole:input.role,projectId,aud:audience,iat:now,exp:now+TTL,nonce:crypto.randomUUID()};
+    const payload=encode(session);sessionToken=payload+'.'+await sign(payload,env.SESSION_SECRET);
+  } else if(path==='/api/site-access/exchange') {
+    if(projectId!==GUKENG_PROJECT)return response(request,{error:'專案不允許'},403);
+    const incoming=request.headers.get('authorization')?.match(/^Bearer (\S+)$/)?.[1];
+    const parent=await readSession(incoming,env.SESSION_SECRET,SITE_PROJECT);
+    if(!parent||parent.uiRole!=='admin')return response(request,{error:'需要官網管理員登入'},403);
+    session={...parent,projectId,nonce:crypto.randomUUID()};
     const payload=encode(session);sessionToken=payload+'.'+await sign(payload,env.SESSION_SECRET);
   } else if(path==='/api/site-access/refresh') {
     sessionToken=request.headers.get('authorization')?.match(/^Bearer (\S+)$/)?.[1];

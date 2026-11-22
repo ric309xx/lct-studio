@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {ORIGINS,UPSTREAM,PROJECT,catalog,json,readBody,verifyPassword,readSession,writeSession,clearCookie,scopeFor,hasTaoyuan} from './viewer-auth.mjs';
 const dataFiles=['taoyuan1006Parcels','taoyuan1010Parcels','taoyuan1013Parcels','taoyuan1013Cl2Parcels','taoyuan1015Parcels','taoyuanDriplineMetrics','caseMapGeometry','caseCaptureDates','shuanglingGround','taoyuan17Ground','taoyuan255Ground'];
+const GUKENG_PROJECT='gukeng-20261019';
 export function createGateway({env=()=>process.env,fetchUpstream=fetch,loadData=async name=>JSON.parse(await fs.readFile(path.join(process.cwd(),'viewer-source/src',name+'.json'),'utf8'))}={}){
   let meshAccess=null,meshInflight=null;
   async function upstream(action,body,origin,token){
@@ -12,8 +13,10 @@ export function createGateway({env=()=>process.env,fetchUpstream=fetch,loadData=
     if(data.project!==body.project||!['admin','viewer'].includes(data.role)||typeof data.sessionToken!=='string'||typeof data.token!=='string'||!Number.isFinite(data.sessionExpiresAt)||data.sessionExpiresAt<=now||data.sessionExpiresAt>now+43201||!Number.isFinite(data.expiresAt)||data.expiresAt<=now||data.expiresAt>data.sessionExpiresAt)throw Error('上游回應不正確');
     return data;
   }
-  async function bootstrap(session,origin,initial){
+  async function bootstrap(session,origin,initial,requestedProject){
     const scope=scopeFor(session);if(!scope)throw Error('專案不存在');
+    if(requestedProject===GUKENG_PROJECT&&(session.role!=='admin'||!session.upstreamSessionToken||!scope.projects.some(p=>p.modelSource.privateProjectId===GUKENG_PROJECT)))
+      throw Object.assign(Error('專案不允許'),{status:403});
     let access=null;const data={},r2Access={};
     if(hasTaoyuan(session)){
       if(!session.upstreamSessionToken)throw Object.assign(Error('請重新登入'),{status:401});
@@ -35,6 +38,11 @@ export function createGateway({env=()=>process.env,fetchUpstream=fetch,loadData=
       }
       r2Access[mesh]={project:mesh,role:session.role,token:meshAccess.value.token,expiresAt:Math.min(meshAccess.value.expiresAt,session.exp)};
       access??=r2Access[mesh];
+    }
+    if(requestedProject===GUKENG_PROJECT){
+      const result=await upstream('exchange',{project:GUKENG_PROJECT},origin,session.upstreamSessionToken);
+      if(result.role!=='admin')throw Object.assign(Error('管理員身分不符'),{status:403});
+      r2Access[GUKENG_PROJECT]={project:GUKENG_PROJECT,role:'admin',token:result.token,expiresAt:Math.min(result.expiresAt,session.exp)};
     }
     return {role:session.role,sessionExpiresAt:session.exp,...scope,data,r2:access,r2Access};
   }
@@ -74,7 +82,7 @@ export function createGateway({env=()=>process.env,fetchUpstream=fetch,loadData=
       const session=readSession(request,settings,undefined,input?.accessId);if(!session)return json({error:'登入已過期，請重新登入'},401);
       // 分享入口還原時不接受其他分頁留下的管理員或不同分享工作階段。
       if(input?.accessId&&input.accessId!==session.accessId)return json({error:'請登入此分享入口'},403);
-      return json(await bootstrap(session,upstreamOrigin));
+      return json(await bootstrap(session,upstreamOrigin,undefined,input?.project));
     }catch(error){const status=error.status??502;return json({error:status===429?'嘗試次數過多，請稍後再試':'登入服務暫時無法使用或登入已失效'},status,
       {...(status===429?{'Retry-After':'60'}:{})});}
   };

@@ -216,6 +216,17 @@
         "pitchDegrees": -90,
         "rollDegrees": 0
       }
+    },
+    {
+      "id": "gukeng-slope-20261019",
+      "name": "古坑｜噴凝土邊坡（20261019）",
+      "location": "雲林縣古坑鄉",
+      "sharePath": "/3d-viewer/?project=gukeng-slope-20261019",
+      "modelSource": {
+        "type": "tileset-url",
+        "tilesetUrl": "https://lct-private-3d-viewer.private-3d-viewer.workers.dev/projects/gukeng-20261019/tiles/model/tileset.json",
+        "privateProjectId": "gukeng-20261019"
+      }
     }
   ],
   "comparisons": [

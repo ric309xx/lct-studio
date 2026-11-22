@@ -39,6 +39,21 @@ test('管理員須通過既有伺服器登入，長效上游憑證不傳回 JSON
  const body=await r.json();assert.equal(body.role,'admin');assert.equal(body.projects.length,catalog.projects.length);assert.equal(body.r2.token,'synthetic-short-read');
  assert.doesNotMatch(JSON.stringify(body),/synthetic-upstream-session/);
 });
+test('古坑授權僅由官網管理員按需取得，客戶不能透過 project 參數擴權',async()=>{
+ const calls=[];const gateway=createGateway({env:()=>env,fetchUpstream:async(url,options)=>{calls.push({action:url.split('/').pop(),body:JSON.parse(options.body),authorization:options.headers.Authorization});return upstream(url,options);},loadData:async()=>[]});
+ const admin=writeSession({accessId:'admin',role:'admin',upstreamSessionToken:'synthetic-upstream-session',upstreamExpiresAt:Math.floor(Date.now()/1000)+3600},env);
+ const normal=await gateway(request('refresh',{accessId:'admin'},{cookie:admin.cookie}));assert.equal(normal.status,200);assert.equal(calls.some(x=>x.action==='exchange'),false);
+ calls.length=0;
+ const r=await gateway(request('refresh',{accessId:'admin',project:'gukeng-20261019'},{cookie:admin.cookie}));assert.equal(r.status,200);
+ const data=await r.json();assert.equal(data.r2Access['gukeng-20261019'].role,'admin');
+ const exchange=calls.find(x=>x.action==='exchange');assert.equal(exchange.body.project,'gukeng-20261019');assert.equal(exchange.authorization,'Bearer synthetic-upstream-session');
+ assert.doesNotMatch(JSON.stringify(data),/synthetic-upstream-session/);
+ for(const accessId of [entry.accessId,'H4mT8qP2vK6x','V6mQ2rL8dK4x']){
+  calls.length=0;const viewer=writeSession({accessId,role:'viewer'},env);
+  assert.equal((await gateway(request('refresh',{accessId,project:'gukeng-20261019'},{cookie:viewer.cookie}))).status,403);assert.equal(calls.length,0);
+  assert.equal(scopeFor({accessId,role:'viewer'}).projects.some(x=>x.id==='gukeng-slope-20261019'),false);
+ }
+});
 test('錯誤密碼、未知分享與缺少設定均拒絕，不退回前端驗證',async()=>{
  assert.equal((await handler()(request('login',{accessId:entry.accessId,password:'wrong'}))).status,401);
  assert.equal((await handler()(request('login',{accessId:'unknown',password}))).status,404);
