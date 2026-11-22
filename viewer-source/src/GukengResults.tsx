@@ -5,6 +5,7 @@ import {Axis,BoundingSphere,Cartesian3,Cartographic,ClippingPlane,ClippingPlaneC
 import {ensureR2Access,GUKENG_R2_PROJECT,PRIVATE_R2_ORIGIN,privateR2Resource} from './r2Access';
 import {parseGukengAssetPath} from './gukengResourcePath.mjs';
 import {auditSurfaceHeights} from './surfaceHeightAudit';
+import {installGukengBackdrop} from './gukengBackdrop';
 import './gukeng.css';
 
 export const GUKENG_VIEWER_PROJECT='gukeng-slope-20261019';
@@ -49,6 +50,8 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
   onBeforeFocus?:()=>void;registerReset?:(reset:(()=>boolean)|null)=>void}){
   const [data,setData]=useState<Data|null>(null),[error,setError]=useState(''),[mode,setMode]=useState<'original'|'underlying'>('original');
   const [showContext,setShowContext]=useState(true);
+  const [modelFirst,setModelFirst]=useState(true),[backdropReady,setBackdropReady]=useState(false);
+  const backdropRef=useRef<ReturnType<typeof installGukengBackdrop>>(null);
   const [selected,setSelected]=useState<Record<Part,boolean>>({completed:true,unperformed:true}),[busy,setBusy]=useState(false);
   const [pdf,setPdf]=useState<{url:string;title:string;filename:string;note?:string;pages:string[]}|null>(null),[reportBusy,setReportBusy]=useState(false);
   const [terrainAudit,setTerrainAudit]=useState('');
@@ -105,6 +108,11 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
             width:3,material:Color.fromCssColorString(part==='completed'?'#26eb91':'#ffa72a'),depthFailMaterial:Color.fromCssColorString(part==='completed'?'#26eb91':'#ffa72a').withAlpha(.5)}});
         }
         const result={manifest,partition,meta,display};
+        // Use authenticated survey rings; no project coordinates are embedded
+        // in the public bundle and no new terrain asset is published.
+        try{backdropRef.current=installGukengBackdrop(viewer,transform,{completed:partition.boundaries.completed_local_rings,unperformed:partition.boundaries.unperformed_local_rings});}
+        catch{backdropRef.current=null;}
+        setBackdropReady(Boolean(backdropRef.current));
         sceneRef.current={models:new Map(),borders,transform,disposed:false};setData(result);focus(result);
         if(window.location.hostname==='security-preview-20261118--lct-studio.netlify.app'&&new URLSearchParams(window.location.search).get('heightAudit')==='1'){
           const point=Cartographic.fromCartesian(Matrix4.multiplyByPoint(transform,Cartesian3.fromArray(partition.view_center_local),new Cartesian3()));
@@ -115,7 +123,7 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
         }
       }catch{if(!disposed)setError('古坑成果載入失敗，請重新載入或稍後重試。');}
     })();
-    return()=>{disposed=true;const scene=sceneRef.current;if(scene){scene.disposed=true;sceneRef.current=null;}
+    return()=>{disposed=true;backdropRef.current?.dispose();backdropRef.current=null;const scene=sceneRef.current;if(scene){scene.disposed=true;sceneRef.current=null;}
       if(!viewer.isDestroyed()){for(const model of scene?.models.values()??[])viewer.scene.primitives.remove(model);if(borders)viewer.dataSources.remove(borders,true);}};
   },[viewer,tileset,ready]);
 
@@ -125,6 +133,11 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
     for(const entity of scene.borders.entities.values){const part=entity.properties?.part?.getValue() as Part;entity.show=selected[part];}
     viewer.scene.requestRender();
   },[mode,selected,data,viewer,tileset]);
+
+  useEffect(()=>{
+    if(!data)return;
+    backdropRef.current?.update(modelFirst,mode==='original'?parts:parts.filter(part=>selected[part]));
+  },[modelFirst,mode,selected,data]);
 
   useEffect(()=>{
     if(!data||!tileset||tileset.isDestroyed()||!viewer||viewer.isDestroyed())return;
@@ -183,6 +196,8 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
       <p className="overlay-hint">左鍵點選對焦 · 拖曳繞焦點旋轉 · 右鍵平移 · 滾輪縮放</p>
       <div className="segmented-control"><button type="button" aria-pressed={mode==='original'} className={mode==='original'?'active':''} disabled={busy} onClick={()=>void showMode('original')}>原始實景</button><button type="button" aria-pressed={mode==='underlying'} className={mode==='underlying'?'active':''} disabled={busy} onClick={()=>void showMode('underlying')}>{busy?'載入中…':'計算坡面'}</button></div>
       {mode==='original'&&<label className="gukeng-context"><input type="checkbox" checked={showContext} onChange={e=>setShowContext(e.target.checked)}/>顯示周邊航測實景</label>}
+      {backdropReady?<label className="gukeng-context"><input type="checkbox" checked={modelFirst} onChange={e=>setModelFirst(e.target.checked)}/>坡面範圍背景避讓</label>:<p className="overlay-hint">此裝置無法啟用局部背景避讓，維持原顯示。</p>}
+      {backdropReady&&<p className="overlay-hint">背景在坡面覆蓋範圍內避讓；模型與量測高程不變。</p>}
       <p className="overlay-hint">{mode==='original'?'周邊航測實景保留同次拍攝的道路與地貌；':'計算坡面為獨立分析面；'}背景地圖與地形僅供定位，接邊不代表量測誤差。</p>
       <button type="button" className="gukeng-focus" onClick={()=>home(data)}>回到坡面全景</button>
       <button type="button" className="gukeng-focus" onClick={front}>正視坡面</button>

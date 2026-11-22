@@ -1,6 +1,6 @@
 import {act,cleanup,fireEvent,render,screen,waitFor} from '@testing-library/react';
 import {afterEach,expect,it,vi} from 'vitest';
-import {Cartesian3,Matrix4,Model,type Viewer,type Cesium3DTileset,type CustomDataSource} from 'cesium';
+import {Cartesian3,ClippingPolygonCollection,Matrix4,Model,Transforms,type Viewer,type Cesium3DTileset,type CustomDataSource} from 'cesium';
 import {GukengResults} from './GukengResults';
 
 const mock=vi.hoisted(()=>({json:new Map<string,unknown>(),ensure:vi.fn()}));
@@ -63,4 +63,17 @@ it('keeps the surrounding surveyed model by default without moving geometry or c
   fireEvent.click(control);await waitFor(()=>expect(tileset.clippingPlanes.enabled).toBe(true));
   fireEvent.click(control);await waitFor(()=>expect(tileset.clippingPlanes.enabled).toBe(false));
   expect(tileset.modelMatrix).toEqual(matrix);expect(screen.getByText(/123.0/)).toBeInTheDocument();
+});
+it('restores background under hidden calculated regions and releases it on leaving the project',async()=>{
+  vi.spyOn(ClippingPolygonCollection,'isSupported').mockReturnValue(true);
+  vi.spyOn(Model,'fromGltfAsync').mockImplementation(async()=>({show:false,destroy:vi.fn()}) as unknown as Model);
+  const {viewer,tileset}=setup();Object.assign(viewer.canvas,{dataset:{}});Object.assign(viewer.scene,{globe:{show:true}});
+  tileset.modelMatrix=Transforms.eastNorthUpToFixedFrame(Cartesian3.fromDegrees(120,23,500));
+  const {unmount}=render(<GukengResults viewer={viewer} tileset={tileset} ready/>);
+  expect(await screen.findByRole('checkbox',{name:'坡面範圍背景避讓'})).toBeChecked();
+  await waitFor(()=>expect(viewer.scene.globe.clippingPolygons?.length).toBe(2));
+  fireEvent.click(screen.getByRole('button',{name:'計算坡面'}));await waitFor(()=>expect(tileset.show).toBe(false));
+  fireEvent.click(screen.getByRole('checkbox',{name:'應施作未施作'}));await waitFor(()=>expect(viewer.scene.globe.clippingPolygons?.length).toBe(1));
+  fireEvent.click(screen.getByRole('checkbox',{name:'坡面範圍背景避讓'}));expect(viewer.scene.globe.clippingPolygons?.enabled).toBe(false);
+  unmount();expect(viewer.scene.globe.clippingPolygons).toBeUndefined();expect(viewer.scene.globe.show).toBe(true);
 });
