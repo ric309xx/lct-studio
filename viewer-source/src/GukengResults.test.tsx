@@ -55,3 +55,12 @@ it('opens report pages outside the filtered sidebar and releases private object 
     fireEvent.click(screen.getByRole('button',{name:'關閉報告'}));expect(URL.revokeObjectURL).toHaveBeenCalledTimes(2);
   }finally{URL.createObjectURL=oldCreate;URL.revokeObjectURL=oldRevoke;}
 });
+it('keeps the surrounding surveyed model by default without moving geometry or changing quantities',async()=>{
+  const {viewer,tileset}=setup(),matrix=Matrix4.clone(tileset.modelMatrix);
+  render(<GukengResults viewer={viewer} tileset={tileset} ready/>);
+  const control=await screen.findByRole('checkbox',{name:'顯示周邊航測實景'});
+  expect(control).toBeChecked();expect(tileset.clippingPlanes.enabled).toBe(false);
+  fireEvent.click(control);await waitFor(()=>expect(tileset.clippingPlanes.enabled).toBe(true));
+  fireEvent.click(control);await waitFor(()=>expect(tileset.clippingPlanes.enabled).toBe(false));
+  expect(tileset.modelMatrix).toEqual(matrix);expect(screen.getByText(/123.0/)).toBeInTheDocument();
+});

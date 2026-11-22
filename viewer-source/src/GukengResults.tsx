@@ -48,6 +48,7 @@ function clippingPlanes(meta:Meta,display:Display){
 export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}:{viewer:Viewer|null;tileset:Cesium3DTileset|null;ready:boolean;
   onBeforeFocus?:()=>void;registerReset?:(reset:(()=>boolean)|null)=>void}){
   const [data,setData]=useState<Data|null>(null),[error,setError]=useState(''),[mode,setMode]=useState<'original'|'underlying'>('original');
+  const [showContext,setShowContext]=useState(true);
   const [selected,setSelected]=useState<Record<Part,boolean>>({completed:true,unperformed:true}),[busy,setBusy]=useState(false);
   const [pdf,setPdf]=useState<{url:string;title:string;filename:string;note?:string;pages:string[]}|null>(null),[reportBusy,setReportBusy]=useState(false);
   const [terrainAudit,setTerrainAudit]=useState('');
@@ -96,7 +97,7 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
         // tileset to GLBs, borders, clipping and camera targets.
         const transform=Matrix4.multiply(tileset.modelMatrix,Matrix4.fromArray(manifest.transform),new Matrix4()),clipOrigin=Transforms.eastNorthUpToFixedFrame(tileset.boundingSphere.center);
         tileset.clippingPlanes=new ClippingPlaneCollection({planes:clippingPlanes(meta,display),
-          modelMatrix:Matrix4.multiply(Matrix4.inverse(clipOrigin,new Matrix4()),transform,new Matrix4()),unionClippingRegions:true,edgeWidth:0});
+          modelMatrix:Matrix4.multiply(Matrix4.inverse(clipOrigin,new Matrix4()),transform,new Matrix4()),unionClippingRegions:true,edgeWidth:0,enabled:false});
         borders=new CustomDataSource('gukeng-scope');await viewer.dataSources.add(borders);
         if(disposed||viewer.isDestroyed()){if(!viewer.isDestroyed())viewer.dataSources.remove(borders,true);return;}
         for(const part of parts)for(const ring of partition.boundaries[`${part}_local_rings`]){
@@ -124,6 +125,15 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
     for(const entity of scene.borders.entities.values){const part=entity.properties?.part?.getValue() as Part;entity.show=selected[part];}
     viewer.scene.requestRender();
   },[mode,selected,data,viewer,tileset]);
+
+  useEffect(()=>{
+    if(!data||!tileset||tileset.isDestroyed()||!viewer||viewer.isDestroyed())return;
+    // The legacy standalone viewer had no globe and isolated a small block.
+    // With a global terrain backdrop, retain the surrounding survey geometry
+    // by default rather than cutting the road/ground away at the slope edge.
+    if(tileset.clippingPlanes)tileset.clippingPlanes.enabled=!showContext;
+    viewer.scene.requestRender();
+  },[showContext,data,viewer,tileset]);
 
   async function showMode(next:'original'|'underlying'){
     const scene=sceneRef.current;if(!data||!viewer||!scene||busy)return;
@@ -172,6 +182,8 @@ export function GukengResults({viewer,tileset,ready,onBeforeFocus,registerReset}
     {data&&<>
       <p className="overlay-hint">左鍵點選對焦 · 拖曳繞焦點旋轉 · 右鍵平移 · 滾輪縮放</p>
       <div className="segmented-control"><button type="button" aria-pressed={mode==='original'} className={mode==='original'?'active':''} disabled={busy} onClick={()=>void showMode('original')}>原始實景</button><button type="button" aria-pressed={mode==='underlying'} className={mode==='underlying'?'active':''} disabled={busy} onClick={()=>void showMode('underlying')}>{busy?'載入中…':'計算坡面'}</button></div>
+      {mode==='original'&&<label className="gukeng-context"><input type="checkbox" checked={showContext} onChange={e=>setShowContext(e.target.checked)}/>顯示周邊航測實景</label>}
+      <p className="overlay-hint">{mode==='original'?'周邊航測實景保留同次拍攝的道路與地貌；':'計算坡面為獨立分析面；'}背景地圖與地形僅供定位，接邊不代表量測誤差。</p>
       <button type="button" className="gukeng-focus" onClick={()=>home(data)}>回到坡面全景</button>
       <button type="button" className="gukeng-focus" onClick={front}>正視坡面</button>
       {parts.map(key=><div className={`gukeng-quantity ${key}`} key={key}><label><input type="checkbox" checked={selected[key]} onChange={e=>setSelected(old=>({...old,[key]:e.target.checked}))}/>{label[key]}</label><strong>{format(data.partition[key].area_m2)} <small>m²</small></strong><button type="button" className="gukeng-region-focus" onClick={()=>{setSelected({completed:key==='completed',unperformed:key==='unperformed'});focus(data,key);}}>查看{label[key]}範圍</button></div>)}
