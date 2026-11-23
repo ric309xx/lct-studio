@@ -13,7 +13,7 @@ it('opens case map before any 3D viewer or private model is requested',async()=>
   vi.stubEnv('VITE_CESIUM_ION_ACCESS_TOKEN','synthetic-public-token');
   render(<App/>);
   expect(screen.getByLabelText('案件總覽地圖')).toBeInTheDocument();
-  expect(screen.getByText('18 個案件')).toBeInTheDocument();
+  expect(screen.getByText('19 個案件')).toBeInTheDocument();
   expect(screen.queryByRole('combobox',{name:'選擇案件區塊'})).not.toBeInTheDocument();
   expect(Viewer).not.toHaveBeenCalled();
   expect(Cesium3DTileset.fromUrl).not.toHaveBeenCalled();
