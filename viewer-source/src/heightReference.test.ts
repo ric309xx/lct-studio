@@ -5,13 +5,25 @@ import {HEIGHT_PROFILES,classifyHeightFrame,heightProfileForPath,heightProfileFo
 
 const profile=():HeightProfile=>({...HEIGHT_PROFILES[0],renderFrame:'orthometric-as-ellipsoid'});
 const tileset=()=>({modelMatrix:Matrix4.clone(Matrix4.IDENTITY),boundingSphere:{center:Cartesian3.fromDegrees(121.2078,24.9628,128)}} as Cesium3DTileset);
-it('all private and ion Taoyuan models have provenance, controls and a local offset; no universal +20',()=>{
-  expect(HEIGHT_PROFILES).toHaveLength(8);expect(new Set(HEIGHT_PROFILES.map(p=>p.tilesetPath)).size).toBe(8);
-  for(const p of HEIGHT_PROFILES){expect(p.sourceVerticalDatum).toBe('EPSG:8904');expect(p.pairedControls).toBeGreaterThanOrEqual(3);expect(p.rootTilesetSha256).toMatch(/^[a-f0-9]{64}$/);}
+it('all private and ion Taoyuan models have source-specific controls or verified grid provenance; no universal +20',()=>{
+  expect(HEIGHT_PROFILES).toHaveLength(9);expect(new Set(HEIGHT_PROFILES.map(p=>p.tilesetPath)).size).toBe(9);
+  for(const p of HEIGHT_PROFILES){expect(p.sourceVerticalDatum).toBe('EPSG:8904');if(p.conversionMethod==='paired-controls-local-constant')expect(p.pairedControls).toBeGreaterThanOrEqual(3);else expect(p.geoidGridSha256).toMatch(/^[a-f0-9]{64}$/);expect(p.rootTilesetSha256).toMatch(/^[a-f0-9]{64}$/);}
   expect(heightProfileForPath('1015-cl2/tileset.json')?.id).toBe('1015-cl2');
   expect(heightProfileForPath('new-model/tileset.json')).toBeUndefined();
   expect(heightProfileForPath(undefined)?.id).toBe('1006');
   expect(new Set(HEIGHT_PROFILES.map(p=>p.offsetM)).size).toBeGreaterThanOrEqual(7);
+});
+it('1111 Pix4D is already ellipsoidal: uses its own grid only for H readout, never adds N again',()=>{
+  const p=heightProfileForPath('1111-cl/20261111CL-cesium_mesh.json')!;
+  const t=tileset(),before=Matrix4.clone(t.modelMatrix);
+  const r=resolveModelHeight(t,p,p.rootTilesetSha256);
+  expect(r.status).toBe('already-ellipsoidal');expect(r.method).toBe('geoid-grid');expect(r.appliedOffsetM).toBe(0);
+  expect(t.modelMatrix).toEqual(before);expect(r.undulationM).toBeCloseTo(19.750432548,8);
+  expect(renderToOrthometricHeight(140,r)).toBeCloseTo(120.249567452,8);
+  expect(resolveModelHeight(t,p,p.rootTilesetSha256)).toBe(r);
+  for(const invalid of [{...p,geoidGridSha256:'bad'},{...p,renderFrame:'orthometric-as-ellipsoid' as const},{...p,frameEvidence:''}]){
+    const other=tileset();expect(resolveModelHeight(other,invalid,p.rootTilesetSha256).status).toBe('pending');expect(other.modelMatrix).toEqual(before);
+  }
 });
 it('includes 102-45 ion identity without an overlay URL and never falls back to the 1006 model',()=>{
   const p=heightProfileForModel({type:'cesium-ion',assetId:6000372});

@@ -24,3 +24,13 @@ test('已登入的桃園覆核圖片仍可取得，且不公開快取',async()=>
  const handler=createOverlayHandler(async()=>new Response(null,{status:200}),async()=>Buffer.from([1,2,3]));
  const r=await handler(new Request(base+'taoyuan-1010-v1/review/17-1.jpg'));assert.equal(r.status,200);assert.equal(r.headers.get('content-type'),'image/jpeg');assert.equal(r.headers.get('cache-control'),'no-store');
 });
+test('成功段680地籍與官方截圖仍須桃園登入；匿名不可碰磁碟',async()=>{
+  for(const relative of ['taoyuan-1111-v1/parcel-680.geojson','taoyuan-1111-v1/review/680-land-info.jpg']){
+    let reads=0;
+    const denied=createOverlayHandler(async()=>new Response(null,{status:401}),async()=>{reads++;return Buffer.from('private');});
+    assert.equal((await denied(new Request(base+relative))).status,401);
+    assert.equal(reads,0);
+    const allowed=createOverlayHandler(async()=>new Response(null,{status:200}),async()=>Buffer.from('private'));
+    const response=await allowed(new Request(base+relative));assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'no-store');
+  }
+});

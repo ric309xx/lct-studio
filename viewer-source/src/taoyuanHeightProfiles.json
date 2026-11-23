@@ -110,5 +110,20 @@
     "conversionMethod": "paired-controls-local-constant",
     "conversionRevision": "20261028-local-v1",
     "frameEvidence": "model-owned-CL09-and-nine-1007-DEM-rays-20261028"
+  },
+  {
+    "id": "1111-cl",
+    "tilesetPath": "1111-cl/20261111CL-cesium_mesh.json",
+    "sourceVerticalDatum": "EPSG:8904",
+    "rootTilesetSha256": "4d83e9421c894c811e41ca5326ac5f0068c346816b991beec5f56c696e722aef",
+    "gcpSha256": "",
+    "offsetM": 19.750432548008984,
+    "pairedControls": 0,
+    "rangeM": null,
+    "renderFrame": "ellipsoidal",
+    "conversionMethod": "verified-ellipsoid-geoid-grid",
+    "conversionRevision": "20261123-TWGEOID2018h-v1",
+    "geoidGridSha256": "d70be09f793d1791633a23154fb17987a7bb47cb790e24abc79769d8b24526ff",
+    "frameEvidence": "LAZ-vs-Cesium-mesh:21758-of-22955-upper-surface-cells-within-1m-of-H-plus-local-N;none-near-H;20261123"
   }
 ]

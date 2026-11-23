@@ -1,0 +1,89 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "parcel-1111-680-fill",
+      "properties": {
+        "parcelKey": "chenggong-680",
+        "parcelNo": "680",
+        "sectionName": "成功段",
+        "cadastralAreaM2": 76,
+        "geometryAreaM2": 72.04000295995775,
+        "sourceCrs": "EPSG:3826",
+        "sourceDxfHandle": "2D4",
+        "analysisStatus": "not-analyzed",
+        "disclaimer": "套繪僅供參考，權利界址以地政機關鑑界為準。",
+        "kind": "cadastral-fill"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              121.26267807430204,
+              24.975612762182074
+            ],
+            [
+              121.26277185184186,
+              24.975509429719164
+            ],
+            [
+              121.26280992207107,
+              24.975535517648865
+            ],
+            [
+              121.26271368328712,
+              24.975641228934997
+            ],
+            [
+              121.26267807430204,
+              24.975612762182074
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "parcel-1111-680-boundary",
+      "properties": {
+        "parcelKey": "chenggong-680",
+        "parcelNo": "680",
+        "sectionName": "成功段",
+        "cadastralAreaM2": 76,
+        "geometryAreaM2": 72.04000295995775,
+        "sourceCrs": "EPSG:3826",
+        "sourceDxfHandle": "2D4",
+        "analysisStatus": "not-analyzed",
+        "disclaimer": "套繪僅供參考，權利界址以地政機關鑑界為準。",
+        "kind": "cadastral-boundary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            121.26267807430204,
+            24.975612762182074
+          ],
+          [
+            121.26277185184186,
+            24.975509429719164
+          ],
+          [
+            121.26280992207107,
+            24.975535517648865
+          ],
+          [
+            121.26271368328712,
+            24.975641228934997
+          ],
+          [
+            121.26267807430204,
+            24.975612762182074
+          ]
+        ]
+      }
+    }
+  ]
+}

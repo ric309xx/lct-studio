@@ -1,0 +1,54 @@
+[
+  {
+    "key": "chenggong-680",
+    "label": "成功段 680 地號",
+    "groupKey": "chenggong-1111-680",
+    "groupLabel": "成功段｜680",
+    "fillEntityId": "parcel-1111-680-fill",
+    "boundaryStatus": "available",
+    "info": {
+      "county": "桃園市",
+      "landOffice": "中壢",
+      "sectionName": "成功段",
+      "sectionCode": "0216",
+      "sectionExtensionCode": "0",
+      "townCode": "03",
+      "parcelNo": "680",
+      "surveyMethod": "數化整合",
+      "surveyType": "地籍圖重測",
+      "mapDate": "1978-07",
+      "coordinateSystem": "TWD67 二度 TM 坐標",
+      "integrationDate": "2019-12",
+      "integrationCoordinateSystem": "TWD97 二度 TM 坐標",
+      "scale": "1:500",
+      "digitizedDate": "2002-07",
+      "registrationDate": "民國067年06月30日",
+      "announcedLandValue": "38,300 元／平方公尺",
+      "rightsCategory": "省市 100.00%",
+      "cadastralAreaM2": 76,
+      "useZone": "—",
+      "landUseCategory": "—",
+      "analysisStatus": "not-analyzed",
+      "analysisNote": "僅顯示原始 DXF 地籍界線；現場測量與 T 棚僅作參考，未作占用判讀或計算。面積及後續占用比例分母採登記76m²；DXF幾何約72.04m²僅供核對，保留差異，不縮放界線。",
+      "crs": "TWD97 二度 TM（EPSG:3826）／TWVD2001",
+      "geometryAreaM2": 72.04000295995775,
+      "sourceImages": [
+        {"label":"基本資訊","url":"overlays/taoyuan-1111-v1/review/680-basic-info.jpg"},
+        {"label":"土地資訊","url":"overlays/taoyuan-1111-v1/review/680-land-info.jpg"},
+        {"label":"地段資訊","url":"overlays/taoyuan-1111-v1/review/680-section-info.jpg"},
+        {"label":"位置","url":"overlays/taoyuan-1111-v1/review/680-location.jpg"},
+        {"label":"地籍範圍","url":"overlays/taoyuan-1111-v1/review/680-boundary.jpg"}
+      ]
+    },
+    "overlayUrl": "overlays/taoyuan-1111-v1/parcel-680.geojson",
+    "tilesetPath": "1111-cl/20261111CL-cesium_mesh.json",
+    "focus": {
+      "longitude": 121.262746,
+      "latitude": 24.975566,
+      "height": 236.88213254800897,
+      "headingDegrees": 0,
+      "pitchDegrees": -65,
+      "rollDegrees": 0
+    }
+  }
+]

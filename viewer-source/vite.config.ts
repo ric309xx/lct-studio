@@ -29,7 +29,7 @@ export default defineConfig({
       name:'private-viewer-data',apply:'build',enforce:'post',
       transform(_code,id){
         const name=id.split(/[\\/]/).pop()??'';
-        if(!['taoyuan1006Parcels.json','taoyuan1010Parcels.json','taoyuan1013Parcels.json','taoyuan1013Cl2Parcels.json','taoyuan1015Parcels.json','taoyuanDriplineMetrics.json','caseMapGeometry.json','caseCaptureDates.json','shuanglingGround.json','taoyuan17Ground.json','taoyuan255Ground.json'].includes(name))return;
+        if(!['taoyuan1006Parcels.json','taoyuan1010Parcels.json','taoyuan1013Parcels.json','taoyuan1013Cl2Parcels.json','taoyuan1015Parcels.json','taoyuan1111Parcels.json','taoyuanDriplineMetrics.json','caseMapGeometry.json','caseCaptureDates.json','shuanglingGround.json','taoyuan17Ground.json','taoyuan255Ground.json'].includes(name))return;
         const fallback=name.includes('Parcels')?'[]':'{}';
         return {code:`export default window.LCT_VIEWER_BOOTSTRAP?.data?.[${JSON.stringify(name)}]??${fallback};`,map:null};
       }

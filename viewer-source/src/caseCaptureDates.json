@@ -62,5 +62,13 @@
     "imageCount": 758,
     "source": "Terra影像拍攝紀錄",
     "exifSamplesVerified": 3
+  },
+  "1111-cl/20261111CL-cesium_mesh.json": {
+    "startDate": "2026-11-11",
+    "endDate": "2026-11-11",
+    "timezone": "Asia/Taipei",
+    "imageCount": 112,
+    "source": "原始DJI影像資料夾EXIF抽核；112為現存資料夾檔數，不是全專案率定張數",
+    "exifSamplesVerified": 3
   }
 }

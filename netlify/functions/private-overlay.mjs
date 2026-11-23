@@ -19,7 +19,7 @@ export function createOverlayHandler(authenticate=async request=>{
     if(!['GET','HEAD'].includes(request.method))return reply('Method not allowed',405);
     // 不接受任意儲存路徑、URL、編碼路徑或其他專案，先拒絕再碰觸磁碟。
     const relative=url.pathname.startsWith(prefix)?url.pathname.slice(prefix.length):'';
-    if(relative!=='sanxia-solar-2-cadastral.geojson'&&!/^taoyuan-(?:building-overlay\.geojson|(?:1006|1010-v1|1013|1013-cl2-v1|1013-v2|1015)\/(?:[a-z0-9-]+\.geojson|review\/[a-zA-Z0-9._-]+\.(?:jpg|png|webp)))$/.test(relative))return reply('Not found',404);
+    if(relative!=='sanxia-solar-2-cadastral.geojson'&&!/^taoyuan-(?:building-overlay\.geojson|(?:1006|1010-v1|1013|1013-cl2-v1|1013-v2|1015|1111-v1)\/(?:[a-z0-9-]+\.geojson|review\/[a-zA-Z0-9._-]+\.(?:jpg|png|webp)))$/.test(relative))return reply('Not found',404);
     const auth=await authenticate(request);
     if(!auth.ok)return reply(auth.status===401?'Unauthorized':'Access unavailable',auth.status);
     // 回應內容與模型讀取權杖均不轉傳給套繪下載端。
@@ -38,5 +38,6 @@ export const config={path:[
   '/3d-viewer/overlays/taoyuan-1013/*',
   '/3d-viewer/overlays/taoyuan-1013-cl2-v1/*',
   '/3d-viewer/overlays/taoyuan-1013-v2/*',
-  '/3d-viewer/overlays/taoyuan-1015/*'
+  '/3d-viewer/overlays/taoyuan-1015/*',
+  '/3d-viewer/overlays/taoyuan-1111-v1/*'
 ]};
