@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 const root=path.resolve(import.meta.dirname,'..');
 const src=path.join(root,'viewer-source');
-const catalogs=['1006','1010','1013','1013Cl2','1015'].flatMap(id=>JSON.parse(fs.readFileSync(path.join(src,`src/taoyuan${id}Parcels.json`),'utf8')));
+const catalogs=['1006','1010','1013','1013Cl2','1015','1111'].flatMap(id=>JSON.parse(fs.readFileSync(path.join(src,`src/taoyuan${id}Parcels.json`),'utf8')));
 const parcels=[{key:'sanzuwu-jiushe-102-45',overlayUrl:'overlays/taoyuan-building-overlay.geojson'},...catalogs];
 const result={};
 for(const parcel of parcels){

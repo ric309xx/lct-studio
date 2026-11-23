@@ -12,7 +12,8 @@ export const PROJECTS = Object.freeze({
       '1013-v2': 'projects/taoyuan/20261013-v2/terra_b3dms/',
       '1013-cl2': 'projects/taoyuan/20261013-cl2-v1/terra_b3dms/',
       '1015-cl1': 'projects/taoyuan/20261015-cl1-v1/terra_b3dms/',
-      '1015-cl2': 'projects/taoyuan/20261015-cl2-v1/terra_b3dms/'
+      '1015-cl2': 'projects/taoyuan/20261015-cl2-v1/terra_b3dms/',
+      '1111-cl': 'projects/pix4d-cl/20261111-cl-20261112-v2/cesium_mesh/'
     }),
     landmarks: false, measurementOnly: true, cadastral: true,
     camera: { heading: 0, pitch: -55, rangeFactor: 1.5 }

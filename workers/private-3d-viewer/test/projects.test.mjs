@@ -22,6 +22,18 @@ test('Pix4D Longdong models use distinct private fixed prefixes', async () => {
     assert.equal((await call(`/projects/${id}/tiles/tileset.json`)).status, 401);
   }
 });
+test('成功段680僅映射既有純空拍版本；沿用桃園登入且禁止跨專案讀取',async()=>{
+  const url='/projects/taoyuan-20261006/tiles/1111-cl/20261111CL-cesium_mesh.json';
+  assert.equal((await call(url)).status,401);
+  const foreign=await login('test-viewer','longteng-20260906');
+  assert.equal((await call(url,{headers:{cookie:foreign}})).status,403);
+  const cookie=await login('test-viewer','taoyuan-20261006');
+  assert.equal((await call(url,{headers:{cookie}})).status,200);
+  assert.equal(keys.at(-1),'projects/pix4d-cl/20261111-cl-20261112-v2/cesium_mesh/20261111CL-cesium_mesh.json');
+  assert.equal((await call('/projects/taoyuan-20261006/tiles/1111-cl/content/4_1.glb',{method:'HEAD',headers:{cookie}})).status,200);
+  assert.equal(keys.at(-1),'projects/pix4d-cl/20261111-cl-20261112-v2/cesium_mesh/content/4_1.glb');
+  keys.length=0;
+});
 async function login(password='test-viewer',project='longteng-20260906'){
   const response=await call('/login',{method:'POST',headers:{origin:'https://viewer.test'},body:new URLSearchParams({password,project})});
   assert.equal(response.status,303);

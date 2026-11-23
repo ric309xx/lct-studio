@@ -6,9 +6,9 @@ export type HeightControl={id:string;longitude:number;latitude:number;orthometri
 export type HeightFrame='orthometric-as-ellipsoid'|'ellipsoidal'|'unverified';
 export type HeightProfile={id:string;tilesetPath:string;sourceVerticalDatum:string;rootTilesetSha256:string;gcpSha256:string;
   offsetM:number|null;pairedControls:number;rangeM:number|null;renderFrame:HeightFrame;
-  conversionMethod:string;conversionRevision:string;frameEvidence:string};
+  conversionMethod:string;conversionRevision:string;frameEvidence:string;geoidGridSha256?:string};
 export type HeightResolution={profileId:string;revision:string;sourceDatum:'TWVD2001'|'unknown';
-  status:'converted-local-controls'|'converted-geoid-grid'|'already-ellipsoidal'|'pending';undulationM:number|null;appliedOffsetM:number;reason:string};
+  status:'converted-local-controls'|'converted-geoid-grid'|'already-ellipsoidal'|'pending';undulationM:number|null;appliedOffsetM:number;reason:string;method?:'geoid-grid'|'paired-controls'};
 
 // Runtime receives only the per-model conversion manifest, not raw survey rows
 // or control-point coordinates. Diagnostics are a separate local-only build;
@@ -57,12 +57,23 @@ export function resolveGukengHeight(tileset:Cesium3DTileset,rootSha256:string|nu
   applied.set(tileset,{revision:GUKENG_HEIGHT.revision,resolution});return resolution;
 }
 export function resolveModelHeight(tileset:Cesium3DTileset,profile:HeightProfile|undefined,rootSha256:string|null):HeightResolution{
-  const revision=profile?`height-v1:${profile.id}:${profile.rootTilesetSha256}:${profile.gcpSha256}:${profile.offsetM}:${profile.renderFrame}:${profile.conversionMethod}:${profile.conversionRevision}`:'height-v1:unknown';
+  const revision=profile?`height-v1:${profile.id}:${profile.rootTilesetSha256}:${profile.gcpSha256}:${profile.offsetM}:${profile.renderFrame}:${profile.conversionMethod}:${profile.conversionRevision}:${profile.geoidGridSha256??''}`:'height-v1:unknown';
   const previous=applied.get(tileset);
   if(previous){if(previous.revision!==revision||rootSha256!==profile?.rootTilesetSha256)throw Error('模型已套用不同高程版本，請重新載入');return previous.resolution;}
   const pending=(reason:string):HeightResolution=>({profileId:profile?.id??'unknown',revision,sourceDatum:profile?.sourceVerticalDatum==='EPSG:8904'?'TWVD2001':'unknown',status:'pending',undulationM:null,appliedOffsetM:0,reason});
   if(!profile)return pending('缺少此模型的高程設定，不預設為零或加 20 m');
   if(rootSha256!==profile.rootTilesetSha256)return pending('模型版本與高程設定不符，未套用轉換');
+  // Pix4D Cesium exports can already include the geoid. This method is readout
+  // conversion ONLY: it must never translate the model a second time.
+  if(profile.conversionMethod==='verified-ellipsoid-geoid-grid'){
+    if(profile.sourceVerticalDatum!=='EPSG:8904'||profile.renderFrame!=='ellipsoidal'||!profile.conversionRevision||!profile.frameEvidence||
+       profile.geoidGridSha256!=='d70be09f793d1791633a23154fb17987a7bb47cb790e24abc79769d8b24526ff'||
+       profile.offsetM===null||!Number.isFinite(profile.offsetM)||Math.abs(profile.offsetM)>50)
+      return pending('模型橢球高框架或本區大地起伏來源尚未驗證');
+    const resolution:HeightResolution={profileId:profile.id,revision,sourceDatum:'TWVD2001',status:'already-ellipsoidal',
+      undulationM:profile.offsetM,appliedOffsetM:0,method:'geoid-grid',reason:'來源模型已含橢球高定位；TWGEOID2018h本區網格僅供正高讀值換算，不再移動模型'};
+    applied.set(tileset,{revision,resolution});return resolution;
+  }
   if(profile.conversionMethod!=='paired-controls-local-constant'||!profile.conversionRevision||!profile.frameEvidence)
     return pending('缺少可使用的高度轉換方法或驗證版本');
   if(profile.sourceVerticalDatum!=='EPSG:8904'||!Number.isInteger(profile.pairedControls)||profile.pairedControls<3||profile.offsetM===null||!Number.isFinite(profile.offsetM)||Math.abs(profile.offsetM)>50||profile.rangeM===null||!Number.isFinite(profile.rangeM)||profile.rangeM<0||profile.rangeM>.2)

@@ -5,6 +5,7 @@ import taoyuan1013Parcels from "./taoyuan1013Parcels.json";
 import taoyuan1013Cl2Parcels from "./taoyuan1013Cl2Parcels.json";
 import taoyuan1010Parcels from "./taoyuan1010Parcels.json";
 import taoyuan1015Parcels from "./taoyuan1015Parcels.json";
+import taoyuan1111Parcels from "./taoyuan1111Parcels.json";
 import { roadGround, roadPosition, roadHeightAt, sampleRoadOffset } from "./shuanglingGround";
 import {fitParcel174Ground} from './parcel174Ground';
 import {auditSurfaceHeights} from './surfaceHeightAudit';
@@ -266,6 +267,7 @@ type CadastralInfo = {
   analysisVersion?: string;
   targetSummary?: string;
   reviewImageUrl?: string;
+  sourceImages?: Array<{label:string;url:string}>;
   analysisReviewNote?: string;
 };
 
@@ -352,7 +354,7 @@ const CADASTRAL_PROJECTS: Record<string, CadastralProject> = {
         pitchDegrees: -90,
         rollDegrees: 0
       }
-    }, ...taoyuan1006Parcels, ...taoyuan1010Parcels, ...taoyuan1013Parcels, ...taoyuan1013Cl2Parcels, ...taoyuan1015Parcels]
+    }, ...taoyuan1006Parcels, ...taoyuan1010Parcels, ...taoyuan1013Parcels, ...taoyuan1013Cl2Parcels, ...taoyuan1015Parcels, ...taoyuan1111Parcels]
   }
 };
 
@@ -3535,6 +3537,7 @@ export function App() {
           <p className="landmark-card-kicker">CADASTRAL INFO</p>
           <h2>{selectedCadastral.sectionName}</h2>
           <span className="landmark-card-category">地號 {selectedCadastral.parcelNo}</span>
+          {selectedCadastral.sourceImages?.length ? <p className="overlay-hint">官方查詢截圖：{selectedCadastral.sourceImages.map(image=><a key={image.url} href={import.meta.env.BASE_URL+image.url} target="_blank" rel="noopener noreferrer" style={{marginRight:12}}>{image.label}</a>)}</p> : null}
           {projectId==='taoyuan-building-overlay'&&<p className="overlay-hint">拍攝日期：{caseCaptureDate(CADASTRAL_PROJECTS[projectId]?.parcels.find(p=>p.info.parcelNo===selectedCadastral.parcelNo&&p.info.sectionName===selectedCadastral.sectionName))}</p>}
           {selectedCadastral.analysisStatus === "awaiting-cadastral-boundary" && <p className="cadastral-draft-badge">界線待補・尚未計算占用</p>}
           {["interpreted-draft", "survey-reference", "model-derived"].includes(selectedCadastral.analysisStatus ?? "") && <p className="cadastral-draft-badge">待複核</p>}
