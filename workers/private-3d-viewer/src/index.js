@@ -11,7 +11,7 @@ const COVER_CSS = `.project-cover{width:116px;height:58px;object-fit:cover;borde
 const SECURITY_HEADERS = {
   "Strict-Transport-Security": "max-age=31536000",
   "X-Robots-Tag": "noindex, nofollow, noarchive",
-  "Referrer-Policy": "no-referrer",
+  "Referrer-Policy": "same-origin",
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
