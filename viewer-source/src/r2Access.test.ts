@@ -17,6 +17,15 @@ it("never falls back to anonymous loading without website authentication",async(
   await expect(ensureR2Access()).rejects.toThrow(R2AuthorizationRequired);
   expect(()=>privateR2Resource(url,project)).toThrow(R2AuthorizationRequired);
 });
+it('restores Longteng with its own read token and rejects cross-project URLs',async()=>{
+  const id='longteng-20260906',access={...current,project:id};
+  window.LCT_SITE_AUTH!.getAccess=target=>target===id?access:null;
+  await ensureR2Access(id);
+  expect(window.LCT_SITE_AUTH!.restore).toHaveBeenCalledWith(false,id);
+  const source=`${PRIVATE_R2_ORIGIN}/projects/${id}/tiles/tileset.json`;
+  expect(privateR2Resource(source,id).getDerivedResource({url:'Block/tile.b3dm'}).headers.Authorization).toBe('Bearer test-read');
+  expect(()=>privateR2Resource(url,id)).toThrow('網址與授權專案不符');
+});
 it("automatically reuses website authentication without any popup",async()=>{
   const open=vi.spyOn(window,"open");await ensureR2Access();await ensureR2Access();
   expect(open).not.toHaveBeenCalled();

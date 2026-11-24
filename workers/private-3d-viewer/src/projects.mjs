@@ -27,6 +27,7 @@ export const PROJECTS = Object.freeze({
   'longteng-20260906': Object.freeze({
     id: 'longteng-20260906', name: '龍騰斷橋模型', date: '2026-09-06',
     prefix: 'projects/longteng/20260906-v1/terra_b3dms/',
+    siteReadOnly: true,
     landmarksKey: 'settings/longteng-20260906/landmarks-v1.json',
     // Relative to the transformed tileset bounding sphere, so the framing stays
     // stable if the source tileset is republished at the same site.

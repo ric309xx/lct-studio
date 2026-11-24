@@ -19,6 +19,17 @@
       }
     },
     {
+      "id": "longteng-20260906",
+      "name": "龍騰",
+      "location": "龍騰斷橋｜2026/09/06",
+      "sharePath": "https://lct-private-3d-viewer.private-3d-viewer.workers.dev/?project=longteng-20260906",
+      "modelSource": {
+        "type": "tileset-url",
+        "tilesetUrl": "https://lct-private-3d-viewer.private-3d-viewer.workers.dev/projects/longteng-20260906/tiles/tileset.json",
+        "privateProjectId": "longteng-20260906"
+      }
+    },
+    {
       "id": "ruifang-shuinandong-smelter-20260811",
       "name": "水湳洞選煉廠遺址",
       "location": "新北市瑞芳區水湳洞",

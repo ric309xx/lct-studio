@@ -60,6 +60,20 @@ test('比較入口含獲准比較的模型，但不包含其他專案',()=>{
  const scope=scopeFor({role:'viewer',accessId:'V6mQ2rL8dK4x'});assert.equal(scope.projects.length,6);assert.equal(scope.comparisons.length,1);
  assert.equal(scope.projects.some(x=>x.id==='taoyuan-building-overlay'),false);
 });
+
+test('龍騰出現在管理員目錄，授權分開快取且不進入其他客戶範圍',async()=>{
+ const calls=[];const gateway=createGateway({env:()=>env,fetchUpstream:async(url,options)=>{calls.push(JSON.parse(options.body));return upstream(url,options);},loadData:async()=>[]});
+ const result=await gateway(request('login',{accessId:'admin',password}));
+ assert.equal(result.status,200);const body=await result.json();
+ const p=body.projects.find(x=>x.id==='longteng-20260906');
+ assert.equal(p.name,'龍騰');assert.equal(p.modelSource.privateProjectId,p.id);assert.equal(p.camera,undefined);
+ assert.equal(body.r2Access[p.id].project,p.id);
+ assert.equal(calls.filter(x=>x.project===p.id).length,1);
+ const cookie=result.headers.get('set-cookie');
+ assert.equal((await gateway(request('refresh',{accessId:'admin'},{cookie}))).status,200);
+ assert.equal(calls.filter(x=>x.project===p.id).length,1);
+ for(const accessId of Object.keys(catalog.entries))assert.equal(scopeFor({role:'viewer',accessId}).projects.some(x=>x.id===p.id),false);
+});
 test('龍洞比較登入只取得龍洞網格短效授權，不取得桃園控制點資料',async()=>{
  const calls=[];const gateway=createGateway({env:()=>env,fetchUpstream:async(url,options)=>{calls.push(JSON.parse(options.body));return upstream(url,options);},loadData:()=>{throw Error('不得讀取桃園資料');}});
  const issued=writeSession({role:'viewer',accessId:'V6mQ2rL8dK4x'},env);

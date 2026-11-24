@@ -3,7 +3,8 @@
 import {CADASTRAL_ORIGINS, createCadastralToken} from './cadastral-access.mjs';
 import {readLimitedText,checkLoginLimit} from './login-security.mjs';
 export const SITE_PROJECT = 'taoyuan-20261006';
-const SITE_PROJECTS = new Set([SITE_PROJECT, 'longdong-pix4d-mesh-20260805']);
+const SERVICE_PROJECTS = new Set(['longdong-pix4d-mesh-20260805', 'longteng-20260906']);
+const SITE_PROJECTS = new Set([SITE_PROJECT, ...SERVICE_PROJECTS]);
 const TTL = 12 * 60 * 60;
 const audience = 'lct-site-cadastral-session';
 const encode = value => btoa(JSON.stringify(value)).replaceAll('+','-').replaceAll('/','_').replace(/=+$/,'');
@@ -66,9 +67,9 @@ export async function siteAccess(request,env,path) {
     const hash=await digest(input.password);
     const admin=equal(hash,adminHash),viewer=projectId===SITE_PROJECT&&equal(hash,viewerHash);
     // The customer viewer password belongs to Taoyuan; the separate service
-    // credential belongs only to the Longdong mesh. Configure distinct values.
+    // credential is limited to the fixed website model allowlist.
     const serviceHash=env.SITE_LONGDONG_SERVICE_PASSWORD_HASH;
-    const meshService=input.project==='longdong-pix4d-mesh-20260805'&&input.role==='viewer'
+    const meshService=SERVICE_PROJECTS.has(input.project)&&input.role==='viewer'
       &&typeof serviceHash==='string'&&/^[a-f0-9]{64}$/.test(serviceHash)&&equal(hash,serviceHash);
     if(!admin&&(input.role==='admin'||(!viewer&&!meshService))) {
       await new Promise(resolve=>setTimeout(resolve,350));

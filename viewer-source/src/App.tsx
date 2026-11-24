@@ -6,6 +6,7 @@ import taoyuan1013Cl2Parcels from "./taoyuan1013Cl2Parcels.json";
 import taoyuan1010Parcels from "./taoyuan1010Parcels.json";
 import taoyuan1015Parcels from "./taoyuan1015Parcels.json";
 import taoyuan1111Parcels from "./taoyuan1111Parcels.json";
+import {parcelModelFill, parcelModelBoundary} from './parcelModelSurface';
 import { roadGround, roadPosition, roadHeightAt, sampleRoadOffset } from "./shuanglingGround";
 import {fitParcel174Ground} from './parcel174Ground';
 import {auditSurfaceHeights} from './surfaceHeightAudit';
@@ -1246,6 +1247,14 @@ export function App() {
                 }
                 fillHierarchies.forEach((hierarchy, index) => {
                   const key = fillEntities[index]?.properties?.parcelKey?.getValue();
+                  if (key === 'chenggong-680') {
+                    groundEntities.push(viewer!.entities.add({
+                      id: `cadastral-model-ground-fill-${index + 1}`, show: initialCadastralMode === 'model-ground',
+                      properties: {kind: 'cadastral-fill', parcelKey: key},
+                      polygon: parcelModelFill(hierarchy, key === activeParcel?.key ? .3 : .12)
+                    }));
+                    return;
+                  }
                   const road255Component=road255Offset!==null ? taoyuan255Ground.components.find(c=>c.fillEntityId===fillEntities[index].id) : undefined;
                   if(road255Component&&road255Offset!==null){
                     road255Component.pieces.forEach((ring,pieceIndex)=>groundEntities.push(viewer!.entities.add({
@@ -1289,6 +1298,15 @@ export function App() {
                   }));
                 });
                 boundaryPositionSets.forEach((positions, index) => {
+                  const key = boundaryEntities[index]?.properties?.parcelKey?.getValue();
+                  if (key === 'chenggong-680') {
+                    groundEntities.push(viewer!.entities.add({
+                      id: `cadastral-model-ground-boundary-${index + 1}`, show: initialCadastralMode === 'model-ground',
+                      properties: {kind: 'cadastral-boundary', parcelKey: key},
+                      polyline: parcelModelBoundary(positions)
+                    }));
+                    return;
+                  }
                   const road255Component=road255Offset!==null ? taoyuan255Ground.components.find(c=>c.fillEntityId===boundaryEntities[index].id.replace('-boundary','-fill')) : undefined;
                   const road17Component=boundaryEntities[index]?.properties?.parcelKey?.getValue()===taoyuan17Ground.parcelKey&&road17Offset!==null
                     ? taoyuan17Ground.components.find(c=>c.fillEntityId===boundaryEntities[index].id.replace('-boundary','-fill')) : undefined;

@@ -3,7 +3,7 @@ import path from 'node:path';
 import {ORIGINS,UPSTREAM,PROJECT,catalog,json,readBody,verifyPassword,readSession,writeSession,clearCookie,scopeFor,hasTaoyuan} from './viewer-auth.mjs';
 const dataFiles=['taoyuan1006Parcels','taoyuan1010Parcels','taoyuan1013Parcels','taoyuan1013Cl2Parcels','taoyuan1015Parcels','taoyuan1111Parcels','taoyuanDriplineMetrics','caseMapGeometry','caseCaptureDates','shuanglingGround','taoyuan17Ground','taoyuan255Ground'];
 export function createGateway({env=()=>process.env,fetchUpstream=fetch,loadData=async name=>JSON.parse(await fs.readFile(path.join(process.cwd(),'viewer-source/src',name+'.json'),'utf8'))}={}){
-  let meshAccess=null,meshInflight=null;
+  const modelAccess=new Map(),modelInflight=new Map();
   async function upstream(action,body,origin,token){
     const r=await fetchUpstream(UPSTREAM+'/api/site-access/'+action,{method:'POST',redirect:'error',signal:AbortSignal.timeout(10000),
       headers:{Origin:origin,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(body)});
@@ -22,19 +22,22 @@ export function createGateway({env=()=>process.env,fetchUpstream=fetch,loadData=
       r2Access[PROJECT]=access;
       for(const name of dataFiles)data[name+'.json']=await loadData(name);
     }
-    const mesh='longdong-pix4d-mesh-20260805';
+    for(const mesh of ['longdong-pix4d-mesh-20260805','longteng-20260906']){
     if(scope.projects.some(p=>p.modelSource.type==='tileset-url'&&p.modelSource.privateProjectId===mesh)){
       const settings=env(),key=settings.VIEWER_R2_SERVICE_PASSWORD;
       if(typeof key!=='string'||key.length<24)throw Object.assign(Error('私人模型授權尚未設定'),{status:503});
+      const cacheId=origin+'|'+mesh;
+      let meshAccess=modelAccess.get(cacheId);
       if(!meshAccess||meshAccess.key!==key||meshAccess.origin!==origin||meshAccess.value.expiresAt<Date.now()/1000+30){
-        if(!meshInflight)meshInflight=upstream('login',{project:mesh,role:'viewer',password:key},origin).then(value=>{
+        if(!modelInflight.has(cacheId))modelInflight.set(cacheId,upstream('login',{project:mesh,role:'viewer',password:key},origin).then(value=>{
           if(value.role!=='viewer')throw Error('私人模型授權身分不符');
-          meshAccess={key,origin,value};return meshAccess;
-        }).finally(()=>{meshInflight=null;});
-        await meshInflight;
+          const result={key,origin,value};modelAccess.set(cacheId,result);return result;
+        }).finally(()=>{modelInflight.delete(cacheId);}));
+        meshAccess=await modelInflight.get(cacheId);
       }
       r2Access[mesh]={project:mesh,role:session.role,token:meshAccess.value.token,expiresAt:Math.min(meshAccess.value.expiresAt,session.exp)};
       access??=r2Access[mesh];
+    }
     }
     return {role:session.role,sessionExpiresAt:session.exp,...scope,data,r2:access,r2Access};
   }

@@ -3,6 +3,7 @@ import { Resource } from "cesium";
 export const PRIVATE_R2_ORIGIN = "https://lct-private-3d-viewer.private-3d-viewer.workers.dev";
 export const TAOYUAN_R2_PROJECT = "taoyuan-20261006";
 export const LONGDONG_R2_PROJECT = "longdong-pix4d-mesh-20260805";
+export const LONGTENG_R2_PROJECT = "longteng-20260906";
 type Access = { project: string; token: string; expiresAt: number; role: "admin" | "viewer" };
 export type SiteAuth = {
   login(password: string, role: "admin" | "viewer", project?: string): Promise<Access>;
@@ -19,7 +20,7 @@ export function hasR2Access(project: string): boolean {
   return !!window.LCT_SITE_AUTH?.getAccess(project);
 }
 export async function ensureR2Access(project = TAOYUAN_R2_PROJECT): Promise<void> {
-  if (![TAOYUAN_R2_PROJECT, LONGDONG_R2_PROJECT].includes(project)) throw new Error("私人模型專案不允許。");
+  if (![TAOYUAN_R2_PROJECT, LONGDONG_R2_PROJECT, LONGTENG_R2_PROJECT].includes(project)) throw new Error("私人模型專案不允許。");
   if (!window.LCT_SITE_AUTH) throw new R2AuthorizationRequired();
   if (project === TAOYUAN_R2_PROJECT) await window.LCT_SITE_AUTH.restore();
   else await window.LCT_SITE_AUTH.restore(false, project);

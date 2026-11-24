@@ -127,3 +127,20 @@ test('missing or malformed Longdong service hash does not weaken existing authen
   assert.equal((await worker.fetch(request('synthetic-longdong-service-credential'),configured)).status,401);
  }
 });
+
+test('Longteng website read token is scoped and rejects customer/admin/service cross-use',async()=>{
+ const target='longteng-20260906',password='synthetic-longdong-service-credential';
+ const configured={...env,SITE_LONGDONG_SERVICE_PASSWORD_HASH:hash(password)};
+ const attempt=(project,role,password)=>worker.fetch(new Request('https://worker.test'+base+'login',{
+   method:'POST',headers:{origin,'Content-Type':'application/json'},body:JSON.stringify({project,role,password})
+ }),configured);
+ const result=await attempt(target,'viewer',password);assert.equal(result.status,200);
+ const access=await result.json();
+ const claims=await readCadastralToken(new Request('https://worker.test',{headers:{authorization:'Bearer '+access.token}}),env.SESSION_SECRET);
+ assert.equal(claims.projectId,target);assert.equal(claims.role,'viewer');
+ assert.equal((await attempt(target,'admin',password)).status,401);
+ assert.equal((await attempt(target,'viewer','synthetic-viewer')).status,401);
+ assert.equal((await attempt('nanya','viewer',password)).status,403);
+ const denied=await worker.fetch(new Request('https://worker.test/projects/longdong-pix4d-mesh-20260805/tiles/tileset.json',{headers:{origin,authorization:'Bearer '+access.token}}),configured);
+ assert.equal(denied.status,403);
+});
